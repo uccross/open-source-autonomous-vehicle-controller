@@ -5,6 +5,7 @@
         <group>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/Board.X/Board.c</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/Board.X/Board.h</file>
+            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/Serial.X/SerialM32.c</file>
         </group>
     </open-files>
 </project-private>

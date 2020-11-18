@@ -24,6 +24,13 @@
 #define IMU_BAUD 400000
 #define ICM_I2C_ADDR 0b1101001 //=decimal 69
 #define BYPASS_EN 0X2
+#define MAG_NUM_BYTES 9
+#define IMU_NUM_BYTES 12
+#define MAG_MODE_4 0b01000
+#define MAG_MODE_3 0b00110
+#define MAG_MODE_2 0b00100
+#define MAG_MODE_1 0b00010
+#define MAG_MODE_0 0b00001
 #define MAG_I2C_ADDR 0b0001100  //hex 0C
 #define MAG_WHO_I_AM_1 0
 #define MAG_WHO_I_AM_2 1
@@ -126,7 +133,26 @@ typedef enum {
     AGB0_REG_REG_BANK_SEL = 0x7F,
 } ICM_USR_Bank_0_e;
 
+typedef enum {
+    WIA1 = 0x00,
+    WIA2,
+    ST1 = 0x10, //status 1 shows when data is ready and if data has been skipped
+    HXL, //data registers
+    HXH,
+    HYL,
+    HYH,
+    HZL,
+    HZH,
+    TMPS, //dummy register    
+    ST2, //status 2, bit 3 indicates mag sensor overflow, must read to allow new data collection
+    CNTL2 = 0x31, //control 2--sets the mode of operation
+    CNTL3,
+} Mag_reg_e;
+
 static int8_t I2C_is_configured = FALSE;
+
+static uint8_t Mag_data[MAG_NUM_BYTES];
+static uint8_t IMU_data[IMU_NUM_BYTES];
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
@@ -138,6 +164,7 @@ int I2C_sendByte(unsigned char byte);
 unsigned char I2C_readByte(void);
 uint8_t IMU_get_byte(uint8_t i2c_addr, uint8_t reg_addr);
 uint8_t ICM_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
+void MAG_read_data();
 /***********************************/
 void IMU_cfg_I2C_state_machine(void);
 /*******************************************************************************
@@ -257,6 +284,59 @@ void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_interrupt_handler(void) {
     LATEINV = 0x4; //toggle led3 RE2
 }
 
+void IMU_read_data() {
+    uint8_t i;
+    uint8_t err_state;
+    uint8_t num_bytes = IMU_NUM_BYTES; // TODO fix this for final version to reflect whole array
+    I2C_start();
+    I2C_sendByte(ICM_I2C_ADDR << 1 | WRITE);
+    I2C_sendByte(AGB0_REG_ACCEL_XOUT_H);
+    //    I2C_stop();
+    I2C_restart();
+    I2C_sendByte(ICM_I2C_ADDR << 1 | READ); //read from device
+
+    for (i = 0; i < num_bytes; i++) {
+        I2C1CONbits.RCEN = 1; //setting this bit initiates a receive.  Hardware clears after the received has finished
+        while (I2C1CONbits.RCEN) { //wait for byte to be received
+            ;
+        }
+        IMU_data[i] = I2C1RCV;
+        /*ACK the byte except last one*/
+        if (i < (num_bytes - 1)) {
+            I2C1CONbits.ACKDT = 0; // NACK the byte
+            I2C1CONbits.ACKEN = 1;
+            while (I2C1CONbits.ACKEN == 1);
+        }
+    }
+    I2C_stop();
+}
+
+void MAG_read_data() {
+    uint8_t i;
+    uint8_t err_state;
+    uint8_t num_bytes = MAG_NUM_BYTES; // TODO fix this for final version to reflect whole array
+    I2C_start();
+    I2C_sendByte(MAG_I2C_ADDR << 1 | WRITE);
+    I2C_sendByte(ST1);
+    I2C_restart();
+    err_state = I2C_sendByte(MAG_I2C_ADDR << 1 | READ);
+
+    for (i = 0; i < num_bytes; i++) {
+        I2C1CONbits.RCEN = 1; //setting this bit initiates a receive.  Hardware clears after the received has finished
+        while (I2C1CONbits.RCEN) { //wait for byte to be received
+            ;
+        }
+        Mag_data[i] = I2C1RCV;
+        /*ACK the byte except last one*/
+        if (i < (num_bytes - 1)) {
+            I2C1CONbits.ACKDT = 0; // NACK the byte
+            I2C1CONbits.ACKEN = 1;
+            while (I2C1CONbits.ACKEN == 1);
+        }
+    }
+    I2C_stop();
+}
+
 void IMU_cfg_I2C_state_machine(void) {
     static IMU_config_states_t current_state = IMU_IDLE;
     static IMU_config_states_t next_state = IMU_IDLE;
@@ -289,15 +369,19 @@ uint8_t someFunction(int foo);
 int main(void) {
     int value = 0;
     int i;
-    uint8_t acc_x_low;
-    uint8_t acc_x_high;
-    uint8_t acc_y_low;
-    uint8_t acc_y_high;
-    uint8_t acc_z_low;
-    uint8_t acc_z_high;
     int16_t acc_x;
     int16_t acc_y;
     int16_t acc_z;
+    int16_t gyr_x;
+    int16_t gyr_y;
+    int16_t gyr_z;
+
+    int16_t mag_x;
+    int16_t mag_y;
+    int16_t mag_z;
+
+    uint8_t mag_status_1;
+    uint8_t mag_status_2;
 
     int errstate = 0;
     Board_init();
@@ -317,20 +401,27 @@ int main(void) {
     /*now see if we can contact the mag*/
     value = IMU_get_byte(MAG_I2C_ADDR, MAG_WHO_I_AM_1);
     printf("MAG returned 0x%x \r\n", value);
-
+    ICM_set_reg(MAG_I2C_ADDR, CNTL2, MAG_MODE_3);
+    value = IMU_get_byte(MAG_I2C_ADDR, CNTL2);
+    printf("MAG returned 0x%x \r\n", value);
 
     while (1) {
-        acc_x_low = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_XOUT_L);
-        acc_x_high = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_XOUT_H);
-        acc_x = acc_x_high<<8 | acc_x_low;
-        acc_y_low = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_YOUT_L);
-        acc_y_high = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_YOUT_H);
-        acc_y = acc_y_high<<8 | acc_y_low;
-        acc_z_low = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_ZOUT_L);
-        acc_z_high = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_ACCEL_ZOUT_H);
-        acc_z = (int16_t) acc_z_high<<8 | acc_z_low;
-        printf("%d \t %d \t %d \r\n", acc_x, acc_y, acc_z);
-        for(i=0;i<100000;i++){
+        IMU_read_data();
+        acc_x = IMU_data[0] << 8 | IMU_data[1];
+        acc_y = IMU_data[2] << 8 | IMU_data[3];
+        acc_z = IMU_data[4] << 8 | IMU_data[5];
+        gyr_x = IMU_data[6] << 8 | IMU_data[7];
+        gyr_y = IMU_data[8] << 8 | IMU_data[9];
+        gyr_z = IMU_data[10] << 8 | IMU_data[11];
+        MAG_read_data();
+        mag_status_1 = Mag_data[0] & 0x3;
+        mag_x = Mag_data[2] << 8 | Mag_data[1];
+        mag_y = Mag_data[4] << 8 | Mag_data[3];
+        mag_z = Mag_data[6] << 8 | Mag_data[5];
+        mag_status_2 = Mag_data[8] & 0x4;
+        printf("a:[%d, %d, %d], g:[%d, %d, %d], m:[%d, %d, %d]\r\n", acc_x, acc_y, acc_z,gyr_x, gyr_y, gyr_z, mag_x, mag_y, mag_z);
+//        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
+        for (i = 0; i < 1000000; i++) {
             ;
         }
     }

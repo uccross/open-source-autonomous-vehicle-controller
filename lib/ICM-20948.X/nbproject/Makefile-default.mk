@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=../../lib/Board.X/Board.c ../../lib/Serial.X/SerialM32.c ICM-20948.c
+SOURCEFILES_QUOTED_IF_SPACED=../../lib/Board.X/Board.c ../../lib/Serial.X/SerialM32.c ICM_20948.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1635976186/Board.o ${OBJECTDIR}/_ext/580601064/SerialM32.o ${OBJECTDIR}/ICM-20948.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1635976186/Board.o.d ${OBJECTDIR}/_ext/580601064/SerialM32.o.d ${OBJECTDIR}/ICM-20948.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/_ext/1635976186/Board.o ${OBJECTDIR}/_ext/580601064/SerialM32.o ${OBJECTDIR}/ICM_20948.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/_ext/1635976186/Board.o.d ${OBJECTDIR}/_ext/580601064/SerialM32.o.d ${OBJECTDIR}/ICM_20948.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/_ext/1635976186/Board.o ${OBJECTDIR}/_ext/580601064/SerialM32.o ${OBJECTDIR}/ICM-20948.o
+OBJECTFILES=${OBJECTDIR}/_ext/1635976186/Board.o ${OBJECTDIR}/_ext/580601064/SerialM32.o ${OBJECTDIR}/ICM_20948.o
 
 # Source Files
-SOURCEFILES=../../lib/Board.X/Board.c ../../lib/Serial.X/SerialM32.c ICM-20948.c
+SOURCEFILES=../../lib/Board.X/Board.c ../../lib/Serial.X/SerialM32.c ICM_20948.c
 
 
 
@@ -119,11 +119,11 @@ ${OBJECTDIR}/_ext/580601064/SerialM32.o: ../../lib/Serial.X/SerialM32.c  nbproje
 	@${RM} ${OBJECTDIR}/_ext/580601064/SerialM32.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/580601064/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/_ext/580601064/SerialM32.o.d" -o ${OBJECTDIR}/_ext/580601064/SerialM32.o ../../lib/Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
-${OBJECTDIR}/ICM-20948.o: ICM-20948.c  nbproject/Makefile-${CND_CONF}.mk
+${OBJECTDIR}/ICM_20948.o: ICM_20948.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/ICM-20948.o.d 
-	@${RM} ${OBJECTDIR}/ICM-20948.o 
-	@${FIXDEPS} "${OBJECTDIR}/ICM-20948.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/ICM-20948.o.d" -o ${OBJECTDIR}/ICM-20948.o ICM-20948.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${RM} ${OBJECTDIR}/ICM_20948.o.d 
+	@${RM} ${OBJECTDIR}/ICM_20948.o 
+	@${FIXDEPS} "${OBJECTDIR}/ICM_20948.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/ICM_20948.o.d" -o ${OBJECTDIR}/ICM_20948.o ICM_20948.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 else
 ${OBJECTDIR}/_ext/1635976186/Board.o: ../../lib/Board.X/Board.c  nbproject/Makefile-${CND_CONF}.mk
@@ -138,11 +138,11 @@ ${OBJECTDIR}/_ext/580601064/SerialM32.o: ../../lib/Serial.X/SerialM32.c  nbproje
 	@${RM} ${OBJECTDIR}/_ext/580601064/SerialM32.o 
 	@${FIXDEPS} "${OBJECTDIR}/_ext/580601064/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/_ext/580601064/SerialM32.o.d" -o ${OBJECTDIR}/_ext/580601064/SerialM32.o ../../lib/Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
-${OBJECTDIR}/ICM-20948.o: ICM-20948.c  nbproject/Makefile-${CND_CONF}.mk
+${OBJECTDIR}/ICM_20948.o: ICM_20948.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
-	@${RM} ${OBJECTDIR}/ICM-20948.o.d 
-	@${RM} ${OBJECTDIR}/ICM-20948.o 
-	@${FIXDEPS} "${OBJECTDIR}/ICM-20948.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/ICM-20948.o.d" -o ${OBJECTDIR}/ICM-20948.o ICM-20948.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${RM} ${OBJECTDIR}/ICM_20948.o.d 
+	@${RM} ${OBJECTDIR}/ICM_20948.o 
+	@${FIXDEPS} "${OBJECTDIR}/ICM_20948.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DICM_TESTING -I"../Board.X" -I"../Serial.X" -MMD -MF "${OBJECTDIR}/ICM_20948.o.d" -o ${OBJECTDIR}/ICM_20948.o ICM_20948.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 endif
 

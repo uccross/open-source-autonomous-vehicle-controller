@@ -1,5 +1,5 @@
 /* 
- * File:   ICM-20948.c
+ * File:   ICM_20948.c
  * Author: Aaron Hunter
  * Brief: Library for the ICM-20948 IMU
  * Created on Nov 13, 2020 9:46 am
@@ -10,7 +10,8 @@
  * #INCLUDES                                                                   *
  ******************************************************************************/
 
-#include "ICM-20948.h" // The header file for this source file. 
+#include "ICM_20948.h" // The header file for this source file. 
+#include "ICM_20948_registers.h"  //register definitions for the device
 #include "SerialM32.h"
 #include "Board.h"
 #include <stdio.h>
@@ -25,7 +26,7 @@
 #define ICM_I2C_ADDR 0b1101001 //=decimal 69
 #define BYPASS_EN 0X2
 #define MAG_NUM_BYTES 9
-#define IMU_NUM_BYTES 12
+#define IMU_NUM_BYTES 22
 #define MAG_MODE_4 0b01000
 #define MAG_MODE_3 0b00110
 #define MAG_MODE_2 0b00100
@@ -34,6 +35,11 @@
 #define MAG_I2C_ADDR 0b0001100  //hex 0C
 #define MAG_WHO_I_AM_1 0
 #define MAG_WHO_I_AM_2 1
+#define USER_BANK_0 0
+#define USER_BANK_1 0b00010000
+#define USER_BANK_2 0b00100000
+#define USER_BANK_3 0b00110000
+
 #define ACK 0
 #define NACK 1
 #define READ 1
@@ -60,94 +66,6 @@ typedef enum {
     RX_NACK_LOW_BYTE,
     RX_STOP_READ,
 } IMU_config_states_t;
-
-typedef enum {
-    // Gyroscope and Accelerometer
-    // User Bank 0
-    AGB0_REG_WHO_AM_I = 0x00,
-    AGB0_REG_USER_CTRL = 0x03,
-    AGB0_REG_LP_CONFIG = 0x05,
-    AGB0_REG_PWR_MGMT_1,
-    AGB0_REG_PWR_MGMT_2,
-    AGB0_REG_INT_PIN_CONFIG = 0x0F,
-    AGB0_REG_INT_ENABLE,
-    AGB0_REG_INT_ENABLE_1,
-    AGB0_REG_INT_ENABLE_2,
-    AGB0_REG_INT_ENABLE_3,
-    AGB0_REG_I2C_MST_STATUS = 0x17,
-    AGB0_REG_INT_STATUS = 0x19,
-    AGB0_REG_INT_STATUS_1,
-    AGB0_REG_INT_STATUS_2,
-    AGB0_REG_INT_STATUS_3,
-    AGB0_REG_DELAY_TIMEH = 0x28,
-    AGB0_REG_DELAY_TIMEL,
-    AGB0_REG_ACCEL_XOUT_H = 0x2D,
-    AGB0_REG_ACCEL_XOUT_L,
-    AGB0_REG_ACCEL_YOUT_H,
-    AGB0_REG_ACCEL_YOUT_L,
-    AGB0_REG_ACCEL_ZOUT_H,
-    AGB0_REG_ACCEL_ZOUT_L,
-    AGB0_REG_GYRO_XOUT_H,
-    AGB0_REG_GYRO_XOUT_L,
-    AGB0_REG_GYRO_YOUT_H,
-    AGB0_REG_GYRO_YOUT_L,
-    AGB0_REG_GYRO_ZOUT_H,
-    AGB0_REG_GYRO_ZOUT_L,
-    AGB0_REG_TEMP_OUT_H,
-    AGB0_REG_TEMP_OUT_L,
-    AGB0_REG_EXT_SLV_SENS_DATA_00,
-    AGB0_REG_EXT_SLV_SENS_DATA_01,
-    AGB0_REG_EXT_SLV_SENS_DATA_02,
-    AGB0_REG_EXT_SLV_SENS_DATA_03,
-    AGB0_REG_EXT_SLV_SENS_DATA_04,
-    AGB0_REG_EXT_SLV_SENS_DATA_05,
-    AGB0_REG_EXT_SLV_SENS_DATA_06,
-    AGB0_REG_EXT_SLV_SENS_DATA_07,
-    AGB0_REG_EXT_SLV_SENS_DATA_08,
-    AGB0_REG_EXT_SLV_SENS_DATA_09,
-    AGB0_REG_EXT_SLV_SENS_DATA_10,
-    AGB0_REG_EXT_SLV_SENS_DATA_11,
-    AGB0_REG_EXT_SLV_SENS_DATA_12,
-    AGB0_REG_EXT_SLV_SENS_DATA_13,
-    AGB0_REG_EXT_SLV_SENS_DATA_14,
-    AGB0_REG_EXT_SLV_SENS_DATA_15,
-    AGB0_REG_EXT_SLV_SENS_DATA_16,
-    AGB0_REG_EXT_SLV_SENS_DATA_17,
-    AGB0_REG_EXT_SLV_SENS_DATA_18,
-    AGB0_REG_EXT_SLV_SENS_DATA_19,
-    AGB0_REG_EXT_SLV_SENS_DATA_20,
-    AGB0_REG_EXT_SLV_SENS_DATA_21,
-    AGB0_REG_EXT_SLV_SENS_DATA_22,
-    AGB0_REG_EXT_SLV_SENS_DATA_23,
-    AGB0_REG_FIFO_EN_1 = 0x66,
-    AGB0_REG_FIFO_EN_2,
-    AGB0_REG_FIFO_MODE,
-    AGB0_REG_FIFO_COUNT_H = 0x70,
-    AGB0_REG_FIFO_COUNT_L,
-    AGB0_REG_FIFO_R_W,
-    AGB0_REG_DATA_RDY_STATUS = 0x74,
-    AGB0_REG_FIFO_CFG = 0x76,
-    AGB0_REG_MEM_START_ADDR = 0x7C, // Hmm, Invensense thought they were sneaky not listing these locations on the datasheet...
-    AGB0_REG_MEM_R_W = 0x7D, // These three locations seem to be able to access some memory within the device
-    AGB0_REG_MEM_BANK_SEL = 0x7E, // And that location is also where the DMP image gets loaded
-    AGB0_REG_REG_BANK_SEL = 0x7F,
-} ICM_USR_Bank_0_e;
-
-typedef enum {
-    WIA1 = 0x00,
-    WIA2,
-    ST1 = 0x10, //status 1 shows when data is ready and if data has been skipped
-    HXL, //data registers
-    HXH,
-    HYL,
-    HYH,
-    HZL,
-    HZH,
-    TMPS, //dummy register    
-    ST2, //status 2, bit 3 indicates mag sensor overflow, must read to allow new data collection
-    CNTL2 = 0x31, //control 2--sets the mode of operation
-    CNTL3,
-} Mag_reg_e;
 
 static int8_t I2C_is_configured = FALSE;
 
@@ -180,6 +98,7 @@ void IMU_cfg_I2C_state_machine(void);
  * @modified  */
 uint8_t IMU_init(void) {
     uint32_t pb_clk;
+    uint8_t value;
     __builtin_disable_interrupts();
     /*config LIDAR I2C interrupt*/
     /*config priority and subpriority--must match IPL level*/
@@ -200,12 +119,41 @@ uint8_t IMU_init(void) {
     I2C1BRG = (pb_clk / (2 * IMU_BAUD)) - 2; //set baud rate to 400KHz-->verify with Oscope for correct timing
     //    printf("Board set to BRG %d",I2C1BRG);
     I2C1CONbits.ON = 1; //enable I2C
-    printf("I2C1 CON state %X", I2C1CON);
+    printf("I2C1 CON state %X\r\n", I2C1CON);
     /* send start command to write settings to device */
     //    I2C1CONbits.SEN = 1;
     /* Note 1: When using the 1:1 PBCLK divisor, the user?s software should not
      * read/write the peripheral?s SFRs in the SYSCLK cycle immediately
      * following the instruction that clears the module?s ON bit.*/
+    /*Config the two devices for operation*/
+    //    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_WHO_AM_I);
+    //    printf("ICM returned %d \r\n", value);
+    /*turn on device by clearing bit 6 and setting bit1*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
+    //    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1);
+    //    printf("ICM returned %d \r\n", value);
+    /*attempt to use I2C bypass feature, this is only in effect if I2C MSTR disabled*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
+    //        value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG);
+    //        printf("ICM returned %d \r\n", value);
+    /*now see if we can contact the mag*/
+    //    value = IMU_get_byte(MAG_I2C_ADDR, M_REG_WIA2);
+    //    printf("MAG returned 0x%x \r\n", value);
+    /*set magnetometer mode*/
+    ICM_set_reg(MAG_I2C_ADDR, M_REG_CNTL2, MAG_MODE_4);
+    value = IMU_get_byte(MAG_I2C_ADDR, M_REG_CNTL2);
+    printf("MAG returned 0x%x \r\n", value);
+    /*Set up I2C Master operation for magnetometer*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_REG_BANK_SEL, USER_BANK_3);
+    /*set slave address*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_ADDR, (1 << 7 | MAG_I2C_ADDR));
+    /*set starting register for slave data read*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_REG, M_REG_ST1);
+    /*enable the external device and set number of bytes to read*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_CTRL, 0b10001001);
+    /*now enable I2C master on bank 0*/
+    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_REG_BANK_SEL, 0);
+    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_USER_CTRL, 0b00100000); //I2C master enable
 
     return SUCCESS;
 }
@@ -317,7 +265,7 @@ void MAG_read_data() {
     uint8_t num_bytes = MAG_NUM_BYTES; // TODO fix this for final version to reflect whole array
     I2C_start();
     I2C_sendByte(MAG_I2C_ADDR << 1 | WRITE);
-    I2C_sendByte(ST1);
+    I2C_sendByte(M_REG_ST1);
     I2C_restart();
     err_state = I2C_sendByte(MAG_I2C_ADDR << 1 | READ);
 
@@ -375,6 +323,7 @@ int main(void) {
     int16_t gyr_x;
     int16_t gyr_y;
     int16_t gyr_z;
+    int16_t temp;
 
     int16_t mag_x;
     int16_t mag_y;
@@ -388,22 +337,7 @@ int main(void) {
     Serial_init();
     IMU_init();
     printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
-    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_WHO_AM_I);
-    printf("ICM returned %d \r\n", value);
-    /*turn on device by clearing bit 6 and setting bit1*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
-    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1);
-    printf("ICM returned %d \r\n", value);
-    /*attempt to use I2C bypass feature*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
-    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG);
-    printf("ICM returned %d \r\n", value);
-    /*now see if we can contact the mag*/
-    value = IMU_get_byte(MAG_I2C_ADDR, MAG_WHO_I_AM_1);
-    printf("MAG returned 0x%x \r\n", value);
-    ICM_set_reg(MAG_I2C_ADDR, CNTL2, MAG_MODE_3);
-    value = IMU_get_byte(MAG_I2C_ADDR, CNTL2);
-    printf("MAG returned 0x%x \r\n", value);
+
 
     while (1) {
         IMU_read_data();
@@ -413,14 +347,20 @@ int main(void) {
         gyr_x = IMU_data[6] << 8 | IMU_data[7];
         gyr_y = IMU_data[8] << 8 | IMU_data[9];
         gyr_z = IMU_data[10] << 8 | IMU_data[11];
-        MAG_read_data();
-        mag_status_1 = Mag_data[0] & 0x3;
-        mag_x = Mag_data[2] << 8 | Mag_data[1];
-        mag_y = Mag_data[4] << 8 | Mag_data[3];
-        mag_z = Mag_data[6] << 8 | Mag_data[5];
-        mag_status_2 = Mag_data[8] & 0x4;
-        printf("a:[%d, %d, %d], g:[%d, %d, %d], m:[%d, %d, %d]\r\n", acc_x, acc_y, acc_z,gyr_x, gyr_y, gyr_z, mag_x, mag_y, mag_z);
-//        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
+        temp = IMU_data[12] << 8 | IMU_data[13];
+        mag_status_1 = IMU_data[14] & 0x3;
+        mag_x = IMU_data[16] << 8 | IMU_data[15];
+        mag_y = IMU_data[18] << 8 | IMU_data[17];
+        mag_z = IMU_data[20] << 8 | IMU_data[19];
+        mag_status_2 = IMU_data[21] & 0x4;
+        //        MAG_read_data();
+        //        mag_status_1 = Mag_data[0] & 0x3;
+        //        mag_x = Mag_data[2] << 8 | Mag_data[1];
+        //        mag_y = Mag_data[4] << 8 | Mag_data[3];
+        //        mag_z = Mag_data[6] << 8 | Mag_data[5];
+        //        mag_status_2 = Mag_data[8] & 0x4;
+        printf("a:[%d, %d, %d], g:[%d, %d, %d],T:%d, ST1:%d, m:[%d, %d, %d], ST2:%d\r\n", acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, temp, mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
+        //        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
         for (i = 0; i < 1000000; i++) {
             ;
         }

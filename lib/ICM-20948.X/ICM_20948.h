@@ -1,5 +1,5 @@
 /* 
- * File:   ICM-20948.h
+ * File:   ICM_20948.h
  * Author: Aaron Hunter
  * Brief: Library for the ICM-20948 IMU
  * Created on Nov 13, 2020 9:46 am

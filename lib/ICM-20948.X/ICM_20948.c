@@ -22,7 +22,7 @@
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define IMU_BAUD 400000
+#define IMU_BAUD 100000
 #define ICM_I2C_ADDR 0b1101001 //= 0x69
 #define BYPASS_EN 0X2
 #define MAG_NUM_BYTES 9
@@ -224,7 +224,7 @@ unsigned char I2C_readByte(void) {
 
 void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_interrupt_handler(void) {
     IMU_run_state_machine();
-    LATAINV = 0x08; //toggle led3 RE2
+    LATAINV = 0x08; //toggle led
     IFS0bits.I2C1MIF = 0; //clear flag
 }
 
@@ -232,27 +232,40 @@ void IMU_read_data() {
     uint8_t i;
     uint8_t err_state;
     uint8_t num_bytes = IMU_NUM_BYTES; // TODO fix this for final version to reflect whole array
+    LATAINV = 0x8;
     I2C_start();
+    LATAINV = 0x8;
     I2C_sendByte(ICM_I2C_ADDR << 1 | WRITE);
+    LATAINV = 0x8;
     I2C_sendByte(AGB0_REG_ACCEL_XOUT_H);
+    LATAINV = 0x8;
     //    I2C_stop();
     I2C_restart();
+    LATAINV = 0x8;
     I2C_sendByte(ICM_I2C_ADDR << 1 | READ); //read from device
+    LATAINV = 0x8;
 
     for (i = 0; i < num_bytes; i++) {
         I2C1CONbits.RCEN = 1; //setting this bit initiates a receive.  Hardware clears after the received has finished
         while (I2C1CONbits.RCEN) { //wait for byte to be received
             ;
         }
+        LATAINV = 0x8;
         IMU_raw_data[i] = I2C1RCV;
         /*ACK the byte except last one*/
         if (i < (num_bytes - 1)) {
-            I2C1CONbits.ACKDT = 0; // NACK the byte
+            I2C1CONbits.ACKDT = 0; // ACK the byte
+            I2C1CONbits.ACKEN = 1;
+            while (I2C1CONbits.ACKEN == 1);
+        } else {
+            I2C1CONbits.ACKDT = 1; // NACK the byte
             I2C1CONbits.ACKEN = 1;
             while (I2C1CONbits.ACKEN == 1);
         }
+        LATAINV = 0x8;
     }
     I2C_stop();
+    LATAINV = 0x8;
 }
 
 void MAG_read_data() {
@@ -297,6 +310,7 @@ void IMU_run_state_machine(void) {
             error = FALSE;
             break;
         case(IMU_SEND_REG):
+            //            LATASET = 0x08;
             if (I2C1STATbits.ACKSTAT == NACK) { // check for ack
                 //                LATAINV = 0x10;
                 error = TRUE;
@@ -308,8 +322,8 @@ void IMU_run_state_machine(void) {
             }
             break;
         case(IMU_RESTART):
+            //            LATASET = 0x18;
             if (I2C1STATbits.ACKSTAT == NACK) { // check for ack
-                LATAINV = 0x10;
                 error = TRUE;
                 I2C1CONbits.PEN = 1; //send stop condition 
                 next_state = IMU_STOP;
@@ -319,11 +333,13 @@ void IMU_run_state_machine(void) {
             }
             break;
         case(IMU_SEND_ADDR_R):
+            //            LATAINV = 0x10;
             I2C1TRN = (ICM_I2C_ADDR << 1 | READ);
             byte_count = 0; //reset the byte counter
             next_state = IMU_RD_DATA;
             break;
         case(IMU_RD_DATA):
+            //            LATAINV = 0x08;
             /*need to check the I2C address was sent (byte_count ==0)*/
             if (byte_count == 0 && I2C1STATbits.ACKSTAT == NACK) {
                 error = TRUE;
@@ -354,7 +370,9 @@ void IMU_run_state_machine(void) {
             next_state = IMU_STOP;
             break;
         case(IMU_STOP):
+            //            LATAINV = 0x8;
             if (error == TRUE) {
+                ;
                 //                LATAINV = 0x10;
                 /*restart communication*/
                 //                I2C1CONbits.SEN = 1;
@@ -414,34 +432,38 @@ int main(void) {
 
 
     while (1) {
-        //                IMU_read_data();
+        LATACLR = 0x8;
+//        IMU_read_data();
         //        LATAINV = 0x18;
-        if (IMU_data_ready == TRUE) {
-            acc_x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
-            acc_y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
-            acc_z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
-            gyr_x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
-            gyr_y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
-            gyr_z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
-            temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
-            mag_status_1 = IMU_raw_data[14] & 0x3;
-            mag_x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
-            mag_y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
-            mag_z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
-            mag_status_2 = IMU_raw_data[22] & 0x4;
-            //        MAG_read_data();
-            //        mag_status_1 = Mag_data[0] & 0x3;
-            //        mag_x = Mag_data[2] << 8 | Mag_data[1];
-            //        mag_y = Mag_data[4] << 8 | Mag_data[3];
-            //        mag_z = Mag_data[6] << 8 | Mag_data[5];
-            //        mag_status_2 = Mag_data[8] & 0x4;
-            printf("%d, %d, %d, %d, %d, %d,%d,%d,%d, %d, %d,%d\r\n", acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, temp, mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
-            //        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
-        }
-        I2C1CONbits.SEN = 1;
+                if (IMU_data_ready == TRUE) {
+        acc_x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
+        acc_y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
+        acc_z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
+        gyr_x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
+        gyr_y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
+        gyr_z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
+        temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
+        mag_status_1 = IMU_raw_data[14] & 0x3;
+        mag_x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
+        mag_y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
+        mag_z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
+        mag_status_2 = IMU_raw_data[22] & 0x4;
+        //        MAG_read_data();
+        //        mag_status_1 = Mag_data[0] & 0x3;
+        //        mag_x = Mag_data[2] << 8 | Mag_data[1];
+        //        mag_y = Mag_data[4] << 8 | Mag_data[3];
+        //        mag_z = Mag_data[6] << 8 | Mag_data[5];
+        //        mag_status_2 = Mag_data[8] & 0x4;
+        printf("%d, %d, %d, %d, %d, %d,%d,%d,%d, %d, %d,%d\r\n", acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, temp, mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
+        //        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
+            }
+
         for (i = 0; i < 1000000; i++) {
             ;
         }
+        LATACLR = 0x8;
+        I2C1CONbits.SEN = 1;
+        //        LATAINV = 0x18;
 
     }
 }

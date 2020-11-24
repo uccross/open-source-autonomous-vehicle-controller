@@ -22,7 +22,7 @@
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define IMU_BAUD 100000
+#define IMU_BAUD 400000
 #define ICM_I2C_ADDR 0b1101001 //= 0x69
 #define BYPASS_EN 0X2
 #define MAG_NUM_BYTES 9
@@ -69,7 +69,7 @@ struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 struct IMU_output* p_IMU_data = &IMU_data;
 
 
-static uint8_t IMU_data_ready = 0;
+static volatile uint8_t IMU_data_ready = 0;
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
@@ -79,10 +79,8 @@ void I2C_stop(void);
 void I2C_restart(void);
 int I2C_sendByte(unsigned char byte);
 unsigned char I2C_readByte(void);
-uint8_t IMU_get_byte(uint8_t i2c_addr, uint8_t reg_addr);
-uint8_t ICM_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
-void MAG_read_data();
-
+uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr);
+uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
 /***********************************/
 void IMU_run_state_machine(void);
 uint8_t IMU_process_data();
@@ -105,57 +103,34 @@ uint8_t IMU_init(void) {
     /*config priority and subpriority--must match IPL level*/
     IPC6bits.I2C1IP = 2;
     IPC6bits.I2C1IS = 0;
-    /*enable master interrupt*/
-    //    IEC0bits.I2C1MIE = 1;
     /*clear master interrupt flag*/
     IFS0bits.I2C1MIF = 0;
-    /*restart interrupts*/
-    __builtin_enable_interrupts();
 
     I2C1CON = 0; //reset config; turn off I2C
-    /*calculate the BRG from the baud rate*/
-    /*FSCK = (PBCLK) / ((I2CxBRG+2) * 2)
-     * I2CBRG = (PBCLK / (2 *FSCK)) - 2*/
     pb_clk = Board_get_PB_clock();
-    I2C1BRG = (pb_clk / (2 * IMU_BAUD)) - 2; //set baud rate to 400KHz-->verify with Oscope for correct timing
-    //    printf("Board set to BRG %d",I2C1BRG);
+    I2C1BRG = (pb_clk / (2 * IMU_BAUD)) - 2; //calculate the BRG from the baud rate
+    //    printf("I2C BRG: %d", I2C1BRG);
     I2C1CONbits.ON = 1; //enable I2C
-    printf("I2C1 CON state %X\r\n", I2C1CON);
-    /* send start command to write settings to device */
-    //    I2C1CONbits.SEN = 1;
-    /* Note 1: When using the 1:1 PBCLK divisor, the user?s software should not
-     * read/write the peripheral?s SFRs in the SYSCLK cycle immediately
-     * following the instruction that clears the module?s ON bit.*/
     /*Config the two devices for operation*/
-    //    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_WHO_AM_I);
-    //    printf("ICM returned %d \r\n", value);
-    /*turn on device by clearing bit 6 and setting bit1*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
-    //    value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1);
-    //    printf("ICM returned %d \r\n", value);
+    /*turn on ICM by clearing bit 6 and setting bit 1*/
+    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
     /*attempt to use I2C bypass feature, this is only in effect if I2C MSTR disabled*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
-    //        value = IMU_get_byte(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG);
-    //        printf("ICM returned %d \r\n", value);
-    /*now see if we can contact the mag*/
-    //    value = IMU_get_byte(MAG_I2C_ADDR, M_REG_WIA2);
-    //    printf("MAG returned 0x%x \r\n", value);
+    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
     /*set magnetometer mode*/
-    ICM_set_reg(MAG_I2C_ADDR, M_REG_CNTL2, MAG_MODE_4);
-    //    value = IMU_get_byte(MAG_I2C_ADDR, M_REG_CNTL2);
-    //    printf("MAG returned 0x%x \r\n", value);
+    I2C_set_reg(MAG_I2C_ADDR, M_REG_CNTL2, MAG_MODE_4);
     /*Set up I2C Master operation for magnetometer*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_REG_BANK_SEL, USER_BANK_3);
+    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_REG_BANK_SEL, USER_BANK_3);
     /*set slave address*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_ADDR, (1 << 7 | MAG_I2C_ADDR));
+    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_ADDR, (1 << 7 | MAG_I2C_ADDR));
     /*set starting register for slave data read*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_REG, M_REG_ST1);
+    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_REG, M_REG_ST1);
     /*enable the external device and set number of bytes to read*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_CTRL, 0b10001001);
+    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_CTRL, 0b10001001);
     /*now enable I2C master on bank 0*/
-    ICM_set_reg(ICM_I2C_ADDR, AGB3_REG_REG_BANK_SEL, 0);
-    ICM_set_reg(ICM_I2C_ADDR, AGB0_REG_USER_CTRL, 0b00100000); //I2C master enable
-
+    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_REG_BANK_SEL, 0);
+    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_USER_CTRL, 0b00100000); //I2C master enable
+    /*restart interrupts*/
+    __builtin_enable_interrupts();
     /*enable master interrupt*/
     IEC0bits.I2C1MIE = 1;
 
@@ -220,7 +195,7 @@ int I2C_sendByte(unsigned char byte) {
     return SUCCESS;
 }
 
-uint8_t IMU_get_byte(uint8_t i2c_addr, uint8_t reg_addr) {
+uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr) {
     uint8_t ret_val;
     uint8_t err_state;
     I2C_start();
@@ -234,7 +209,7 @@ uint8_t IMU_get_byte(uint8_t i2c_addr, uint8_t reg_addr) {
     return ret_val;
 }
 
-uint8_t ICM_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting) {
+uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting) {
     uint8_t ret_val;
     uint8_t err_state;
     I2C_start();
@@ -259,6 +234,7 @@ void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_interrupt_handler(void) {
     IFS0bits.I2C1MIF = 0; //clear flag
 }
 
+/*deprecated with ISR read*/
 void IMU_read_data() {
     uint8_t i;
     uint8_t err_state;
@@ -297,32 +273,6 @@ void IMU_read_data() {
     }
     I2C_stop();
     LATAINV = 0x8;
-}
-
-void MAG_read_data() {
-    uint8_t i;
-    uint8_t err_state;
-    uint8_t num_bytes = MAG_NUM_BYTES; // TODO fix this for final version to reflect whole array
-    I2C_start();
-    I2C_sendByte(MAG_I2C_ADDR << 1 | WRITE);
-    I2C_sendByte(M_REG_ST1);
-    I2C_restart();
-    err_state = I2C_sendByte(MAG_I2C_ADDR << 1 | READ);
-
-    for (i = 0; i < num_bytes; i++) {
-        I2C1CONbits.RCEN = 1; //setting this bit initiates a receive.  Hardware clears after the received has finished
-        while (I2C1CONbits.RCEN) { //wait for byte to be received
-            ;
-        }
-        Mag_data[i] = I2C1RCV;
-        /*ACK the byte except last one*/
-        if (i < (num_bytes - 1)) {
-            I2C1CONbits.ACKDT = 0; // NACK the byte
-            I2C1CONbits.ACKEN = 1;
-            while (I2C1CONbits.ACKEN == 1);
-        }
-    }
-    I2C_stop();
 }
 
 void IMU_run_state_machine(void) {
@@ -447,22 +397,6 @@ int main(void) {
 
     while (1) {
         LATACLR = 0x8;
-
-//        if (IMU_data_ready == TRUE) {
-//            IMU_process_data();
-//            /*test with data structure*/
-//            //            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
-//            //                    IMU_data.acc.x, IMU_data.acc.y, IMU_data.acc.z,
-//            //                    IMU_data.gyro.x, IMU_data.gyro.y, IMU_data.gyro.z,
-//            //                    IMU_data.mag.x, IMU_data.mag.y, IMU_data.mag.z,
-//            //                    IMU_data.temp, IMU_data.mag_status);
-//            /*test with point to data structure*/
-//            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
-//                    p_IMU_data->acc.x, p_IMU_data->acc.y, p_IMU_data->acc.z,
-//                    p_IMU_data->gyro.x, p_IMU_data->gyro.y, p_IMU_data->gyro.z,
-//                    p_IMU_data->mag.x, p_IMU_data->mag.y, p_IMU_data->mag.z,
-//                    p_IMU_data->temp, p_IMU_data->mag_status);
-//        }
         if (IMU_is_data_ready() == TRUE) {
             p_data = IMU_get_data();
             printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
@@ -470,9 +404,8 @@ int main(void) {
                     p_data->gyro.x, p_data->gyro.y, p_data->gyro.z,
                     p_data->mag.x, p_data->mag.y, p_data->mag.z,
                     p_data->temp, p_data->mag_status);
-
         }
-
+        /*delay to not overwhelm the serial port*/
         for (i = 0; i < 1000000; i++) {
             ;
         }

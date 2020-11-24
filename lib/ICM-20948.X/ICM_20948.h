@@ -22,7 +22,19 @@
 /*******************************************************************************
  * PUBLIC TYPEDEFS                                                             *
  ******************************************************************************/
+struct IMU_device {
+    int16_t x;
+    int16_t y;
+    int16_t z;
+};
 
+struct IMU_output {
+    struct IMU_device acc;
+    struct IMU_device gyro;
+    struct IMU_device mag;
+    int16_t temp;
+    uint16_t mag_status;
+};
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
@@ -36,6 +48,24 @@
  * @author Aaron Hunter,
  * @modified  */
 uint8_t IMU_init(void);
+
+/**
+ * @Function IMU_is_data_ready(void)
+ * @return TRUE or FALSE
+ * @brief TRUE if unread data is available
+ * @note 
+ * @author Aaron Hunter,
+ * @modified  */
+uint8_t IMU_is_data_ready(void);
+
+/**
+ * @Function IMU_get_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief returns most current data from the IMU
+ * @note 
+ * @author Aaron Hunter,
+ * @modified  */
+struct IMU_output * IMU_get_data(void);
 
 
 

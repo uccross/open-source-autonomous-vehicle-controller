@@ -27,6 +27,7 @@
 #define BYPASS_EN 0X2
 #define MAG_NUM_BYTES 9
 #define IMU_NUM_BYTES 23
+#define IMU_NUM_AXES 3
 #define MAG_MODE_4 0b01000
 #define MAG_MODE_3 0b00110
 #define MAG_MODE_2 0b00100
@@ -63,11 +64,16 @@ static int8_t I2C_is_configured = FALSE;
 
 static uint8_t Mag_data[MAG_NUM_BYTES];
 static uint8_t IMU_raw_data[IMU_NUM_BYTES];
+
+struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+struct IMU_output* p_IMU_data = &IMU_data;
+
+
 static uint8_t IMU_data_ready = 0;
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
-/*blocking functions, deprecated*/
+/*blocking functions, used for init only*/
 void I2C_start(void);
 void I2C_stop(void);
 void I2C_restart(void);
@@ -76,8 +82,10 @@ unsigned char I2C_readByte(void);
 uint8_t IMU_get_byte(uint8_t i2c_addr, uint8_t reg_addr);
 uint8_t ICM_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
 void MAG_read_data();
+
 /***********************************/
 void IMU_run_state_machine(void);
+uint8_t IMU_process_data();
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
  ******************************************************************************/
@@ -152,6 +160,29 @@ uint8_t IMU_init(void) {
     IEC0bits.I2C1MIE = 1;
 
     return SUCCESS;
+}
+
+/**
+ * @Function IMU_is_data_ready(void)
+ * @return TRUE or FALSE
+ * @brief TRUE if unread data is available
+ * @note 
+ * @author Aaron Hunter,
+ * @modified  */
+uint8_t IMU_is_data_ready(void) {
+    return IMU_data_ready;
+}
+
+/**
+ * @Function IMU_get_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief returns most current data from the IMU
+ * @note 
+ * @author Aaron Hunter,
+ * @modified  */
+struct IMU_output* IMU_get_data(void) {
+    IMU_process_data();
+    return p_IMU_data;
 }
 
 /*******************************************************************************
@@ -296,13 +327,12 @@ void MAG_read_data() {
 
 void IMU_run_state_machine(void) {
     static IMU_SM_states_t current_state = IMU_SEND_ADDR_W;
-    static IMU_SM_states_t next_state = IMU_SEND_ADDR_W;
+    IMU_SM_states_t next_state = IMU_SEND_ADDR_W;
     static uint8_t error = FALSE;
     static uint8_t byte_count;
 
     switch (current_state) {
         case(IMU_SEND_ADDR_W):
-            //            LATASET = 0x10; //entry into state machine
             next_state = IMU_SEND_REG;
             I2C1TRN = (ICM_I2C_ADDR << 1 | WRITE);
             /*reset error and data ready flags*/
@@ -310,9 +340,7 @@ void IMU_run_state_machine(void) {
             error = FALSE;
             break;
         case(IMU_SEND_REG):
-            //            LATASET = 0x08;
             if (I2C1STATbits.ACKSTAT == NACK) { // check for ack
-                //                LATAINV = 0x10;
                 error = TRUE;
                 I2C1CONbits.PEN = 1; //send stop condition 
                 next_state = IMU_STOP;
@@ -322,7 +350,6 @@ void IMU_run_state_machine(void) {
             }
             break;
         case(IMU_RESTART):
-            //            LATASET = 0x18;
             if (I2C1STATbits.ACKSTAT == NACK) { // check for ack
                 error = TRUE;
                 I2C1CONbits.PEN = 1; //send stop condition 
@@ -333,13 +360,11 @@ void IMU_run_state_machine(void) {
             }
             break;
         case(IMU_SEND_ADDR_R):
-            //            LATAINV = 0x10;
             I2C1TRN = (ICM_I2C_ADDR << 1 | READ);
             byte_count = 0; //reset the byte counter
             next_state = IMU_RD_DATA;
             break;
         case(IMU_RD_DATA):
-            //            LATAINV = 0x08;
             /*need to check the I2C address was sent (byte_count ==0)*/
             if (byte_count == 0 && I2C1STATbits.ACKSTAT == NACK) {
                 error = TRUE;
@@ -370,13 +395,6 @@ void IMU_run_state_machine(void) {
             next_state = IMU_STOP;
             break;
         case(IMU_STOP):
-            //            LATAINV = 0x8;
-            if (error == TRUE) {
-                ;
-                //                LATAINV = 0x10;
-                /*restart communication*/
-                //                I2C1CONbits.SEN = 1;
-            }
             next_state = IMU_SEND_ADDR_W;
             break;
         default:
@@ -387,39 +405,37 @@ void IMU_run_state_machine(void) {
     current_state = next_state;
 }
 
-
-
 /**
- * @Function someFunction(void)
- * @param foo, some value
- * @return TRUE or FALSE
- * @brief 
- * @note 
- * @author <Your Name>
- * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
-uint8_t someFunction(int foo);
+ * @Function IMU_process_data(void)
+ * @return SUCCESS or ERROR
+ * @brief converts raw register data into IMU values for output
+ * @note mag data has reversed endianness
+ * @author Aaron Hunter,
+ * @modified  */
+uint8_t IMU_process_data() {
+    IMU_data.acc.x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
+    IMU_data.acc.y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
+    IMU_data.acc.z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
+    IMU_data.gyro.x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
+    IMU_data.gyro.y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
+    IMU_data.gyro.z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
+    IMU_data.temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
+    IMU_data.mag.x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
+    IMU_data.mag.y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
+    IMU_data.mag.z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
+    /*status 1 is high byte and status 2 is low byte*/
+    IMU_data.mag_status = (IMU_raw_data[14] & 0x3) << 8 | (IMU_raw_data[22] & 0x4);
+    return SUCCESS;
+}
 
 #ifdef ICM_TESTING
 
 int main(void) {
     int value = 0;
     int i;
-    int16_t acc_x;
-    int16_t acc_y;
-    int16_t acc_z;
-    int16_t gyr_x;
-    int16_t gyr_y;
-    int16_t gyr_z;
-    int16_t temp;
-
-    int16_t mag_x;
-    int16_t mag_y;
-    int16_t mag_z;
-
-    uint8_t mag_status_1;
-    uint8_t mag_status_2;
-
     int errstate = 0;
+    struct IMU_output* p_data;
+
     Board_init();
     Serial_init();
     IMU_init();
@@ -429,42 +445,39 @@ int main(void) {
     LATACLR = 0x18;
     printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
 
-
-
     while (1) {
         LATACLR = 0x8;
-//        IMU_read_data();
-        //        LATAINV = 0x18;
-                if (IMU_data_ready == TRUE) {
-        acc_x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
-        acc_y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
-        acc_z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
-        gyr_x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
-        gyr_y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
-        gyr_z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
-        temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
-        mag_status_1 = IMU_raw_data[14] & 0x3;
-        mag_x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
-        mag_y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
-        mag_z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
-        mag_status_2 = IMU_raw_data[22] & 0x4;
-        //        MAG_read_data();
-        //        mag_status_1 = Mag_data[0] & 0x3;
-        //        mag_x = Mag_data[2] << 8 | Mag_data[1];
-        //        mag_y = Mag_data[4] << 8 | Mag_data[3];
-        //        mag_z = Mag_data[6] << 8 | Mag_data[5];
-        //        mag_status_2 = Mag_data[8] & 0x4;
-        printf("%d, %d, %d, %d, %d, %d,%d,%d,%d, %d, %d,%d\r\n", acc_x, acc_y, acc_z, gyr_x, gyr_y, gyr_z, temp, mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
-        //        printf("MAG: DR/ODR: %d, %d, %d, %d, HOFL: %x \r\n", mag_status_1, mag_x, mag_y, mag_z, mag_status_2);
-            }
+
+//        if (IMU_data_ready == TRUE) {
+//            IMU_process_data();
+//            /*test with data structure*/
+//            //            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
+//            //                    IMU_data.acc.x, IMU_data.acc.y, IMU_data.acc.z,
+//            //                    IMU_data.gyro.x, IMU_data.gyro.y, IMU_data.gyro.z,
+//            //                    IMU_data.mag.x, IMU_data.mag.y, IMU_data.mag.z,
+//            //                    IMU_data.temp, IMU_data.mag_status);
+//            /*test with point to data structure*/
+//            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
+//                    p_IMU_data->acc.x, p_IMU_data->acc.y, p_IMU_data->acc.z,
+//                    p_IMU_data->gyro.x, p_IMU_data->gyro.y, p_IMU_data->gyro.z,
+//                    p_IMU_data->mag.x, p_IMU_data->mag.y, p_IMU_data->mag.z,
+//                    p_IMU_data->temp, p_IMU_data->mag_status);
+//        }
+        if (IMU_is_data_ready() == TRUE) {
+            p_data = IMU_get_data();
+            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
+                    p_data->acc.x, p_data->acc.y, p_data->acc.z,
+                    p_data->gyro.x, p_data->gyro.y, p_data->gyro.z,
+                    p_data->mag.x, p_data->mag.y, p_data->mag.z,
+                    p_data->temp, p_data->mag_status);
+
+        }
 
         for (i = 0; i < 1000000; i++) {
             ;
         }
         LATACLR = 0x8;
         I2C1CONbits.SEN = 1;
-        //        LATAINV = 0x18;
-
     }
 }
 #endif //ICM_TESTING

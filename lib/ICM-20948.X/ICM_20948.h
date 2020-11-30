@@ -17,7 +17,8 @@
 /*******************************************************************************
  * PUBLIC #DEFINES                                                             *
  ******************************************************************************/
-
+#define IMU_SPI_MODE 0
+#define IMU_I2C_MODE 1
 
 /*******************************************************************************
  * PUBLIC TYPEDEFS                                                             *
@@ -47,7 +48,7 @@ struct IMU_output {
  * @note 
  * @author Aaron Hunter,
  * @modified  */
-uint8_t IMU_init(void);
+uint8_t IMU_init(char interface_mode);
 
 /**
  * @Function IMU_is_data_ready(void)

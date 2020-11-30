@@ -22,7 +22,8 @@
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define IMU_BAUD 400000
+#define IMU_I2C_FREQ 400000
+#define IMU_SPI_FREQ 1000000ul
 #define ICM_I2C_ADDR 0b1101001 //= 0x69
 #define BYPASS_EN 0X2
 #define MAG_NUM_BYTES 9
@@ -45,6 +46,10 @@
 #define NACK 1
 #define READ 1
 #define WRITE 0
+#define INTERFACE_MODE IMU_SPI_MODE
+//#define INTERFACE_MODE IMU_I2C_MODE 
+#define IMU_CS_TRIS TRISEbits.TRISE0 //chip select for IMU
+#define IMU_CS_LAT LATEbits.LATE0
 
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *
@@ -81,7 +86,14 @@ int I2C_sendByte(unsigned char byte);
 unsigned char I2C_readByte(void);
 uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr);
 uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
+uint8_t SPI_read_reg(uint8_t reg_addr);
+uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value);
+uint8_t SPI_read_reg(uint8_t reg_addr);
+uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value);
+void SPI_read_data(void);
+
 /***********************************/
+void delay(int cycles);
 void IMU_run_state_machine(void);
 uint8_t IMU_process_data();
 /*******************************************************************************
@@ -95,44 +107,109 @@ uint8_t IMU_process_data();
  * @note 
  * @author Aaron Hunter,
  * @modified  */
-uint8_t IMU_init(void) {
+uint8_t IMU_init(char interface_mode) {
     uint32_t pb_clk;
-    uint8_t value;
-    __builtin_disable_interrupts();
-    /*config LIDAR I2C interrupt*/
-    /*config priority and subpriority--must match IPL level*/
-    IPC6bits.I2C1IP = 2;
-    IPC6bits.I2C1IS = 0;
-    /*clear master interrupt flag*/
-    IFS0bits.I2C1MIF = 0;
-
-    I2C1CON = 0; //reset config; turn off I2C
+    uint8_t value=0;
     pb_clk = Board_get_PB_clock();
-    I2C1BRG = (pb_clk / (2 * IMU_BAUD)) - 2; //calculate the BRG from the baud rate
-    //    printf("I2C BRG: %d", I2C1BRG);
-    I2C1CONbits.ON = 1; //enable I2C
-    /*Config the two devices for operation*/
-    /*turn on ICM by clearing bit 6 and setting bit 1*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
-    /*attempt to use I2C bypass feature, this is only in effect if I2C MSTR disabled*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
-    /*set magnetometer mode*/
-    I2C_set_reg(MAG_I2C_ADDR, M_REG_CNTL2, MAG_MODE_4);
-    /*Set up I2C Master operation for magnetometer*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_REG_BANK_SEL, USER_BANK_3);
-    /*set slave address*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_ADDR, (1 << 7 | MAG_I2C_ADDR));
-    /*set starting register for slave data read*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_REG, M_REG_ST1);
-    /*enable the external device and set number of bytes to read*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_CTRL, 0b10001001);
-    /*now enable I2C master on bank 0*/
-    I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_REG_BANK_SEL, 0);
-    I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_USER_CTRL, 0b00100000); //I2C master enable
-    /*restart interrupts*/
-    __builtin_enable_interrupts();
-    /*enable master interrupt*/
-    IEC0bits.I2C1MIE = 1;
+    if (interface_mode == IMU_I2C_MODE) {
+        __builtin_disable_interrupts();
+        /*config LIDAR I2C interrupt*/
+        /*config priority and subpriority--must match IPL level*/
+        IPC6bits.I2C1IP = 2;
+        IPC6bits.I2C1IS = 0;
+        /*clear master interrupt flag*/
+        IFS0bits.I2C1MIF = 0;
+
+        I2C1CON = 0; //reset config; turn off I2C
+        I2C1BRG = (pb_clk / (2 * IMU_I2C_FREQ)) - 2; //calculate the BRG from the baud rate
+        //    printf("I2C BRG: %d", I2C1BRG);
+        I2C1CONbits.ON = 1; //enable I2C
+        /*Config the two devices for operation*/
+        /*turn on ICM by clearing bit 6 and setting bit 1*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_PWR_MGMT_1, 0x2);
+        /*attempt to use I2C bypass feature, this is only in effect if I2C MSTR disabled*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_INT_PIN_CONFIG, BYPASS_EN);
+        /*set magnetometer mode*/
+        I2C_set_reg(MAG_I2C_ADDR, M_REG_CNTL2, MAG_MODE_4);
+        /*Set up I2C Master operation for magnetometer*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_REG_BANK_SEL, USER_BANK_3);
+        /*set slave address*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_ADDR, (1 << 7 | MAG_I2C_ADDR));
+        /*set starting register for slave data read*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_REG, M_REG_ST1);
+        /*enable the external device and set number of bytes to read*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_I2C_SLV0_CTRL, 0b10001001);
+        /*now enable I2C master on bank 0*/
+        I2C_set_reg(ICM_I2C_ADDR, AGB3_REG_REG_BANK_SEL, 0);
+        I2C_set_reg(ICM_I2C_ADDR, AGB0_REG_USER_CTRL, 0b00100000); //I2C master enable
+        /*restart interrupts*/
+        __builtin_enable_interrupts();
+        /*enable master interrupt*/
+        IEC0bits.I2C1MIE = 1;
+    } else {
+        /*Disable the SPI interrupts in the respective IEC0/1 register.*/
+        __builtin_disable_interrupts();
+        SPI1CON = 0; // Stop and reset the SPI module by clearing the ON bit.
+        /*Note: When using 1:1 PBCLK divisor, the user?s software should not read/write the peripheral?s
+SFRs in the SYSCLK cycle immediately following the instruction that clears the module?s ON
+bit.*/
+        /*initialize chip select pins*/
+        IMU_CS_TRIS = 0; /* set up CS1 for CS output */
+        IMU_CS_LAT = 1; /* deselect encoder 1*/
+        SPI1BUF; // clear receive buffer 
+        /*set up SPI1 RX interrupt*/
+        IFS0bits.SPI1RXIF = 0; // clear interrupt flag
+        //        IEC0bits.SPI1RXIE = 1; //enable interrupt
+        IPC5bits.SPI1IP = 5; //interrupt priority 5
+        IPC5bits.SPI1IS = 0; //subpriority 0
+        SPI1BRG = pb_clk / (2 * IMU_SPI_FREQ) - 1; // set frequency 
+        SPI1STATbits.SPIROV = 0; // clear any overflow condition 
+        /*Write the desired settings to the SPIxCON register with MSTEN (SPIxCON<5>) = 1.*/
+        SPI1CONbits.MODE32 = 0;
+        SPI1CONbits.MODE16 = 0; //8 bit mode
+        SPI1CONbits.SMP = 1; /* set sample at end of data*/
+        SPI1CONbits.SSEN = 0; // manually drive CS/SS 
+        SPI1CONbits.CKP = 1; /*set clock phase to idle high*/
+        SPI1CONbits.CKE = 0; /* set to read on falling edge (active --> idle)*/
+        SPI1CONbits.MSTEN = 1; // set as master
+        SPI1CONbits.ON = 1; /* enable SPI system*/
+        /*verify device ID*/
+        SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_0);
+        while (!value) {
+            value = SPI_read_reg(AGB0_REG_WHO_AM_I);
+        }
+        printf("IMU returned who am I = 0x%x \r\n", value);
+        SPI_set_reg(AGB0_REG_USER_CTRL, 0x30); //enable master I2C, disable slave I2C interface
+        SPI_set_reg(AGB0_REG_PWR_MGMT_1, 0x01); //clear sleep bit and set clock to best available
+        /*switch to user bank 3 to configure slave devices*/
+        SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_3);
+        /*get who I am data from mag*/
+        SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, (READ << 7 | MAG_I2C_ADDR)); /*load the I2C address of the magnetometer*/
+        SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_WIA2); //load who I am 2 register
+        SPI_set_reg(AGB3_REG_I2C_SLV4_CTRL, 0x80); //execute the read by setting the enable bit
+        while (SPI_read_reg(AGB3_REG_I2C_SLV4_CTRL)) { //bit 7 is cleared when the transaction is complete
+            ;
+        }
+        value = SPI_read_reg(AGB3_REG_I2C_SLV4_DI); /*read the data returned by the mag*/
+        printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
+        SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR);  /*load the I2C address of the magnetometer*/
+        /*set the mag parameters on mag control 2 register*/
+        SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_CNTL2);
+        SPI_set_reg(AGB3_REG_I2C_SLV4_DO, MAG_MODE_4); //100 Hz output
+        SPI_set_reg(AGB3_REG_I2C_SLV4_CTRL, 0x80); //set the enable bit to execute the transaction
+        while (SPI_read_reg(AGB3_REG_I2C_SLV4_CTRL)) { //bit 7 is cleared when the transaction is complete
+            ;
+        }
+        /*set up the slave data registers to be read on slave 0*/
+        SPI_set_reg(AGB3_REG_I2C_SLV0_ADDR, READ << 7 | MAG_I2C_ADDR);
+        SPI_set_reg(AGB3_REG_I2C_SLV0_REG, M_REG_ST1); //starting register for data
+        SPI_set_reg(AGB3_REG_I2C_SLV0_CTRL, 0b10001001); //read nine bytes and set enable bit
+        /*return to user bank 0 for data read*/
+        SPI_set_reg(AGB3_REG_REG_BANK_SEL, USER_BANK_0);
+
+        /*restart interrupts*/
+        __builtin_enable_interrupts();
+    }
 
     return SUCCESS;
 }
@@ -163,6 +240,21 @@ struct IMU_output* IMU_get_data(void) {
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
  ******************************************************************************/
+
+/**
+ * @Function delay(int cycles)
+ * @param cycles, number of cycles to delay
+ * @brief simlple delay loop
+ * @note ~500nsec for one delay, then +12.5 nsec for every increment higher
+ * @author ahunter
+ */
+void delay(int cycles) {
+    int i;
+    for (i = 0; i < cycles; i++) {
+        ;
+    }
+}
+
 void I2C_start(void) {
     I2C1CONbits.SEN = 1;
     while (I2C1CONbits.SEN) {
@@ -227,11 +319,90 @@ unsigned char I2C_readByte(void) {
     }
     return I2C1RCV; //return the value in receive buffer
 }
+/*SPI blocking functions*/
+
+/**
+ * @Function SPI_read_reg(uint8_t reg_addr)
+ * @param address, hardware address in the encoder
+ * @brief sends the next address to read
+ * @returns data from previous SPI operation
+ * @author ahunter
+ */
+uint8_t SPI_read_reg(uint8_t reg_addr) {
+    uint8_t data;
+    reg_addr = reg_addr | (READ << 7);
+
+    IMU_CS_LAT = 0;
+    SPI1BUF = reg_addr;
+    while (SPI1STATbits.SPIRBF == FALSE);
+    data = SPI1BUF;
+    //    IMU_CS_LAT = 1;
+    //    delay(1);
+    //
+    //    IMU_CS_LAT = 0;
+    reg_addr++;
+    SPI1BUF = reg_addr; // We're not going to read this but need set something
+    while (SPI1STATbits.SPIRBF == FALSE);
+    data = SPI1BUF;
+    IMU_CS_LAT = 1;
+
+    return (data);
+
+}
+
+/**
+ * @Function SPI_set_reg(uint8_t reg_addr)
+ * @param address, hardware address in the encoder
+ * @brief sends the next address to read
+ * @returns data from previous SPI operation
+ * @author ahunter
+ */
+uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value) {
+    uint8_t data;
+    reg_addr = reg_addr | (WRITE << 7);
+
+    IMU_CS_LAT = 0;
+    SPI1BUF = reg_addr;
+    while (SPI1STATbits.SPIRBF == FALSE);
+    data = SPI1BUF;
+    SPI1BUF = value; //send register setting
+    while (SPI1STATbits.SPIRBF == FALSE);
+    data = SPI1BUF;
+    IMU_CS_LAT = 1;
+    return data;
+}
+
+void SPI_read_data(void) {
+    int i;
+    int num_bytes = IMU_NUM_BYTES;
+    uint8_t val = 0;
+    uint8_t data_reg = AGB0_REG_ACCEL_XOUT_H;
+    IMU_CS_LAT = 0;
+    data_reg = data_reg | (READ << 7);
+    for (i = 0; i < num_bytes; i++) {
+        SPI1BUF = data_reg;
+        while (SPI1STATbits.SPIRBF == FALSE);
+        val = SPI1BUF;
+        if (i > 0) {
+            IMU_raw_data[i - 1] = val;
+        }
+        data_reg++;
+    }
+    IMU_CS_LAT = 1;
+    IMU_process_data();
+    IMU_data_ready = TRUE;
+}
 
 void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_interrupt_handler(void) {
     IMU_run_state_machine();
     LATAINV = 0x08; //toggle led
     IFS0bits.I2C1MIF = 0; //clear flag
+}
+
+void __ISR(_SPI_1_VECTOR, IPL5AUTO) __SPI2Interrupt(void) {
+    IFS0bits.SPI1ARXIF = 0; // clear interrupt flag
+    LATAINV = 0x08;
+    //    run_SPI_SM();
 }
 
 /*deprecated with ISR read*/
@@ -388,29 +559,38 @@ int main(void) {
 
     Board_init();
     Serial_init();
-    IMU_init();
+    IMU_init(INTERFACE_MODE);
     //set LEDs for troubleshooting
     TRISAbits.TRISA4 = 0; //pin 72 Max32
     TRISAbits.TRISA3 = 0; //built-in LED, pin 13
     LATACLR = 0x18;
     printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
+    if (INTERFACE_MODE == IMU_SPI_MODE) {
+        printf("SPI interface enabled\r\n");
+        /*read whoami register on ICM_20948*/
+        printf("finding IMU\r\n");
+    } else {
+        printf("I2C interface mode enabled\r\n");
+    }
 
     while (1) {
         LATACLR = 0x8;
+        SPI_read_data();
         if (IMU_is_data_ready() == TRUE) {
             p_data = IMU_get_data();
-            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d,%d\r\n",
+            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\r\n",
                     p_data->acc.x, p_data->acc.y, p_data->acc.z,
                     p_data->gyro.x, p_data->gyro.y, p_data->gyro.z,
                     p_data->mag.x, p_data->mag.y, p_data->mag.z,
                     p_data->temp, p_data->mag_status);
+            IMU_data_ready = FALSE;
         }
         /*delay to not overwhelm the serial port*/
         for (i = 0; i < 1000000; i++) {
             ;
         }
         LATACLR = 0x8;
-        I2C1CONbits.SEN = 1;
+        //        I2C1CONbits.SEN = 1;
     }
 }
 #endif //ICM_TESTING

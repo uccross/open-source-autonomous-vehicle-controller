@@ -65,6 +65,11 @@ typedef enum {
     IMU_STOP,
 } IMU_SM_states_t;
 
+typedef enum {
+    IMU_SPI_SEND_NEXT_REG,
+    IMU_SPI_READ_LAST_REG,
+} IMU_SPI_SM_states_t;
+
 static int8_t I2C_is_configured = FALSE;
 
 static uint8_t Mag_data[MAG_NUM_BYTES];
@@ -94,7 +99,8 @@ void SPI_read_data(void);
 
 /***********************************/
 void delay(int cycles);
-void IMU_run_state_machine(void);
+void IMU_run_I2C_state_machine(void);
+void IMU_run_SPI_state_machine(void);
 uint8_t IMU_process_data();
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -109,7 +115,7 @@ uint8_t IMU_process_data();
  * @modified  */
 uint8_t IMU_init(char interface_mode) {
     uint32_t pb_clk;
-    uint8_t value=0;
+    uint8_t value = 0;
     pb_clk = Board_get_PB_clock();
     if (interface_mode == IMU_I2C_MODE) {
         __builtin_disable_interrupts();
@@ -159,7 +165,6 @@ bit.*/
         SPI1BUF; // clear receive buffer 
         /*set up SPI1 RX interrupt*/
         IFS0bits.SPI1RXIF = 0; // clear interrupt flag
-        //        IEC0bits.SPI1RXIE = 1; //enable interrupt
         IPC5bits.SPI1IP = 5; //interrupt priority 5
         IPC5bits.SPI1IS = 0; //subpriority 0
         SPI1BRG = pb_clk / (2 * IMU_SPI_FREQ) - 1; // set frequency 
@@ -192,7 +197,7 @@ bit.*/
         }
         value = SPI_read_reg(AGB3_REG_I2C_SLV4_DI); /*read the data returned by the mag*/
         printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
-        SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR);  /*load the I2C address of the magnetometer*/
+        SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR); /*load the I2C address of the magnetometer*/
         /*set the mag parameters on mag control 2 register*/
         SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_CNTL2);
         SPI_set_reg(AGB3_REG_I2C_SLV4_DO, MAG_MODE_4); //100 Hz output
@@ -208,6 +213,7 @@ bit.*/
         SPI_set_reg(AGB3_REG_REG_BANK_SEL, USER_BANK_0);
 
         /*restart interrupts*/
+        IEC0bits.SPI1RXIE = 1; //enable interrupt
         __builtin_enable_interrupts();
     }
 
@@ -393,16 +399,23 @@ void SPI_read_data(void) {
     IMU_data_ready = TRUE;
 }
 
-void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_interrupt_handler(void) {
-    IMU_run_state_machine();
+void SPI_start_read_data(void) {
+    uint8_t data_reg = AGB0_REG_ACCEL_XOUT_H;
+    IMU_CS_LAT = 0; //select the IMU 
+    data_reg = data_reg | (READ << 7);
+    SPI1BUF = data_reg; //start SPI transaction 
+}
+
+void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_I2C_interrupt_handler(void) {
+    IMU_run_I2C_state_machine();
     LATAINV = 0x08; //toggle led
     IFS0bits.I2C1MIF = 0; //clear flag
 }
 
-void __ISR(_SPI_1_VECTOR, IPL5AUTO) __SPI2Interrupt(void) {
-    IFS0bits.SPI1ARXIF = 0; // clear interrupt flag
-    LATAINV = 0x08;
-    //    run_SPI_SM();
+void __ISR(_SPI_1_VECTOR, IPL5AUTO) IMU_SPI_interrupt_handler(void) {
+    LATAINV = 0x18;
+    IMU_run_SPI_state_machine();
+    IFS0bits.SPI1RXIF = 0; // clear interrupt flag
 }
 
 /*deprecated with ISR read*/
@@ -446,7 +459,7 @@ void IMU_read_data() {
     LATAINV = 0x8;
 }
 
-void IMU_run_state_machine(void) {
+void IMU_run_I2C_state_machine(void) {
     static IMU_SM_states_t current_state = IMU_SEND_ADDR_W;
     IMU_SM_states_t next_state = IMU_SEND_ADDR_W;
     static uint8_t error = FALSE;
@@ -527,6 +540,49 @@ void IMU_run_state_machine(void) {
 }
 
 /**
+ * @Function IMU_run_SPI_state_machine()
+ * @return none
+ * @brief reads IMU data registers over SPI
+ * @note called with a single SPI read of the IMU
+ * @author Aaron Hunter,
+ * @modified  */
+void IMU_run_SPI_state_machine(void) {
+    static uint8_t reg_address = AGB0_REG_ACCEL_XOUT_H;
+    static IMU_SPI_SM_states_t current_state = IMU_SPI_SEND_NEXT_REG;
+    IMU_SM_states_t next_state = IMU_SPI_SEND_NEXT_REG;
+    static uint8_t error = FALSE;
+    static int8_t byte_index = -1;
+    uint8_t byte_read;
+    uint8_t max_index = IMU_NUM_BYTES - 1;
+    switch (current_state) {
+        case IMU_SPI_SEND_NEXT_REG:
+            //store spi buffer in raw data struct
+            byte_read = SPI1BUF;
+            if (byte_index >= 0) {
+                IMU_raw_data[byte_index] = byte_read;
+            }
+            byte_index++; //increment byte count
+            if (byte_index >= max_index) { // only change states after we have read all the data
+                next_state = IMU_SPI_READ_LAST_REG;
+            } else {
+                next_state = current_state;
+            }
+            SPI1BUF = (++reg_address); //increment and send next register value
+            break;
+        case IMU_SPI_READ_LAST_REG:
+            byte_read = SPI1BUF;
+            IMU_raw_data[byte_index] = byte_read; //store last data byte in raw data struct
+            IMU_CS_LAT = 1; // deselect IMU
+            IMU_data_ready = TRUE; // set data read flag
+            byte_index=-1; //reset byte counter
+            break;
+        default:
+            break;
+    }
+    current_state = next_state;
+}
+
+/**
  * @Function IMU_process_data(void)
  * @return SUCCESS or ERROR
  * @brief converts raw register data into IMU values for output
@@ -567,15 +623,13 @@ int main(void) {
     printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
     if (INTERFACE_MODE == IMU_SPI_MODE) {
         printf("SPI interface enabled\r\n");
-        /*read whoami register on ICM_20948*/
-        printf("finding IMU\r\n");
     } else {
         printf("I2C interface mode enabled\r\n");
     }
 
     while (1) {
-        LATACLR = 0x8;
-        SPI_read_data();
+//                SPI_read_data();
+        SPI_start_read_data();
         if (IMU_is_data_ready() == TRUE) {
             p_data = IMU_get_data();
             printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\r\n",
@@ -589,7 +643,7 @@ int main(void) {
         for (i = 0; i < 1000000; i++) {
             ;
         }
-        LATACLR = 0x8;
+        LATACLR = 0x18;
         //        I2C1CONbits.SEN = 1;
     }
 }

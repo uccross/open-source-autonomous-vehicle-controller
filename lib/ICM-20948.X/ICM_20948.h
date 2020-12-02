@@ -3,7 +3,6 @@
  * Author: Aaron Hunter
  * Brief: Library for the ICM-20948 IMU
  * Created on Nov 13, 2020 9:46 am
- * Modified on 
  */
 
 #ifndef ICM_20948_H // Header guard
@@ -46,9 +45,17 @@ struct IMU_output {
  * @return SUCCESS or ERROR
  * @brief initializes the I2C system for IMU operation
  * @note 
- * @author Aaron Hunter,
- * @modified  */
+ * @author Aaron Hunter
+ **/
 uint8_t IMU_init(char interface_mode);
+/**
+ * @Function IMU_start_data_acq(void);
+ * @return none
+ * @param none
+ * @brief this function starts the SPI data read
+ * @author Aaron Hunter
+ **/
+void IMU_start_data_acq(void);
 
 /**
  * @Function IMU_is_data_ready(void)
@@ -56,7 +63,7 @@ uint8_t IMU_init(char interface_mode);
  * @brief TRUE if unread data is available
  * @note 
  * @author Aaron Hunter,
- * @modified  */
+ **/
 uint8_t IMU_is_data_ready(void);
 
 /**
@@ -65,7 +72,7 @@ uint8_t IMU_is_data_ready(void);
  * @brief returns most current data from the IMU
  * @note 
  * @author Aaron Hunter,
- * @modified  */
+ **/
 struct IMU_output * IMU_get_data(void);
 
 

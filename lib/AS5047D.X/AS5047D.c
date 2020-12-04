@@ -362,8 +362,8 @@ int16_t write_register(uint16_t address, uint16_t value) {
  * @author ahunter
  */
 void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void) {
-    IFS1bits.SPI2RXIF = 0; // clear interrupt flag
     run_encoder_SM();
+    IFS1bits.SPI2RXIF = 0; // clear interrupt flag
 }
 
 /**

@@ -461,7 +461,7 @@ int main(void) {
         vel_left = Encoder_get_velocity(LEFT_MOTOR);
         vel_right = Encoder_get_velocity(RIGHT_MOTOR);
         printf("L: %d, %d; R: %d, %d\r\n", angle_left, vel_left,angle_right,vel_right);
-        delay(72900);
+        delay(79000);
     }
 }
 #endif //ENC_TESTING

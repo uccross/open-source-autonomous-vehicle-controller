@@ -42,8 +42,8 @@
  * PRIVATE TYPEDEFS                                                            *
  ******************************************************************************/
 typedef struct circular_buffer {
-    int readIdx;
-    int writeIdx;
+    int read_index;
+    int write_index;
     int size;
     unsigned char data[BUFFER_LENGTH];
 } circular_buffer; /*circular  buffer */
@@ -53,8 +53,8 @@ typedef struct GPS_msg_buffer {
     unsigned char payload[GPS_BUFFERSIZE][GPS_PAYLOADLENGTH];
     unsigned char length[GPS_BUFFERSIZE];
     unsigned char checksum[GPS_BUFFERSIZE];
-    int writeIndex;
-    int readIndex;
+    int write_index;
+    int read_index;
 } GPS_msg_buffer;
 
 typedef enum {
@@ -262,7 +262,7 @@ int GPS_init(void) {
 char GPS_is_msg_avail(void) {
     {
         struct GPS_msg_buffer *buf = msg_buffer_p;
-        if (buf->readIndex == buf->writeIndex) { //if read = write then the buffer is empty
+        if (buf->read_index == buf->write_index) { //if read = write then the buffer is empty
             return FALSE;
         }
         return TRUE;
@@ -279,9 +279,9 @@ char GPS_parse_stream(void) {
     struct GPS_msg_buffer *buf = msg_buffer_p;
 
     if (GPS_is_msg_avail() == TRUE) {
-        NMEA_parse(buf->payload[buf->readIndex]);
+        NMEA_parse(buf->payload[buf->read_index]);
         /*increment and wrap read index*/
-        buf->readIndex = (buf->readIndex + 1) % GPS_BUFFERSIZE;
+        buf->read_index = (buf->read_index + 1) % GPS_BUFFERSIZE;
         return SUCCESS;
     } else return ERROR;
 }
@@ -370,8 +370,8 @@ void __ISR(_UART_2_VECTOR, IPL3AUTO) UART2_interrupt_handler(void) {
  * @modified  */
 void init_buffer(struct circular_buffer * buf) {
     int i;
-    buf->readIdx = 0; /*initialize read index to 0 */
-    buf->writeIdx = 0; /*initialize write index to 0 */
+    buf->read_index = 0; /*initialize read index to 0 */
+    buf->write_index = 0; /*initialize write index to 0 */
     buf->size = BUFFER_LENGTH; /*Set size to buffer length const*/
     for (i = 0; i < BUFFER_LENGTH; i++) { /*initialize data to zero*/
         buf->data[i] = 0;
@@ -387,8 +387,8 @@ void init_buffer(struct circular_buffer * buf) {
 void init_msg_buffer(struct GPS_msg_buffer * buf) {
     int i;
     int j;
-    buf->readIndex = 0; /*initialize read index to 0 */
-    buf->writeIndex = 0; /*initialize write index to 0 */
+    buf->read_index = 0; /*initialize read index to 0 */
+    buf->write_index = 0; /*initialize write index to 0 */
 
     for (i = 0; i < GPS_BUFFERSIZE; i++) { /*initialize data to zero*/
         buf->length[j] = 0;
@@ -480,15 +480,15 @@ int GPS_store_msg(unsigned char *payload, int length, unsigned char checksum) {
 
     if (GPS_is_queue_full() == FALSE) { /*If the packet buffer is not full */
         reading_from_RX_buffer = TRUE;
-        buf->length[buf->writeIndex] = length; /*write length to the bufferLength at the writeIndex */
+        buf->length[buf->write_index] = length; /*write length to the bufferLength at the writeIndex */
         for (i = 0; i < length; i++) {
-            buf->payload[buf->writeIndex][i] = payload[i]; //write payload data
+            buf->payload[buf->write_index][i] = payload[i]; //write payload data
         }
         /*NULL terminate the string*/
-        buf->payload[buf->writeIndex][length] = '\0';
+        buf->payload[buf->write_index][length] = '\0';
         reading_from_RX_buffer = FALSE;
-        buf->checksum[buf->writeIndex] = checksum;
-        buf->writeIndex = (buf->writeIndex + 1) % GPS_BUFFERSIZE; //increment and wrap
+        buf->checksum[buf->write_index] = checksum;
+        buf->write_index = (buf->write_index + 1) % GPS_BUFFERSIZE; //increment and wrap
         if (RX_collision == TRUE) {
             IFS1bits.U2RXIF = 1; /*reset interrupt for RX*/
             RX_collision = FALSE; /* reset collision flag */
@@ -505,7 +505,7 @@ int GPS_store_msg(unsigned char *payload, int length, unsigned char checksum) {
  * @author Aaron Hunter */
 char GPS_is_queue_full(void) {
     struct GPS_msg_buffer *buf = msg_buffer_p;
-    if ((buf->writeIndex + 1) % GPS_BUFFERSIZE == buf->readIndex) {
+    if ((buf->write_index + 1) % GPS_BUFFERSIZE == buf->read_index) {
         return TRUE;
     }
     return FALSE;

@@ -28,6 +28,8 @@
 #define CS1_LAT LATEbits.LATE1
 #define CS2_TRIS TRISEbits.TRISE2 //chip select for RHS rotary encoder
 #define CS2_LAT LATEbits.LATE2 
+#define CS3_TRIS TRISEbits.TRISE3 //chip select for RHS rotary encoder
+#define CS3_LAT LATEbits.LATE3 
 
 /*Used for debugging the interrupt can be removed eventually*/
 #define LED_OUT_TRIS TRISDbits.TRISD3
@@ -62,8 +64,8 @@ typedef struct encoder {
 typedef struct encoder *encoder_ptr_t; //pointer to encoder struct
 encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
 
-static int16_t current_angle;
-static int16_t current_vel;
+//static int16_t current_angle;
+//static int16_t current_vel;
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -168,9 +170,11 @@ uint8_t Encoder_init(void) {
     SPI2CONbits.CKE = 0; /* set to read on falling edge (active --> idle)*/
     /*initialize chip select pins*/
     CS1_TRIS = 0; /* set up CS1 for CS output */
-    CS1_LAT = 1; /* deselect encoder 1*/
+    CS1_LAT = 1; /* deselect encoder 1 (left wheel)*/
     CS2_TRIS = 0; /* set up CS2 for CS output */
-    CS2_LAT = 1; /* deselect encoder 2*/
+    CS2_LAT = 1; /* deselect encoder 2 (right wheel)*/
+    CS3_TRIS = 0; /* set up CS3 for CS output */
+    CS3_LAT = 1; /* deselect encoder 3 (steering servo)*
     /*LED indicator of ISR  to be removed later*/
     LED_OUT_TRIS = 0;
     LED_OUT_LAT = 0;
@@ -187,6 +191,7 @@ uint8_t Encoder_init(void) {
     __builtin_enable_interrupts();
     init_encoder_data(&encoder_data[LEFT_MOTOR]);
     init_encoder_data(&encoder_data[RIGHT_MOTOR]);
+    init_encoder_data(&encoder_data[HEADING]);
     return SUCCESS;
 }
 
@@ -396,17 +401,9 @@ static void run_encoder_SM(void) {
             CS2_LAT = 0; /*select encoder 2*/
             /*write angle register address to encoder 2*/
             SPI2BUF = ANGLE;
-            next_state = ENC_LAST;
+            next_state = ENC_NEXT;
             break;
-            //        case(ENC_NEXT):
-            //            /*read the encoder_x angle*/
-            //            /*update encoder 1 data struct*/
-            //            /*deselect encoder_x*/
-            //            /*select encoder_x+1*/
-            //            /*write angle register address to encoder_x+1*/
-            //            next_state = ENC_LAST;
-            //            break;
-        case ENC_LAST:
+        case(ENC_NEXT):
             encoder_data[RIGHT_MOTOR].last_theta = encoder_data[RIGHT_MOTOR].next_theta;
             /*read the RIGHT_MOTOR angle*/
             encoder_data[RIGHT_MOTOR].next_theta = 0x3FFF & SPI2BUF; //mask top bits
@@ -420,6 +417,25 @@ static void run_encoder_SM(void) {
             }
             encoder_data[RIGHT_MOTOR].omega = (int16_t) w;
             CS2_LAT = 1; /*deselect encoder 2*/
+            CS3_LAT = 0; /*select encoder 3*/
+            /*write angle register address to encoder 3*/
+            SPI2BUF = ANGLE;
+            next_state = ENC_LAST;
+            break;
+        case ENC_LAST:
+            encoder_data[HEADING].last_theta = encoder_data[HEADING].next_theta;
+            /*read the HEADING angle*/
+            encoder_data[HEADING].next_theta = 0x3FFF & SPI2BUF; //mask top bits
+            /*update HEADING data struct*/
+            w = encoder_data[HEADING].next_theta - encoder_data[HEADING].last_theta;
+            if (w < -MAX_VELOCITY) {
+                w = w + TWO_PI;
+            }
+            if (w > MAX_VELOCITY) {
+                w = w - TWO_PI;
+            }
+            encoder_data[HEADING].omega = (int16_t) w;
+            CS3_LAT = 1; /*deselect encoder 3*/
             next_state = ENC_START;
             break;
         default:
@@ -448,6 +464,8 @@ int main(void) {
     int16_t angle_right;
     int16_t vel_left;
     int16_t vel_right;
+    int16_t phi; // steering angle
+    int16_t dphi_dt; //angular velocity of steering servo
 
     Board_init();
     Serial_init();
@@ -460,7 +478,9 @@ int main(void) {
         angle_right = Encoder_get_angle(RIGHT_MOTOR);
         vel_left = Encoder_get_velocity(LEFT_MOTOR);
         vel_right = Encoder_get_velocity(RIGHT_MOTOR);
-        printf("L: %d, %d; R: %d, %d\r\n", angle_left, vel_left,angle_right,vel_right);
+        phi = Encoder_get_angle(HEADING);
+        dphi_dt = Encoder_get_velocity(HEADING);
+        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right,phi, dphi_dt);
         delay(79000);
     }
 }

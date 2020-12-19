@@ -25,14 +25,14 @@
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define USEC_NUM 5
-#define USEC_LOG_DEN 1
+#define USEC_NUM 5  //numerator multiplier to avoid divides
+#define USEC_LOG_DEN 1  //right shift to divide by 2^x
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            *
  ******************************************************************************/
-static uint16_t pulse_width = 0; //PW in microseconds
-static uint16_t raw_ticks = 0; // raw ticks corresponding to pulse width
+static uint16_t pulse_width[RC_NUM_SERVOS]; //PW in microseconds
+static uint16_t raw_ticks[RC_NUM_SERVOS]; // raw ticks corresponding to pulse width
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
@@ -41,7 +41,7 @@ static uint16_t raw_ticks = 0; // raw ticks corresponding to pulse width
  * @ brief handles output compare IRQ, updates duty cycle of PWM if different
  * @ author Aaron Hunter
  */
-void __ISR(_OUTPUT_COMPARE_2_VECTOR, IPL4AUTO) OC2_ISR_handler(void);
+//void __ISR(_OUTPUT_COMPARE_2_VECTOR, IPL4AUTO) OC2_ISR_handler(void);
 
 /**
  * @Function delay(int cycles)
@@ -61,8 +61,12 @@ void RC_servo_delay(int cycles);
  * @return SUCCESS or ERROR
  * @brief initializes hardware required and set it to the CENTER PULSE */
 uint8_t RC_servo_init(void) {
-    pulse_width = RC_SERVO_CENTER_PULSE;
-    raw_ticks = (pulse_width * USEC_NUM) >> USEC_LOG_DEN;
+    uint8_t i;
+    uint16_t ticks_center = (RC_SERVO_CENTER_PULSE * USEC_NUM) >> USEC_LOG_DEN;
+    for (i = 0; i < RC_NUM_SERVOS; i++) {
+        pulse_width[i] = RC_SERVO_CENTER_PULSE;
+        raw_ticks[i] = ticks_center;
+    }
     __builtin_disable_interrupts();
     /* timer 3 settings */
     T3CON = 0;
@@ -75,17 +79,49 @@ uint8_t RC_servo_init(void) {
     OC2RS = 0x0000; // Initialize secondary Compare Register
     OC2CONbits.OC32 = 0; //16 bit mode
     OC2CONbits.OCTSEL = 1; //use timer 3
-    OC2CONbits.OCM = 0b101; // Continuous pulses
-    OC2R = 0; // start of pulse
-    OC2RS = raw_ticks; //this parameter can be changed at any time by the user
+    OC2CONbits.OCM = 0b110; // PWM mode, no fault detection
+    OC2R = raw_ticks[RC_LEFT_WHEEL]; // need load this register initially
+    OC2RS = raw_ticks[RC_LEFT_WHEEL]; // OCxRS -> OCxR at timer rollover
     /*Configure interrupt*/
-    IFS0bits.OC2IF = 0; //clear interrupt
-    IPC2bits.OC2IP = 0b100; //priority 4
-    IEC0bits.OC2IE = 1; //enable interrupt
+    //    IFS0bits.OC2IF = 0; //clear interrupt
+    //    IPC2bits.OC2IP = 0b100; //priority 4
+    //    IEC0bits.OC2IE = 1; //enable interrupt
+    OC2CONbits.ON = 1; //turn on the peripheral
 
-    /* turn on the peripherals */
+    if (RC_NUM_SERVOS > 1) {
+        OC3CON = 0x0;
+        OC3R = 0x0000; // Initialize primary Compare Register
+        OC3RS = 0x0000; // Initialize secondary Compare Register
+        OC3CONbits.OC32 = 0; //16 bit mode
+        OC3CONbits.OCTSEL = 1; //use timer 3
+        OC3CONbits.OCM = 0b110; // PWM mode, no fault detection
+        OC3R = raw_ticks[RC_RIGHT_WHEEL]; // need load this register initially 
+        OC3RS = raw_ticks[RC_RIGHT_WHEEL]; // OCxRS -> OCxR at timer rollover
+        /*Configure interrupt*/
+        //        IFS0bits.OC3IF = 0; //clear interrupt
+        //        IPC3bits.OC3IP = 0b100; //priority 4
+        //        IPC3bits.OC3IS = 0b01; //sub priority 1
+        //        IEC0bits.OC3IE = 1; //enable interrupt
+        OC3CONbits.ON = 1; //turn on the peripheral
+    }
+    if (RC_NUM_SERVOS > 2) {
+        OC4CON = 0x0;
+        OC4R = 0x0000; // Initialize primary Compare Register
+        OC4RS = 0x0000; // Initialize secondary Compare Register
+        OC4CONbits.OC32 = 0; //16 bit mode
+        OC4CONbits.OCTSEL = 1; //use timer 3
+        OC4CONbits.OCM = 0b110; // PWM mode, no fault detection
+        OC4R = raw_ticks[RC_STEERING]; // need load this register initially 
+        OC4RS = raw_ticks[RC_STEERING]; // OCxRS -> OCxR at timer rollover
+        /*Configure interrupt*/
+        //        IFS0bits.OC4IF = 0; //clear interrupt
+        //        IPC4bits.OC4IP = 0b100; //priority 4
+        //        IPC4bits.OC4IS = 0b10; //sub priority 1
+        //        IEC0bits.OC4IE = 1; //enable interrupt
+        OC4CONbits.ON = 1; //turn on the peripheral
+    }
+    /* turn on the timer */
     T3CONbits.ON = 1;
-    OC2CONbits.ON = 1;
     __builtin_enable_interrupts();
     return SUCCESS;
 }
@@ -96,7 +132,7 @@ uint8_t RC_servo_init(void) {
  * @return SUCCESS or ERROR
  * @brief takes in microsecond count, converts to ticks and updates the internal variables
  * @warning This will update the timing for the next pulse, not the current one */
-uint8_t RC_servo_set_pulse(uint16_t in_pulse) {
+uint8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
     /*if inPulse < min pulse, inPulse = min pulse*/
     /*if inPulse > max pulse, inPulse = max pulse*/
     if (in_pulse < RC_SERVO_MIN_PULSE) {
@@ -105,27 +141,41 @@ uint8_t RC_servo_set_pulse(uint16_t in_pulse) {
     if (in_pulse > RC_SERVO_MAX_PULSE) {
         in_pulse = RC_SERVO_MAX_PULSE;
     }
-    if (in_pulse != pulse_width) {
-        pulse_width = in_pulse;
-        raw_ticks = (pulse_width * USEC_NUM) >> USEC_LOG_DEN; //only update PW register if the value has changed
+    if (in_pulse != pulse_width[which_servo]) { //only update struct and OCxRS register if new value
+        pulse_width[which_servo] = in_pulse;
+        raw_ticks[which_servo] = (in_pulse * USEC_NUM) >> USEC_LOG_DEN; //only update PW register if the value has changed
+        switch (which_servo) {
+            case RC_LEFT_WHEEL:
+                OC2RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
+                break;
+            case RC_RIGHT_WHEEL:
+                OC3RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
+                break;
+            case RC_STEERING:
+                OC4RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
+                break;
+            default:
+                break;
+        }
     }
+
     return SUCCESS;
 }
 
 /**
- * @Function int RCServo_GetPulse(void)
- * @param None
- * @return Pulse in microseconds currently set */
-uint16_t RC_servo_get_pulse(void) {
-    return (uint16_t) (RC_servo_get_raw_ticks() << USEC_LOG_DEN) / USEC_NUM;
+ * @Function RC_servo_get_pulse(uint8_t which_servo)
+ * @param servo number
+ * @return pulse in microseconds currently set */
+uint16_t RC_servo_get_pulse(uint8_t which_servo) {
+    return pulse_width[which_servo];
 }
 
 /**
- * @Function int RCServo_GetRawTicks(void)
+ * @Function int RC_servo_get_raw_ticks(uint8_t which_servo)
  * @param None
  * @return raw timer ticks required to generate current pulse. */
-uint16_t RC_servo_get_raw_ticks(void) {
-    return raw_ticks;
+uint16_t RC_servo_get_raw_ticks(uint8_t which_servo) {
+    return raw_ticks[which_servo];
 }
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
@@ -137,11 +187,23 @@ uint16_t RC_servo_get_raw_ticks(void) {
  * @ author Aaron Hunter
  */
 
-void __ISR(_OUTPUT_COMPARE_2_VECTOR, IPL4AUTO) OC2_ISR_handler(void) {
-    /*update compare register if it's changed*/
-    OC2RS = raw_ticks;
-    IFS0bits.OC2IF = 0; //clear interrupt flag
-}
+//void __ISR(_OUTPUT_COMPARE_2_VECTOR, IPL4AUTO) OC2_ISR_handler(void) {
+//    /*update compare register if it's changed*/
+//    OC2RS = raw_ticks[RC_LEFT_WHEEL];
+//    IFS0bits.OC2IF = 0; //clear interrupt flag
+//}
+//
+//void __ISR(_OUTPUT_COMPARE_3_VECTOR, IPL4AUTO) OC3_ISR_handler(void) {
+//    /*update compare register if it's changed*/
+//    OC3RS = raw_ticks[RC_RIGHT_WHEEL];
+//    IFS0bits.OC3IF = 0; //clear interrupt flag
+//}
+//
+//void __ISR(_OUTPUT_COMPARE_4_VECTOR, IPL4AUTO) OC4_ISR_handler(void) {
+//    /*update compare register if it's changed*/
+//    OC4RS = raw_ticks[RC_STEERING];
+//    IFS0bits.OC4IF = 0; //clear interrupt flag
+//}
 
 /**
  * @Function delay(int cycles)
@@ -172,21 +234,27 @@ void main(void) {
 
     while (1) {
         if (direction == 1) {
-            RC_servo_set_pulse(test_pulse);
+            RC_servo_set_pulse(test_pulse, RC_LEFT_WHEEL);
+            RC_servo_set_pulse(test_pulse, RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(test_pulse, RC_STEERING);
             test_pulse += 10;
             if (test_pulse > RC_SERVO_MAX_PULSE) {
                 direction = -1;
             }
         }
         if (direction == -1) {
-            RC_servo_set_pulse(test_pulse);
+            RC_servo_set_pulse(test_pulse, RC_LEFT_WHEEL);
+            RC_servo_set_pulse(test_pulse, RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(test_pulse, RC_STEERING);
             test_pulse -= 10;
             if (test_pulse < RC_SERVO_MIN_PULSE) {
                 direction = 1;
             }
         }
-        RC_servo_delay(80000);
-        printf("Current pulse width: %d, current ticks: %d \r\n", RC_servo_get_pulse(), RC_servo_get_raw_ticks());
+        RC_servo_delay(160000);
+        printf("LEFT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_LEFT_WHEEL), RC_servo_get_raw_ticks(RC_LEFT_WHEEL));
+        printf("RIGHT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_RIGHT_WHEEL), RC_servo_get_raw_ticks(RC_RIGHT_WHEEL));
+        printf("STEERING PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_STEERING), RC_servo_get_raw_ticks(RC_STEERING));
     }
 }
 

@@ -41,22 +41,23 @@
 uint8_t RC_servo_init(void);
 
 /**
- * @Function int RC_servo_set_pulse(unsigned int inPulse)
- * @param inPulse, integer representing number of microseconds
+ * @Function int RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo)
+ * @param in_pulse, integer representing PWM width in microseconds
+ * @param which_servo, servo number to set
  * @return SUCCESS or ERROR
  * @brief takes in microsecond count, converts to ticks and updates the internal variables
  * @warning This will update the timing for the next pulse, not the current one */
 uint8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo);
 
 /**
- * @Function int RC_servo_get_pulse(void)
- * @param None
+ * @Function int RC_servo_get_pulse(uint8_t which_servo)
+ * @param which_servo, servo number to retrieve PWM value from 
  * @return Pulse in microseconds currently set */
 uint16_t RC_servo_get_pulse(uint8_t which_servo);
 
 /**
  * @Function int RC_servo_get_raw_ticks(void)
- * @param None
+ * @param which_servo, servo number to retrieve raw timer compare value from 
  * @return raw timer ticks required to generate current pulse. */
 uint16_t RC_servo_get_raw_ticks(uint8_t which_servo);
 

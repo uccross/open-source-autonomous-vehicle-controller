@@ -37,6 +37,10 @@
 RCRX_channel_buffer servo_data;
 RCRX_channel_buffer* servo_data_p = &servo_data;
 
+typedef struct sbus_t {
+    uint8_t data[SBUS_BUFFER_LENGTH];
+} sbus_t;
+
 struct RCRX_msg_buffer {
     uint8_t read_index;
     uint8_t write_index;
@@ -87,6 +91,14 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
  * @author Aaron Hunter */
 static void RCRX_run_RX_state_machine(uint8_t char_in);
 
+/**
+ * @Function uint8_t RCRX_calc_cmd(void)
+ * @param none
+ * @return SUCCESS or ERROR
+ * @brief converts sbus raw data into 11 bit channel data
+ * @author Aaron Hunter 
+ */
+static uint8_t RCRX_calc_cmd(void);
 
 
 /*******************************************************************************
@@ -236,9 +248,7 @@ static void RCRX_run_RX_state_machine(uint8_t char_in) {
             }
             break;
         case GET_END:
-
             if (char_in == END_BYTE) {
-                //                printf("%x", char_in);
                 RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = END_BYTE;
                 new_data_avail = TRUE;
                 parse_error = FALSE; //clear previous parsing error
@@ -270,6 +280,36 @@ void RCRX_delay(int cycles) {
     }
 }
 
+/**
+ * @Function uint8_t RCRX_calc_cmd(void)
+ * @param none
+ * @return SUCCESS or ERROR
+ * @brief converts sbus raw data into 11 bit channel data
+ * @author Aaron Hunter 
+ */
+static uint8_t RCRX_calc_cmd(void) {
+    servo_data[0] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][1]\
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] << 8) &0x7ff;
+    servo_data[1] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] >> 3 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] << 5) &0x7ff;
+    servo_data[2] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] >> 6 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][4] << 2 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] << 10) &0x7ff;
+    servo_data[3] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] >> 1 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] << 7) & 0x7ff;
+    servo_data[4] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] >> 4 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] << 4) & 0x7ff;
+    servo_data[5] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] >> 7 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][8] << 1 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] << 9) & 0x7ff;
+    servo_data[6] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] >> 2 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] << 6) & 0x7ff;
+    servo_data[7] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] >> 5 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][11] << 3) & 0x7ff;
+// this pattern repeats for the second 8 channels
+    return SUCCESS;
+}
+
 
 
 
@@ -278,22 +318,17 @@ void RCRX_delay(int cycles) {
 
 void main(void) {
     uint8_t i;
-    uint16_t throttle;
     Board_init();
     Serial_init();
     printf("\r\nRC Receiver Test Harness %s %s\r\n", __DATE__, __TIME__);
     RCRX_init();
     while (1) {
         while (!new_data_avail);
-        //        if(new_data_avail == TRUE) {
-        throttle = (RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][1] | RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][2] << 8) &0x7ff;
-        printf("throttle: %d \r", throttle);
+        RCRX_calc_cmd();
+        //        printf("thr: %d, ail: %d, ele: %d, rud: %d, sd: %d  \r",\
+//                servo_data[0], servo_data[1], servo_data[2], servo_data[3], servo_data[7]);
+        printf("thr: %d, ail: %d \r", servo_data[0], servo_data[1]);
         new_data_avail = FALSE;
-        //        }
-        //        for (i = 0; i < SBUS_BUFFER_LENGTH; i++) {
-        //            printf("%x ", RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][i]);
-        //        }
-        RCRX_delay(100000);
     }
 }
 

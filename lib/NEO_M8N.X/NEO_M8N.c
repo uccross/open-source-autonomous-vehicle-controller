@@ -36,7 +36,8 @@
 #define GPS_PAYLOADLENGTH 128 
 #define GPS_HEAD 0X24   //ASCII $
 #define GPS_TAIL 0X2A   //ASCII *
-#define GPS_BAUD_RATE 9600
+//#define GPS_BAUD_RATE 9600
+#define GPS_BAUD_RATE 115200
 
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *
@@ -696,7 +697,7 @@ void main(void) {
                 }
                 /*print current data in degrees to output*/
                 printf("time: %.2f, location %0.6f, %0.6f, speed %3.3f, dir"
-                        " %0.6f\r\n", data.time, data.lat * 180.0 / M_PI,
+                        " %0.6f\r", data.time, data.lat * 180.0 / M_PI,
                         data.lon * 180.0 / M_PI, data.spd, data.cog);
             } else {
                 printf("Data is not valid");

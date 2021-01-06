@@ -16,7 +16,6 @@
 #include "Board.H"   //Max32 setup      
 #include <xc.h>
 #include <stdio.h>
-#include <string.h>
 #include <sys/attribs.h>  //for ISR definitions
 #include <proc/p32mx795f512l.h>
 
@@ -306,7 +305,7 @@ static uint8_t RCRX_calc_cmd(void) {
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] << 6) & 0x7ff;
     servo_data[7] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] >> 5 \
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][11] << 3) & 0x7ff;
-// this pattern repeats for the second 8 channels
+    // this pattern repeats for the second 8 channels
     return SUCCESS;
 }
 
@@ -323,12 +322,13 @@ void main(void) {
     printf("\r\nRC Receiver Test Harness %s %s\r\n", __DATE__, __TIME__);
     RCRX_init();
     while (1) {
-        while (!new_data_avail);
-        RCRX_calc_cmd();
-        //        printf("thr: %d, ail: %d, ele: %d, rud: %d, sd: %d  \r",\
+        if (new_data_avail == TRUE) {
+            RCRX_calc_cmd();
+            //        printf("thr: %d, ail: %d, ele: %d, rud: %d, sd: %d  \r",\
 //                servo_data[0], servo_data[1], servo_data[2], servo_data[3], servo_data[7]);
-        printf("thr: %d, ail: %d \r", servo_data[0], servo_data[1]);
-        new_data_avail = FALSE;
+            printf("T %d S %d M %d \r", servo_data[2], servo_data[3], servo_data[4]);
+            new_data_avail = FALSE;
+        }
     }
 }
 

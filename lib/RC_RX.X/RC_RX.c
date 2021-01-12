@@ -324,8 +324,10 @@ void main(void) {
     while (1) {
         if (new_data_avail == TRUE) {
             RCRX_calc_cmd();
-            //        printf("thr: %d, ail: %d, ele: %d, rud: %d, sd: %d  \r",\
-//                servo_data[0], servo_data[1], servo_data[2], servo_data[3], servo_data[7]);
+/*Throttle is assigned to elevator channel to center at midpoint for ESCs unlike
+ how an airplane motor is configured.  We need reverse drive in other words.
+ Steering servo is assigned to rudder channel, may be easier to drive on aileron
+ Switch D is for passthrough mode and assigned to channel 4.  Low is passthrough, High is autonomous*/
             printf("T %d S %d M %d \r", servo_data[2], servo_data[3], servo_data[4]);
             new_data_avail = FALSE;
         }

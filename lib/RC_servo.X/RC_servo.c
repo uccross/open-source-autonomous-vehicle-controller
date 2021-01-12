@@ -15,7 +15,6 @@
 #include "SerialM32.h"
 #include "xc.h"
 #include <stdio.h>
-#include <string.h>
 #include <sys/types.h>
 #include <sys/attribs.h>
 #include <proc/p32mx795f512l.h>

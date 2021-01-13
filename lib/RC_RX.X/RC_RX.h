@@ -24,7 +24,7 @@
 /*******************************************************************************
  * PUBLIC TYPEDEFS                                                             *
  ******************************************************************************/
-typedef uint16_t RCRX_channel_buffer[CHANNELS]; //servo data array
+typedef uint16_t RCRX_channel_buffer; //servo data array
 
 
 /*******************************************************************************
@@ -53,15 +53,15 @@ uint8_t RCRX_init(void);
 uint8_t RCRX_new_cmd_avail(void);
 
 /**
- * @Function RCRX_new_cmd_avail()
- * @param none
- * @return pointer to servo data buffer
+ * @Function RCRX_get_cmd(RCRX_channel_buffer*)
+ * @param pointer to servo data buffer
+ * @return SUCCESS or ERROR
  * @brief processes most current message, stores data and returns the pointer
  * to the data
  * @note 
  * @author aahunter
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
-RCRX_channel_buffer* RCRX_get_cmd(void);
+uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels);
 
 
 

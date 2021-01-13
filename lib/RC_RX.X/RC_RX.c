@@ -33,8 +33,8 @@
  * PRIVATE TYPEDEFS                                                            *
  ******************************************************************************/
 
-RCRX_channel_buffer servo_data;
-RCRX_channel_buffer* servo_data_p = &servo_data;
+RCRX_channel_buffer servo_data[CHANNELS];
+//RCRX_channel_buffer* servo_data_p = &servo_data;
 
 typedef struct sbus_t {
     uint8_t data[SBUS_BUFFER_LENGTH];
@@ -91,13 +91,13 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
 static void RCRX_run_RX_state_machine(uint8_t char_in);
 
 /**
- * @Function uint8_t RCRX_calc_cmd(void)
- * @param none
+ * @Function uint8_t RCRX_calc_cmd(RCRX_channel_buffer* channels)
+ * @param pointer to channel data array
  * @return SUCCESS or ERROR
  * @brief converts sbus raw data into 11 bit channel data
  * @author Aaron Hunter 
  */
-static uint8_t RCRX_calc_cmd(void);
+static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels);
 
 
 /*******************************************************************************
@@ -153,15 +153,19 @@ uint8_t RCRX_new_cmd_avail(void) {
 }
 
 /**
- * @Function RCRX_new_cmd_avail()
- * @param none
- * @return pointer to servo data buffer
- * @brief processes most current message, stores data and returns the pointer
+ * @Function RCRX_get_cmd(RCRX_channel_buffer*)
+ * @param pointer to servo data buffer
+ * @return SUCCESS or ERROR
+ * @brief processes most current message, stores data at pointer to data array
  * to the data
  * @note 
  * @author aahunter
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
-RCRX_channel_buffer* RCRX_get_cmd(void);
+uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
+    RCRX_calc_cmd(channels);
+    new_data_avail = FALSE;
+    return SUCCESS;
+}
 
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
@@ -286,30 +290,28 @@ void RCRX_delay(int cycles) {
  * @brief converts sbus raw data into 11 bit channel data
  * @author Aaron Hunter 
  */
-static uint8_t RCRX_calc_cmd(void) {
-    servo_data[0] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][1]\
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] << 8) &0x7ff;
-    servo_data[1] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] >> 3 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] << 5) &0x7ff;
-    servo_data[2] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] >> 6 \
+static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels) {
+    channels[0] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][1]\
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] << 8) &0x7ff);
+    channels[1] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] >> 3 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] << 5) &0x7ff);
+    channels[2] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][3] >> 6 \
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][4] << 2 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] << 10) &0x7ff;
-    servo_data[3] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] >> 1 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] << 7) & 0x7ff;
-    servo_data[4] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] >> 4 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] << 4) & 0x7ff;
-    servo_data[5] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] >> 7 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] << 10) &0x7ff);
+    channels[3] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][5] >> 1 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] << 7) & 0x7ff);
+    channels[4] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][6] >> 4 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] << 4) & 0x7ff);
+    channels[5] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][7] >> 7 \
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][8] << 1 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] << 9) & 0x7ff;
-    servo_data[6] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] >> 2 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] << 6) & 0x7ff;
-    servo_data[7] = (RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] >> 5 \
-            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][11] << 3) & 0x7ff;
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] << 9) & 0x7ff);
+    channels[6] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][9] >> 2 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] << 6) & 0x7ff);
+    channels[7] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] >> 5 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][11] << 3) & 0x7ff);
     // this pattern repeats for the second 8 channels
     return SUCCESS;
 }
-
-
 
 
 /*Test harness*/
@@ -323,13 +325,12 @@ void main(void) {
     RCRX_init();
     while (1) {
         if (new_data_avail == TRUE) {
-            RCRX_calc_cmd();
-/*Throttle is assigned to elevator channel to center at midpoint for ESCs unlike
- how an airplane motor is configured.  We need reverse drive in other words.
- Steering servo is assigned to rudder channel, may be easier to drive on aileron
- Switch D is for passthrough mode and assigned to channel 4.  Low is passthrough, High is autonomous*/
+            RCRX_get_cmd(servo_data);
+            ///*Throttle is assigned to elevator channel to center at midpoint for ESCs unlike
+            // how an airplane motor is configured.  We need reverse drive in other words.
+            // Steering servo is assigned to rudder channel, may be easier to drive on aileron
+            // Switch D is for passthrough mode and assigned to channel 4.  Low is passthrough, High is autonomous*/
             printf("T %d S %d M %d \r", servo_data[2], servo_data[3], servo_data[4]);
-            new_data_avail = FALSE;
         }
     }
 }

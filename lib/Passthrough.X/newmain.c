@@ -23,6 +23,7 @@
 /*******************************************************************************
  * #DEFINES                                                                    *
  ******************************************************************************/
+#define CTS_2_USEC 1  //divide by 2 scaling of counts to usec
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -36,15 +37,32 @@
 /*******************************************************************************
  * FUNCTION PROTOTYPES                                                         *
  ******************************************************************************/
-uint16_t calc_pw(uint16_t raw_counts);
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts);
 
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
-uint16_t calc_pw(uint16_t raw_counts) {
+
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts) {
     int16_t normalized_pulse; //converted to microseconds and centered at 0
     uint16_t pulse_width; //servo output in microseconds
-    normalized_pulse = (raw_counts - RC_RX_MID_COUNTS) >> 1;
+    normalized_pulse = (raw_counts - RC_RX_MID_COUNTS) >> CTS_2_USEC;
     pulse_width = normalized_pulse + RC_SERVO_CENTER_PULSE;
     return pulse_width;
 }
@@ -52,12 +70,12 @@ uint16_t calc_pw(uint16_t raw_counts) {
 int main(void) {
 
     enum RC_channels {
-        ACCELERATOR = 2,
-        STEERING,
+        STEERING = 1,
+        ACCELERATOR,
+        NU,
         SWITCH_D,
     }; //map to the car controls from the RC receiver
     RCRX_channel_buffer channels[CHANNELS];
-
 
     Board_init(); //board configuration
     Serial_init(); //start debug terminal (USB)
@@ -70,11 +88,10 @@ int main(void) {
             RCRX_get_cmd(channels);
             //            printf("T %d S %d M %d \r", channels[2], channels[3], channels[4]);
             // update pulsewidths for each servo output
-
-            RC_servo_set_pulse(calc_pw(channels[2]), RC_LEFT_WHEEL);
-            RC_servo_set_pulse(calc_pw(channels[2]), RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(calc_pw(channels[3]), RC_STEERING);
-//            printf("T:%d\r", RC_servo_get_pulse(RC_STEERING));
+            RC_servo_set_pulse(calc_pw(channels[ACCELERATOR]), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(calc_pw(channels[STEERING]), RC_STEERING);
+            printf("F:%d, T: %d\r", RC_servo_get_pulse(RC_STEERING), RC_servo_get_pulse(RC_LEFT_WHEEL));
         }
     }
     return 0;

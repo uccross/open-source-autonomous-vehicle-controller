@@ -324,7 +324,7 @@ void main(void) {
     printf("\r\nRC Receiver Test Harness %s %s\r\n", __DATE__, __TIME__);
     RCRX_init();
     while (1) {
-        if (new_data_avail == TRUE) {
+        if (RCRX_new_cmd_avail() == TRUE) {
             RCRX_get_cmd(servo_data);
             ///*Throttle is assigned to elevator channel to center at midpoint for ESCs unlike
             // how an airplane motor is configured.  We need reverse drive in other words.

@@ -342,6 +342,9 @@ int main(void) {
     for(i = 0;i < strlen(msg); i++ ){
         Radio_put_char(msg[i]);
     }
+    printf("elements in TX circular buffer %d\r\n", get_num_elements(txp));
+    printf("Is TX buffer empty? %d \r\n", is_buffer_empty(txp));
+    printf("Is TX buffer full? %d \r\n", is_buffer_full(txp));
     
     while (1) {
         if (c = Radio_get_char()) {

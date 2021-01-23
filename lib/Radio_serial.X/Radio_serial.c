@@ -326,6 +326,7 @@ static int16_t get_num_elements(struct circular_buffer *buf) {
 #ifdef RADIO_TESTING
 
 int main(void) {
+    unsigned char msg[BUFFER_LENGTH];
     char c;
     int i;
     Board_init();
@@ -335,9 +336,12 @@ int main(void) {
     printf("\r\nRadio serial test harness %s, %s \r\n", __DATE__, __TIME__);
     printf("System clock freq: %d (Hz)\r\n", Board_get_sys_clock());
     printf("Peripheral clock freq: %d (Hz)\r\n", Board_get_PB_clock());
-    printf("Everything in Radio serial port window will be echoed: \r\n");
+    printf("Everything in Radio serial port window will be echoed here: \r\n");
     printf("**********************************************\r\n");
-    Radio_put_char('x');
+    sprintf(msg, "Testing Radio Serial Port\r\n");
+    for(i = 0;i < strlen(msg); i++ ){
+        Radio_put_char(msg[i]);
+    }
     
     while (1) {
         if (c = Radio_get_char()) {

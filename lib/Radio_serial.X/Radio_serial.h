@@ -50,6 +50,13 @@ char Radio_put_char(unsigned char c);
  * @author Aaron Hunter*/
 unsigned char Radio_get_char(void);
 
+/**
+ * @Function Radio_data_available();
+ * @return TRUE or FALSE
+ * @brief responds with TRUE if the buffer is not empty
+ * @author Aaron Hunter*/
+unsigned char Radio_data_available(void);
+
 
 
 #endif	/* RADIOSERIAL_H */ // End of header guard

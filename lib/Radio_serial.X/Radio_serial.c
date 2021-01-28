@@ -189,6 +189,15 @@ unsigned char Radio_get_char(void){
     return 0; /*no data available*/
 }
 
+/**
+ * @Function Radio_data_available();
+ * @return TRUE or FALSE
+ * @brief responds with TRUE if the buffer is not empty, FALSE otherwise
+ * @author Aaron Hunter*/
+unsigned char Radio_data_available(void){
+    return(!is_buffer_empty(rxp));
+}
+
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
  ******************************************************************************/
@@ -347,7 +356,8 @@ int main(void) {
     printf("Is TX buffer full? %d \r\n", is_buffer_full(txp));
     
     while (1) {
-        if (c = Radio_get_char()) {
+        if(Radio_data_available() == TRUE){
+        c = Radio_get_char();
             Radio_put_char(c); //send via the radio
             put_char(c); //send over USB/debug also
         }

@@ -30,6 +30,7 @@
 #define UINT_16_MAX 0xffff
 #define RAD2DEG 180.0/M_PI
 #define DEG2RAD M_PI/180.0
+#define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -123,15 +124,15 @@ int main(void) {
                     &msg_tx,
                     (uint64_t) Sys_timer_get_usec(),
                     gps_fix,
-                    (int32_t) (GPS_data.lat * RAD2DEG * 10000000.0),
-                    (int32_t) (GPS_data.lon * RAD2DEG * 10000000.0),
+                    (int32_t) (GPS_data.lat * 10000000.0),
+                    (int32_t) (GPS_data.lon * 10000000.0),
                     0, //altitude --can update GPS data if need this
                     UINT_16_MAX, //hdop--currently don't care
                     UINT_16_MAX, //vdop
-                    (uint16_t) (GPS_data.spd * 100.0), //need to verify units and convert from knots if so
-                    (uint16_t) (GPS_data.cog * 100.0),
+                    (uint16_t) (GPS_data.spd * KNOTS_TO_MPS * 100.0), //need to verify units and convert from knots if so
+                    (uint16_t) (GPS_data.cog * KNOTS_TO_MPS * 100.0),
                     255, //satellites visible again, currently don't care
-                    0, //alt ellispoid
+                    0, //alt ellipsoid
                     0, //h position uncertainty
                     0, //v position uncertainty
                     0, //velocity uncertainty

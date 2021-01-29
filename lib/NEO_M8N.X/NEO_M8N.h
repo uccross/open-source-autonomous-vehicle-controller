@@ -25,8 +25,8 @@
  ******************************************************************************/
 struct GPS_data{
     double time; // UTC time in seconds
-    double lat; //latitude
-    double lon; //longitude
+    double lat; //latitude, deg 
+    double lon; //longitude, deg 
     double spd; //GPS speed in knots
     double cog; //GPS heading in deg
 };

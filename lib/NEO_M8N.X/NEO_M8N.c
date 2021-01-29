@@ -598,7 +598,7 @@ static int RMC_parse(char* messageID, char* sentence) {
                 deg = (double) (atoi(field) / 100); //get degrees -  minutes
                 float_minutes = atof(field + 2); //minutes are the remainder of the string
                 fdeg = float_minutes / 60.0; //scale to degrees (fractional part of degrees)
-                RMC.lat = (deg + fdeg) * DEG2RAD;
+                RMC.lat = deg + fdeg;
                 break;
             case NS:
                 strncpy(RMC.NS, field, sizeof (RMC.NS));
@@ -613,7 +613,7 @@ static int RMC_parse(char* messageID, char* sentence) {
                 deg = (double) (atoi(field) / 100); //get degrees - minutes
                 float_minutes = atof(field + 3); //minutes are the remainder of the string
                 fdeg = float_minutes / 60.0; //scale to degrees (fractional part of degrees)
-                RMC.lon = (deg + fdeg) * DEG2RAD;
+                RMC.lon = deg + fdeg;
                 break;
             case EW:
                 strncpy(RMC.EW, field, sizeof (RMC.EW));
@@ -697,8 +697,8 @@ void main(void) {
                 }
                 /*print current data in degrees to output*/
                 printf("time: %.2f, location %0.6f, %0.6f, speed %3.3f, dir"
-                        " %0.6f\r", data.time, data.lat * 180.0 / M_PI,
-                        data.lon * 180.0 / M_PI, data.spd, data.cog);
+                        " %0.6f\r", data.time, data.lat,
+                        data.lon, data.spd, data.cog);
             } else {
                 printf("Data is not valid");
             }

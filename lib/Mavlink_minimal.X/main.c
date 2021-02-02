@@ -19,6 +19,8 @@
 #include "Radio_serial.h"
 #include "common/mavlink.h"
 #include "NEO_M8N.h"
+#include "RC_RX.h"
+#include "ICM_20948.h"
 
 
 
@@ -34,6 +36,7 @@
 #define DEG2RAD M_PI/180.0
 #define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
 
+
 /*******************************************************************************
  * VARIABLES                                                                   *
  ******************************************************************************/
@@ -42,6 +45,9 @@ mavlink_system_t mavlink_system = {
     MAV_COMP_ID_AUTOPILOT1 // Component ID (a MAV_COMPONENT value)
 };
 static struct GPS_data GPS_data;
+RCRX_channel_buffer RC_channels[CHANNELS];
+
+struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for IMU data
 
 /*******************************************************************************
  * TYPEDEFS                                                                    *
@@ -51,10 +57,100 @@ static struct GPS_data GPS_data;
 /*******************************************************************************
  * FUNCTION PROTOTYPES                                                         *
  ******************************************************************************/
+/**
+ * @function RC_channels_init(void)
+ * @param none
+ * @brief set all RC channels to RC_RX_MID_COUNTS
+ * @author Aaron Hunter
+ */
+void RC_channels_init(void);
+/**
+ * @function check_RC_events(void)
+ * @param none
+ * @brief checks for RC messages and stores data in RC channel buffer
+ * @author Aaron Hunter
+ */
+void check_RC_events();
+/**
+ * @function check_radio_events(void)
+ * @param none
+ * @brief looks for messages sent over the radio serial port to OSAVC, parses
+ * them and provides responses, if needed
+ * @note currently only pushing information to usb-serial port
+ * @author Aaron Hunter
+ */
+void check_radio_events(void);
+/**
+ * @function check_GPS_events(void)
+ * @param none
+ * @brief checks for GPS messages, parses, and stores data in module gps variable
+ * @author aaron hunter
+ */
+void check_GPS_events(void);
+/**
+ * @function publish_GPS(void)
+ * @param none
+ * @brief invokes mavlink helper function to generate GPS message and sends to
+ * radio serial port
+ * @author aaron hunter
+ */
+void publish_GPS(void);
+/**
+ * @Function publish_heartbeat(void)
+ * @param none
+ * @brief invokes mavlink helper to generate heartbeat and sends out via the radio
+ * @author aaron hunter
+ */
+void publish_heartbeat(void);
 
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
+
+/**
+ * @function check_IMU_events(void)
+ */
+
+void check_IMU_events(void) {
+    if (IMU_is_data_ready()==TRUE) {
+        printf("IMU_event\r\n");
+        IMU_get_data(&IMU_data);
+    }
+}
+
+/**
+ * @function RC_channels_init(void)
+ * @param none
+ * @brief set all RC channels to RC_RX_MID_COUNTS
+ * @author Aaron Hunter
+ */
+void RC_channels_init(void) {
+    uint8_t i;
+    for (i = 0; i < CHANNELS; i++) {
+        RC_channels[i] = RC_RX_MID_COUNTS;
+    }
+}
+
+/**
+ * @function check_RC_events(void)
+ * @param none
+ * @brief checks for RC messages and stores data in RC channel buffer
+ * @author Aaron Hunter
+ */
+void check_RC_events() {
+    if (RCRX_new_cmd_avail()) {
+        RCRX_get_cmd(RC_channels);
+    }
+}
+
+/**
+ * @function check_radio_events(void)
+ * @param none
+ * @brief looks for messages sent over the radio serial port to OSAVC, parses
+ * them and provides responses, if needed
+ * @note currently only pushing information to usb-serial port
+ * @author Aaron Hunter
+ */
 void check_radio_events(void) {
     uint8_t channel = MAVLINK_COMM_0;
     uint8_t msg_byte;
@@ -89,6 +185,12 @@ void check_radio_events(void) {
     }
 }
 
+/**
+ * @function check_GPS_events(void)
+ * @param none
+ * @brief checks for GPS messages, parses, and stores data in module gps variable
+ * @author Aaron Hunter
+ */
 void check_GPS_events(void) {
     if (GPS_is_msg_avail() == TRUE) {
         GPS_parse_stream();
@@ -98,6 +200,81 @@ void check_GPS_events(void) {
     }
 }
 
+/**
+ * @function publish_IMU_data()
+ */
+void publish_IMU_data(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    uint8_t IMU_id = 0;
+    mavlink_msg_raw_imu_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_usec(),
+            IMU_data.acc.x,
+            IMU_data.acc.y,
+            IMU_data.acc.z,
+            IMU_data.gyro.x,
+            IMU_data.gyro.y,
+            IMU_data.gyro.z,
+            IMU_data.mag.x,
+            IMU_data.mag.y,
+            IMU_data.mag.z,
+            IMU_id,
+            IMU_data.temp
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
+ * @function publish_RC_signals(void)
+ * @param none
+ * @brief scales raw RC signals into +/- 10000
+ * @author Aaron Hunter
+ */
+void publish_RC_signals(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    uint8_t RC_port = 0; //first 8 channels 
+    int16_t scaled_channels[CHANNELS];
+    uint8_t rssi = 255; //unknown--may be able to extract from receiver
+    for (index = 0; index < CHANNELS; index++) {
+        scaled_channels[index] = (RC_channels[index] - RC_RX_MID_COUNTS) * RC_RAW_TO_FS;
+    }
+    mavlink_msg_rc_channels_scaled_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            RC_port,
+            scaled_channels[0],
+            scaled_channels[1],
+            scaled_channels[2],
+            scaled_channels[3],
+            scaled_channels[4],
+            scaled_channels[5],
+            scaled_channels[6],
+            scaled_channels[7],
+            rssi);
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
+ * @function publish_GPS(void)
+ * @param none
+ * @brief invokes mavlink helper function to generate GPS message and sends to
+ * radio serial port
+ * @author Aaron Hunter
+ */
 void publish_GPS(void) {
     static uint8_t gps_fix = GPS_FIX_TYPE_NO_FIX;
     mavlink_message_t msg_tx;
@@ -137,12 +314,18 @@ void publish_GPS(void) {
     }
 }
 
+/**
+ * @Function publish_heartbeat(void)
+ * @param none
+ * @brief invokes mavlink helper to generate heartbeat and sends out via the radio
+ * @author aaron hunter
+ */
 void publish_heartbeat(void) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
-    uint8_t mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED;
+    uint8_t mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED;
     uint32_t custom = 0;
     uint8_t state = MAV_STATE_STANDBY;
     mavlink_msg_heartbeat_pack(mavlink_system.sysid
@@ -170,19 +353,37 @@ int main(void) {
     Radio_serial_init(); //start the radios
     GPS_init();
     Sys_timer_init(); //start the system timer
+    RCRX_init(); //initialize the radio control system
+    RC_channels_init(); //set channels to midpoint of RC system
+    IMU_init(IMU_SPI_MODE);
+    IMU_start_data_acq(); //starts the IMU by initiating first SPI transaction
+    //ERROR not getting the IMU to read properly
+//    while(IMU_is_data_ready()==FALSE){
+//        ;
+//    }
+    IMU_get_data(&IMU_data);
+    printf("acc %d \r\n", IMU_data.acc.x);
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
 
 
     while (1) {
         cur_time = Sys_timer_get_msec();
         //check for all events
+        check_IMU_events(); //look for new measurements on IMU
         check_radio_events(); //MAVLink incoming messages
-        //check control system events
+        check_RC_events(); //check control system events
         //check IMU system events
         //check rotary encocder events
         check_GPS_events(); //new GPS data
 
         //publish control and sensor signals
+        if (cur_time - control_start_time > CONTROL_PERIOD) {
+            control_start_time = cur_time; //reset control loop timer
+            publish_IMU_data(); //publish_IMU
+            publish_RC_signals();
+            //publish encoder velocity
+            //publish servo angle
+        }
 
         //publish GPS
         if (cur_time - gps_start_time > GPS_PERIOD) {

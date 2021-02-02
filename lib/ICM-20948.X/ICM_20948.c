@@ -72,8 +72,8 @@ typedef enum {
 
 
 static uint8_t IMU_raw_data[IMU_NUM_BYTES];
-struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-struct IMU_output* IMU_data_p = &IMU_data;
+static struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+//struct IMU_output* IMU_data_p = &IMU_data;
 
 static volatile uint8_t IMU_data_ready = 0;
 /*******************************************************************************
@@ -225,7 +225,7 @@ uint8_t IMU_init(char interface_mode) {
 
 /**
  * @Function IMU_start_data_acq(void);
- * @return nonde
+ * @return none
  * @param none
  * @brief this function starts the SPI data read
  * @author Aaron Hunter
@@ -255,10 +255,23 @@ uint8_t IMU_is_data_ready(void) {
  * @note 
  * @author Aaron Hunter,
  * @modified  */
-struct IMU_output* IMU_get_data(void) {
-    IMU_process_data();
+//struct IMU_output* IMU_get_data(void) {
+//    IMU_process_data();
+//    IMU_data_ready = FALSE; //clear the data ready flag
+//    return IMU_data_p;
+//}
+
+/**
+ * @Function IMU_get_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief returns most current data from the IMU
+ * @note 
+ * @author Aaron Hunter,
+ * @modified  */
+uint8_t IMU_get_data(struct IMU_output* IMU_data) {
+    IMU_process_data(IMU_data);
     IMU_data_ready = FALSE; //clear the data ready flag
-    return IMU_data_p;
+    return SUCCESS;
 }
 
 /*******************************************************************************
@@ -637,25 +650,26 @@ void IMU_run_SPI_state_machine(void) {
 }
 
 /**
- * @Function IMU_process_data(void)
+ * @Function IMU_process_data(struct IMU_output* IMU_data)
+ * @param IMU_data, a struct with accel, gyro and mag values on 3 axes
  * @return SUCCESS or ERROR
  * @brief converts raw register data into IMU values for output
  * @note mag data has reversed endianness
  * @author ahunter
  * @modified  */
-uint8_t IMU_process_data() {
-    IMU_data.acc.x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
-    IMU_data.acc.y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
-    IMU_data.acc.z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
-    IMU_data.gyro.x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
-    IMU_data.gyro.y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
-    IMU_data.gyro.z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
-    IMU_data.temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
-    IMU_data.mag.x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
-    IMU_data.mag.y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
-    IMU_data.mag.z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
+uint8_t IMU_process_data(struct IMU_output* IMU_data) {
+    IMU_data->acc.x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
+    IMU_data->acc.y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
+    IMU_data->acc.z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
+    IMU_data->gyro.x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
+    IMU_data->gyro.y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
+    IMU_data->gyro.z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
+    IMU_data->temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
+    IMU_data->mag.x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
+    IMU_data->mag.y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
+    IMU_data->mag.z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
     /*status 1 is high byte and status 2 is low byte*/
-    IMU_data.mag_status = (IMU_raw_data[14] & 0x3) << 8 | (IMU_raw_data[22] & 0x4);
+    IMU_data->mag_status = (IMU_raw_data[14] & 0x3) << 8 | (IMU_raw_data[22] & 0x4);
     return SUCCESS;
 }
 
@@ -680,20 +694,20 @@ int main(void) {
     } else {
         printf("I2C interface mode enabled\r\n");
     }
-    if(IMU_err != SUCCESS){
+    if (IMU_err != SUCCESS) {
         printf("\r\nSensor failed init!\r\n");
-        while(1);
+        while (1);
     }
 
     while (1) {
         IMU_start_data_acq();
         if (IMU_is_data_ready() == TRUE) {
-            p_data = IMU_get_data();
+            IMU_get_data(&IMU_data);
             printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\r\n",
-                    p_data->acc.x, p_data->acc.y, p_data->acc.z,
-                    p_data->gyro.x, p_data->gyro.y, p_data->gyro.z,
-                    p_data->mag.x, p_data->mag.y, p_data->mag.z,
-                    p_data->temp, p_data->mag_status);
+                    IMU_data.acc.x, IMU_data.acc.y, IMU_data.acc.z,
+                    IMU_data.gyro.x, IMU_data.gyro.y, IMU_data.gyro.z,
+                    IMU_data.mag.x, IMU_data.mag.y, IMU_data.mag.z,
+                    IMU_data.temp, IMU_data.mag_status);
         }
         /*delay to not overwhelm the serial port*/
         for (i = 0; i < 500000; i++) {

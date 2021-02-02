@@ -12,6 +12,7 @@
  * PUBLIC #INCLUDES                                                            *
  ******************************************************************************/
 #include <sys/types.h>
+#include "ICM_20948_registers.h"
 
 /*******************************************************************************
  * PUBLIC #DEFINES                                                             *
@@ -73,7 +74,8 @@ uint8_t IMU_is_data_ready(void);
  * @note 
  * @author Aaron Hunter,
  **/
-struct IMU_output * IMU_get_data(void);
+uint8_t IMU_get_data(struct IMU_output* IMU_data);
+//struct IMU_output * IMU_get_data(void);
 
 
 

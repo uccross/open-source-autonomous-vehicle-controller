@@ -21,6 +21,9 @@
  ******************************************************************************/
 #define CHANNELS 16
 #define RC_RX_MID_COUNTS 992
+#define RC_RX_MAX_COUNTS 1811
+#define RC_RX_MIN_COUNTS 172
+#define RC_RAW_TO_FS 10000/(RC_RX_MAX_COUNTS - RC_RX_MID_COUNTS)
 
 /*******************************************************************************
  * PUBLIC TYPEDEFS                                                             *

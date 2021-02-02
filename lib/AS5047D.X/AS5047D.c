@@ -56,16 +56,7 @@ typedef enum {
     ENC_LAST
 } ENC_state_t;
 
-typedef struct encoder {
-    int16_t last_theta; //old angle
-    int16_t next_theta; //new angle
-    int16_t omega; //angular velocity
-} encoder_t;
-typedef struct encoder *encoder_ptr_t; //pointer to encoder struct
-encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
-
-//static int16_t current_angle;
-//static int16_t current_vel;
+static encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -76,8 +67,7 @@ encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
  * @returns p, parity, either zero (even) or one (odd)
  * @author ahunter
  */
-int check_parity(uint16_t in);
-
+static int check_parity(uint16_t in);
 
 /**
  * @Function insertParityBit(uint_16t in)
@@ -86,7 +76,7 @@ int check_parity(uint16_t in);
  * @returns in, the value to send to encoder
  * @author ahunter
  */
-uint16_t insert_parity_bit(uint16_t in);
+static uint16_t insert_parity_bit(uint16_t in);
 
 /**
  * @Function delay(int cycles)
@@ -95,7 +85,7 @@ uint16_t insert_parity_bit(uint16_t in);
  * @note ~500nsec for one delay, then +12.5 nsec for every increment higher
  * @author ahunter
  */
-void delay(int cycles);
+static void delay(int cycles);
 
 /**
  * @Function readRegister(uint16_t address)
@@ -104,7 +94,7 @@ void delay(int cycles);
  * @returns in, the value to send to encoder
  * @author ahunter
  */
-uint16_t read_register(uint16_t address);
+static uint16_t read_register(uint16_t address);
 
 /*blocking function used for init only*/
 /**
@@ -114,7 +104,7 @@ uint16_t read_register(uint16_t address);
  * @returns setting read from address after write
  * @author ahunter
  */
-int16_t write_register(uint16_t address, uint16_t setting);
+static int16_t write_register(uint16_t address, uint16_t setting);
 
 /**
  * @Function void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void);
@@ -125,20 +115,12 @@ int16_t write_register(uint16_t address, uint16_t setting);
  */
 void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void);
 
-
 /**
  * @Function void run_encoder_SM(void)
  * @brief simple FSM to update encoder data struct with multiple encoders
  * @author Aaron Hunter
  */
 static void run_encoder_SM(void);
-
-/**
- * @Function void init_encoder_data(encoder_ptr_t enc);
- * @brief initializes encoder data struct(s)
- * @author Aaron Hunter
- */
-static void init_encoder_data(encoder_ptr_t enc);
 
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -150,6 +132,7 @@ static void init_encoder_data(encoder_ptr_t enc);
  * @return SUCCESS or ERROR
  * @brief initializes hardware in appropriate mode along with the needed interrupts */
 uint8_t Encoder_init(void) {
+    uint8_t index;
     uint32_t pb_clk;
     uint16_t setting;
     uint16_t return_value;
@@ -189,9 +172,9 @@ uint8_t Encoder_init(void) {
     return_value = write_register(SETTINGS_REG, setting);
     printf("\r\nEncoder set to:0x%x\r\n", return_value);
     __builtin_enable_interrupts();
-    init_encoder_data(&encoder_data[LEFT_MOTOR]);
-    init_encoder_data(&encoder_data[RIGHT_MOTOR]);
-    init_encoder_data(&encoder_data[HEADING]);
+    for (index = 0; index < NUM_ENCODERS; index++) {
+        Encoder_init_encoder_data(&encoder_data[index]);
+    }
     return SUCCESS;
 }
 
@@ -225,6 +208,34 @@ int16_t Encoder_get_velocity(encoder_enum_t encoder_num) {
     return encoder_data[encoder_num].omega;
 }
 
+/**
+ * @Function void init_encoder_data(void);
+ * @brief initializes encoder data struct(s)
+ * @author Aaron Hunter
+ */
+void Encoder_init_encoder_data(encoder_ptr_t enc) {
+    int i;
+    enc->last_theta = 0;
+    enc->next_theta = 0;
+    enc->omega = 0;
+}
+
+/**
+ * @Function Encoder_get_data(encoder_t * data)
+ * @param encoder_t data--to receive private encoder data 
+ * @brief copies internal encoder data to data
+ * @author Aaron Hunter
+ */
+int8_t Encoder_get_data(encoder_t * data) {
+    uint8_t i;
+    for (i = 0; i < NUM_ENCODERS; i++) {
+        data[i].last_theta = encoder_data[i].last_theta;
+        data[i].next_theta = encoder_data[i].next_theta;
+        data[i].omega = encoder_data[i].omega;
+    }
+    return SUCCESS;
+}
+
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
  ******************************************************************************/
@@ -235,7 +246,7 @@ int16_t Encoder_get_velocity(encoder_enum_t encoder_num) {
  * @returns p, parity, either zero (even) or one (odd)
  * @author ahunter
  */
-int check_parity(uint16_t in) {
+static int check_parity(uint16_t in) {
     int p = 0; //our parity value
     int i;
     for (i = 1; i < 0x8000;) {
@@ -248,7 +259,7 @@ int check_parity(uint16_t in) {
     return p;
 }
 
-uint16_t insert_parity_bit(uint16_t in) {
+static uint16_t insert_parity_bit(uint16_t in) {
     int p;
     p = check_parity(in);
     in = in | (p << 15);
@@ -262,7 +273,7 @@ uint16_t insert_parity_bit(uint16_t in) {
  * @note ~500nsec for one delay, then +12.5 nsec for every increment higher
  * @author ahunter
  */
-void delay(int cycles) {
+static void delay(int cycles) {
     int i;
     for (i = 0; i < cycles; i++) {
         ;
@@ -276,7 +287,7 @@ void delay(int cycles) {
  * @returns data from previous SPI operation
  * @author ahunter
  */
-uint16_t read_register(uint16_t address) {
+static uint16_t read_register(uint16_t address) {
     uint16_t data;
     address = address | (READ << 14);
     address = insert_parity_bit(address);
@@ -306,7 +317,7 @@ uint16_t read_register(uint16_t address) {
  * @returns value after the write is performed
  * @author ahunter
  */
-int16_t write_register(uint16_t address, uint16_t value) {
+static int16_t write_register(uint16_t address, uint16_t value) {
     uint16_t data;
     uint16_t address_write;
     uint16_t address_read;
@@ -445,32 +456,28 @@ static void run_encoder_SM(void) {
     current_state = next_state;
 }
 
-/**
- * @Function void init_encoder_data(void);
- * @brief initializes encoder data struct(s)
- * @author Aaron Hunter
- */
-static void init_encoder_data(encoder_ptr_t enc) {
-    int i;
-    enc->last_theta = 0;
-    enc->next_theta = 0;
-    enc->omega = 0;
-}
+
 
 #ifdef ENC_TESTING
 
 int main(void) {
+    uint8_t index;
     int16_t angle_left;
     int16_t angle_right;
     int16_t vel_left;
     int16_t vel_right;
     int16_t phi; // steering angle
     int16_t dphi_dt; //angular velocity of steering servo
+    encoder_t enc_data[NUM_ENCODERS];
+
 
     Board_init();
     Serial_init();
     Encoder_init();
     printf("\r\nAS5047D Encoder Test Harness %s, %s\r\n", __DATE__, __TIME__);
+    for (index = 0; index < NUM_ENCODERS; index++) {
+        Encoder_init_encoder_data(&enc_data[index]);
+    }
 
     while (1) {
         Encoder_start_data_acq();
@@ -480,8 +487,16 @@ int main(void) {
         vel_right = Encoder_get_velocity(RIGHT_MOTOR);
         phi = Encoder_get_angle(HEADING);
         dphi_dt = Encoder_get_velocity(HEADING);
-        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right,phi, dphi_dt);
-        delay(79000);
+        Encoder_get_data(enc_data);
+        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n",
+                enc_data[LEFT_MOTOR].next_theta,
+                enc_data[LEFT_MOTOR].omega,
+                enc_data[RIGHT_MOTOR].next_theta,
+                enc_data[RIGHT_MOTOR].omega,
+                enc_data[HEADING].next_theta,
+                enc_data[HEADING].omega);
+        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right, phi, dphi_dt);
+        delay(150000);
     }
 }
 #endif //ENC_TESTING

@@ -32,6 +32,14 @@ typedef enum {
     PAN,
 } encoder_enum_t;
 
+typedef struct encoder {
+    int16_t last_theta; //old angle
+    int16_t next_theta; //new angle
+    int16_t omega; //angular velocity
+} encoder_t;
+
+typedef struct encoder* encoder_ptr_t; //pointer to encoder struct
+
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
  ******************************************************************************/
@@ -65,6 +73,21 @@ void Encoder_start_data_acq(void);
  * @return angular velocity measurement
  */
 int16_t Encoder_get_velocity(encoder_enum_t encoder_num);
+
+/**
+ * @Function void init_encoder_data(void);
+ * @brief initializes encoder data struct(s)
+ * @author Aaron Hunter
+ */
+void Encoder_init_encoder_data(encoder_ptr_t enc);
+
+/**
+ * @Function Encoder_get_data(encoder_t * data)
+ * @param encoder_t data--to receive private encoder data 
+ * @brief copies internal encoder data to data
+ * @author Aaron Hunter
+ */
+int8_t Encoder_get_data(encoder_t * data);
 
 
 #endif	/* AS5047D_H */ // End of header guard

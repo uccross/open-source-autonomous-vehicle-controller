@@ -58,6 +58,13 @@ struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for 
  * FUNCTION PROTOTYPES                                                         *
  ******************************************************************************/
 /**
+ * @function check_IMU_events(void)
+ * @param none
+ * @brief detects when IMU SPI transaction completes and then publishes data over Mavlink
+ * @author Aaron Hunter
+ */
+void check_IMU_events(void);
+/**
  * @function RC_channels_init(void)
  * @param none
  * @brief set all RC channels to RC_RX_MID_COUNTS
@@ -87,6 +94,14 @@ void check_radio_events(void);
  * @author aaron hunter
  */
 void check_GPS_events(void);
+
+/**
+ * @function publish_IMU_data()
+ * @param none
+ * @brief reads module level IMU data and publishes over radio serial in Mavlink
+ * @author Aaron Hunter
+ */
+void publish_IMU_data(void);
 /**
  * @function publish_GPS(void)
  * @param none
@@ -109,12 +124,14 @@ void publish_heartbeat(void);
 
 /**
  * @function check_IMU_events(void)
+ * @param none
+ * @brief detects when IMU SPI transaction completes and then publishes data over Mavlink
+ * @author Aaron Hunter
  */
-
 void check_IMU_events(void) {
     if (IMU_is_data_ready()==TRUE) {
-        printf("IMU_event\r\n");
         IMU_get_data(&IMU_data);
+        publish_IMU_data();
     }
 }
 
@@ -202,6 +219,9 @@ void check_GPS_events(void) {
 
 /**
  * @function publish_IMU_data()
+ * @param none
+ * @brief reads module level IMU data and publishes over radio serial in Mavlink
+ * @author Aaron Hunter
  */
 void publish_IMU_data(void) {
     mavlink_message_t msg_tx;
@@ -356,7 +376,7 @@ int main(void) {
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     IMU_init(IMU_SPI_MODE);
-    IMU_start_data_acq(); //starts the IMU by initiating first SPI transaction
+    
     //ERROR not getting the IMU to read properly
 //    while(IMU_is_data_ready()==FALSE){
 //        ;
@@ -369,17 +389,17 @@ int main(void) {
     while (1) {
         cur_time = Sys_timer_get_msec();
         //check for all events
-        check_IMU_events(); //look for new measurements on IMU
+        check_IMU_events(); //check for IMU data ready and publish when available
         check_radio_events(); //MAVLink incoming messages
-        check_RC_events(); //check control system events
-        //check IMU system events
+        check_RC_events(); //check incoming RC events
         //check rotary encocder events
         check_GPS_events(); //new GPS data
 
         //publish control and sensor signals
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            publish_IMU_data(); //publish_IMU
+            IMU_start_data_acq(); //starts the IMU by initiating first SPI transaction
+           
             publish_RC_signals();
             //publish encoder velocity
             //publish servo angle

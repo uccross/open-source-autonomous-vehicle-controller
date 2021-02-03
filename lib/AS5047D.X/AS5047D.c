@@ -57,6 +57,7 @@ typedef enum {
 } ENC_state_t;
 
 static encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
+static int8_t data_ready = FALSE;  //set in SPI SM at completion of a read cycle
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -221,6 +222,18 @@ void Encoder_init_encoder_data(encoder_ptr_t enc) {
 }
 
 /**
+ * @Function Encoder_is_data_ready(void)
+ * @param none
+ * @brief returns TRUE if there is unread (from Encoder_get_data()) data available
+ * @return TRUE or FALSE
+ * @author Aaron Hunter
+ */
+int8_t Encoder_is_data_ready(void){
+    return(data_ready);
+}
+
+
+/**
  * @Function Encoder_get_data(encoder_t * data)
  * @param encoder_t data--to receive private encoder data 
  * @brief copies internal encoder data to data
@@ -233,6 +246,7 @@ int8_t Encoder_get_data(encoder_t * data) {
         data[i].next_theta = encoder_data[i].next_theta;
         data[i].omega = encoder_data[i].omega;
     }
+    data_ready = FALSE;
     return SUCCESS;
 }
 
@@ -447,6 +461,7 @@ static void run_encoder_SM(void) {
             }
             encoder_data[HEADING].omega = (int16_t) w;
             CS3_LAT = 1; /*deselect encoder 3*/
+            data_ready = TRUE;
             next_state = ENC_START;
             break;
         default:
@@ -487,6 +502,7 @@ int main(void) {
         vel_right = Encoder_get_velocity(RIGHT_MOTOR);
         phi = Encoder_get_angle(HEADING);
         dphi_dt = Encoder_get_velocity(HEADING);
+        if(Encoder_is_data_ready()==TRUE){
         Encoder_get_data(enc_data);
         printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n",
                 enc_data[LEFT_MOTOR].next_theta,
@@ -495,6 +511,7 @@ int main(void) {
                 enc_data[RIGHT_MOTOR].omega,
                 enc_data[HEADING].next_theta,
                 enc_data[HEADING].omega);
+        }
         printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right, phi, dphi_dt);
         delay(150000);
     }

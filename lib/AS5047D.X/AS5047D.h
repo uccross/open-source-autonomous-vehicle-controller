@@ -68,6 +68,15 @@ int16_t Encoder_get_angle(encoder_enum_t encoder_num);
 void Encoder_start_data_acq(void);
 
 /**
+ * @Function Encoder_is_data_ready(void)
+ * @param none
+ * @brief returns TRUE if there is unread (from Encoder_get_data()) data available
+ * @return TRUE or FALSE
+ * @author Aaron Hunter
+ */
+int8_t Encoder_is_data_ready(void);
+
+/**
  * @Function int16_t Encoder_get_velocity(encoder_enum_t encoder_num);
  * @param encoder number 
  * @return angular velocity measurement

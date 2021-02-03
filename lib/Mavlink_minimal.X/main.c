@@ -21,6 +21,7 @@
 #include "NEO_M8N.h"
 #include "RC_RX.h"
 #include "ICM_20948.h"
+#include "AS5047D.h"
 
 
 
@@ -29,6 +30,8 @@
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define CONTROL_PERIOD 20 //50 Hz control and sensor update rate
+#define ENCODER_TWO_PI 0x4fff
+#define RPS_TO_RPM (60*1000/CONTROL_PERIOD)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define BUFFER_SIZE 1024
 #define UINT_16_MAX 0xffff
@@ -48,6 +51,7 @@ static struct GPS_data GPS_data;
 RCRX_channel_buffer RC_channels[CHANNELS];
 
 struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for IMU data
+encoder_t encoder_data[NUM_ENCODERS];
 
 /*******************************************************************************
  * TYPEDEFS                                                                    *
@@ -103,6 +107,14 @@ void check_GPS_events(void);
  */
 void publish_IMU_data(void);
 /**
+ * @Function publish_encoder_data()
+ * @param none
+ * @brief publishes motor data and steering angle data over MAVLink to radio
+ * @return none
+ * @author Aaron Hunter
+ */
+void publish_encoder_data(void);
+/**
  * @function publish_GPS(void)
  * @param none
  * @brief invokes mavlink helper function to generate GPS message and sends to
@@ -129,9 +141,23 @@ void publish_heartbeat(void);
  * @author Aaron Hunter
  */
 void check_IMU_events(void) {
-    if (IMU_is_data_ready()==TRUE) {
+    if (IMU_is_data_ready() == TRUE) {
         IMU_get_data(&IMU_data);
         publish_IMU_data();
+    }
+}
+
+/**
+ * @Function check_encoder_events(void)
+ * @param none
+ * @brief looks for data_ready signal from encoder module and publishes if available over MAVLink
+ * @return none
+ * @author Aaron Hunter
+ */
+void check_encoder_events(void) {
+    if (Encoder_is_data_ready() == TRUE) {
+        Encoder_get_data(encoder_data);
+        publish_encoder_data();
     }
 }
 
@@ -252,6 +278,42 @@ void publish_IMU_data(void) {
 }
 
 /**
+ * @Function publish_encoder_data()
+ * @param none
+ * @brief publishes motor data and steering angle data over MAVLink to radio
+ * @return none
+ * @author Aaron Hunter
+ */
+void publish_encoder_data(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    mavlink_msg_raw_rpm_pack(
+            mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            LEFT_MOTOR,
+            ((float) encoder_data[LEFT_MOTOR].omega / ENCODER_TWO_PI) * RPS_TO_RPM
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+        mavlink_msg_raw_rpm_pack(
+            mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            RIGHT_MOTOR,
+            ((float) encoder_data[RIGHT_MOTOR].omega / ENCODER_TWO_PI) * RPS_TO_RPM
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
  * @function publish_RC_signals(void)
  * @param none
  * @brief scales raw RC signals into +/- 10000
@@ -363,11 +425,12 @@ void publish_heartbeat(void) {
 
 int main(void) {
     uint32_t cur_time = 0;
-    uint32_t start_time = 0;
     uint32_t gps_start_time = 0;
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
+    uint8_t index;
 
+    //Initialization routines
     Board_init(); //board configuration
     Serial_init(); //start debug terminal (USB)
     Radio_serial_init(); //start the radios
@@ -376,33 +439,31 @@ int main(void) {
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     IMU_init(IMU_SPI_MODE);
-    
-    //ERROR not getting the IMU to read properly
-//    while(IMU_is_data_ready()==FALSE){
-//        ;
-//    }
-    IMU_get_data(&IMU_data);
-    printf("acc %d \r\n", IMU_data.acc.x);
-    printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
+    Encoder_init();
+    //initialize encoder data
+    for (index = 0; index < NUM_ENCODERS; index++) {
+        Encoder_init_encoder_data(&encoder_data[index]);
+    }
 
+    printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
 
     while (1) {
         cur_time = Sys_timer_get_msec();
         //check for all events
         check_IMU_events(); //check for IMU data ready and publish when available
-        check_radio_events(); //MAVLink incoming messages
-        check_RC_events(); //check incoming RC events
+        check_encoder_events(); //check for encoder data ready and publish when available
+        check_radio_events(); //detect and process MAVLink incoming messages
+        check_RC_events(); //check incoming RC commands
         //check rotary encocder events
-        check_GPS_events(); //new GPS data
+        check_GPS_events(); //check and process incoming GPS messages
 
         //publish control and sensor signals
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            IMU_start_data_acq(); //starts the IMU by initiating first SPI transaction
-           
+            IMU_start_data_acq(); //initiate IMU measurement with SPI
+            Encoder_start_data_acq(); //initiate Encoder measurement with SPI
             publish_RC_signals();
-            //publish encoder velocity
-            //publish servo angle
+            //start encoder measurements
         }
 
         //publish GPS

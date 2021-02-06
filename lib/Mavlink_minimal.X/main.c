@@ -289,28 +289,29 @@ void publish_encoder_data(void) {
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
-    mavlink_msg_raw_rpm_pack(
+    int32_t rpm[4];
+    float voltage[4] = {0, 0, 0, 0};
+    float current[4] = {0, 0, 0, 0};
+
+    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
+    mavlink_msg_esc_status_pack(
             mavlink_system.sysid,
             mavlink_system.compid,
             &msg_tx,
+            Sys_timer_get_usec(),
             LEFT_MOTOR,
-            ((float) encoder_data[LEFT_MOTOR].omega / ENCODER_TWO_PI) * RPS_TO_RPM
+            rpm,
+            voltage,
+            current
             );
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-    for (index = 0; index < msg_length; index++) {
-        Radio_put_char(msg_buffer[index]);
-    }
-        mavlink_msg_raw_rpm_pack(
-            mavlink_system.sysid,
-            mavlink_system.compid,
-            &msg_tx,
-            RIGHT_MOTOR,
-            ((float) encoder_data[RIGHT_MOTOR].omega / ENCODER_TWO_PI) * RPS_TO_RPM
-            );
-    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-    for (index = 0; index < msg_length; index++) {
-        Radio_put_char(msg_buffer[index]);
-    }
+//    for (index = 0; index < msg_length; index++) {
+//        Radio_put_char(msg_buffer[index]);
+//    }
+
 }
 
 /**
@@ -429,6 +430,8 @@ int main(void) {
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     uint8_t index;
+    int8_t IMU_state = SUCCESS;
+    uint32_t IMU_error = 0;
 
     //Initialization routines
     Board_init(); //board configuration
@@ -454,13 +457,16 @@ int main(void) {
         check_encoder_events(); //check for encoder data ready and publish when available
         check_radio_events(); //detect and process MAVLink incoming messages
         check_RC_events(); //check incoming RC commands
-        //check rotary encocder events
         check_GPS_events(); //check and process incoming GPS messages
 
         //publish control and sensor signals
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            IMU_start_data_acq(); //initiate IMU measurement with SPI
+            IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
+            if(IMU_state == ERROR){
+                IMU_error ++;
+                printf("IMU error count %d\r\n", IMU_error);
+            }
             Encoder_start_data_acq(); //initiate Encoder measurement with SPI
             publish_RC_signals();
             //start encoder measurements

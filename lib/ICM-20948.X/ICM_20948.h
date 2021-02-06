@@ -56,7 +56,7 @@ uint8_t IMU_init(char interface_mode);
  * @brief this function starts the SPI data read
  * @author Aaron Hunter
  **/
-void IMU_start_data_acq(void);
+int8_t IMU_start_data_acq(void);
 
 /**
  * @Function IMU_is_data_ready(void)

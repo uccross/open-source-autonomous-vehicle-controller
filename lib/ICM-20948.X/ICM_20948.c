@@ -87,6 +87,7 @@ int I2C_send_byte(unsigned char byte);
 unsigned char I2C_read_byte(void);
 uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr);
 uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
+static int8_t SPI_IMU_reset();
 uint8_t SPI_read_reg(uint8_t reg_addr);
 uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value);
 uint8_t SPI_read_reg(uint8_t reg_addr);
@@ -230,11 +231,22 @@ uint8_t IMU_init(char interface_mode) {
  * @brief this function starts the SPI data read
  * @author Aaron Hunter
  */
-void IMU_start_data_acq(void) {
+int8_t IMU_start_data_acq(void) {
+    int8_t error = FALSE;
+    if (IMU_CS_LAT == 0) {
+        printf("IMU error found, resetting...\r\n");
+        error = SPI_IMU_reset();
+    } else {
+        error = FALSE;
+    }
     uint8_t data_reg = AGB0_REG_ACCEL_XOUT_H;
-    IMU_CS_LAT = 0; //select the IMU 
     data_reg = data_reg | (READ << 7);
+    IMU_CS_LAT = 0; //select the IMU 
     SPI1BUF = data_reg; //start SPI transaction 
+    if (error) {
+        return ERROR;
+    }
+    return SUCCESS;
 }
 
 /**
@@ -357,6 +369,55 @@ unsigned char I2C_read_byte(void) {
 }
 
 /*SPI blocking functions*/
+static int8_t SPI_IMU_reset() {
+    uint8_t value = 0;
+    IEC0bits.SPI1RXIE = 0; //disable interrupt
+    IFS0bits.SPI1RXIF = 0; // clear interrupt flag
+    SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_0);
+    value = SPI_read_reg(AGB0_REG_WHO_AM_I);
+    if (value != ICM_DEV_ID) {
+        printf("IMU not found!\r\n");
+        return ERROR;
+    }
+    printf("IMU returned who am I = 0x%x \r\n", value);
+    SPI_set_reg(AGB0_REG_USER_CTRL, 0x30); //enable master I2C, disable slave I2C interface
+    SPI_set_reg(AGB0_REG_PWR_MGMT_1, 0x01); //clear sleep bit and set clock to best available
+    /*switch to user bank 3 to configure slave devices*/
+    SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_3);
+    /*get who I am data from mag*/
+    SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, (READ << 7 | MAG_I2C_ADDR)); /*load the I2C address of the magnetometer*/
+    SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_WIA2); //load who I am 2 register
+    SPI_set_reg(AGB3_REG_I2C_SLV4_CTRL, 0x80); //execute the read by setting the enable bit
+    while (SPI_read_reg(AGB3_REG_I2C_SLV4_CTRL)) { //bit 7 is cleared when the transaction is complete
+        ;
+    }
+    value = SPI_read_reg(AGB3_REG_I2C_SLV4_DI); /*read the data returned by the mag*/
+    if (value != MAG_DEV_ID) {
+        printf("Magnetometer not found!\r\n");
+        return ERROR;
+    }
+    printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
+    SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR); /*load the I2C address of the magnetometer*/
+    /*set the mag parameters on mag control 2 register*/
+    SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_CNTL2);
+    SPI_set_reg(AGB3_REG_I2C_SLV4_DO, MAG_MODE_4); //100 Hz output
+    SPI_set_reg(AGB3_REG_I2C_SLV4_CTRL, 0x80); //set the enable bit to execute the transaction
+    while (SPI_read_reg(AGB3_REG_I2C_SLV4_CTRL)) { //bit 7 is cleared when the transaction is complete
+        ;
+    }
+    /*set up the slave data registers to be read on slave 0*/
+    SPI_set_reg(AGB3_REG_I2C_SLV0_ADDR, READ << 7 | MAG_I2C_ADDR);
+    SPI_set_reg(AGB3_REG_I2C_SLV0_REG, M_REG_ST1); //starting register for data
+    SPI_set_reg(AGB3_REG_I2C_SLV0_CTRL, 0b10001001); //read nine bytes and set enable bit
+    /*configurations for gyro and accel*/
+    SPI_set_reg(AGB3_REG_REG_BANK_SEL, USER_BANK_2);
+    SPI_set_reg(AGB2_REG_GYRO_CONFIG_1, 0b00010011); //119.5hz 3dB low pass, +/-500 dps FS
+    SPI_set_reg(AGB2_REG_ACCEL_CONFIG, 0b00010001); // 114Hz 3dB LP, +/-2g FS
+    /*return to user bank 0 for data read*/
+    SPI_set_reg(AGB3_REG_REG_BANK_SEL, USER_BANK_0);
+    /*restart interrupts*/
+    IEC0bits.SPI1RXIE = 0; //enable interrupt
+}
 
 /**
  * @Function SPI_read_reg(uint8_t reg_addr)

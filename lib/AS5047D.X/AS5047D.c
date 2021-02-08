@@ -57,7 +57,7 @@ typedef enum {
 } ENC_state_t;
 
 static encoder_t encoder_data[NUM_ENCODERS]; //array of encoder structs
-static int8_t data_ready = FALSE;  //set in SPI SM at completion of a read cycle
+static int8_t data_ready = FALSE; //set in SPI SM at completion of a read cycle
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -117,11 +117,12 @@ static int16_t write_register(uint16_t address, uint16_t setting);
 void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void);
 
 /**
- * @Function void run_encoder_SM(void)
+ * @Function void run_encoder_SM(data)
+ * @param raw uint16_t data read from SPI2BUF
  * @brief simple FSM to update encoder data struct with multiple encoders
  * @author Aaron Hunter
  */
-static void run_encoder_SM(void);
+static void run_encoder_SM(uint16_t data);
 
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -228,10 +229,9 @@ void Encoder_init_encoder_data(encoder_ptr_t enc) {
  * @return TRUE or FALSE
  * @author Aaron Hunter
  */
-int8_t Encoder_is_data_ready(void){
-    return(data_ready);
+int8_t Encoder_is_data_ready(void) {
+    return (data_ready);
 }
-
 
 /**
  * @Function Encoder_get_data(encoder_t * data)
@@ -392,8 +392,11 @@ static int16_t write_register(uint16_t address, uint16_t value) {
  * @author ahunter
  */
 void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void) {
-    run_encoder_SM();
+    uint16_t data;
+    data = SPI2BUF; //read the data 
     IFS1bits.SPI2RXIF = 0; // clear interrupt flag
+    run_encoder_SM(data);
+
 }
 
 /**
@@ -401,7 +404,7 @@ void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void) {
  * @brief simple FSM to update encoder data struct with multiple encoders
  * @author Aaron Hunter
  */
-static void run_encoder_SM(void) {
+static void run_encoder_SM(uint16_t data_short) {
     static ENC_state_t current_state = ENC_START;
     static ENC_state_t next_state = ENC_START;
     static int16_t last_theta;
@@ -412,7 +415,7 @@ static void run_encoder_SM(void) {
         case ENC_START:
             encoder_data[LEFT_MOTOR].last_theta = encoder_data[LEFT_MOTOR].next_theta;
             /*read LEFT_MOTOR encoder, subtract from 2pi to correct for orientation */
-            encoder_data[LEFT_MOTOR].next_theta = TWO_PI - (0x3FFF & SPI2BUF); //mask top bits
+            encoder_data[LEFT_MOTOR].next_theta = TWO_PI - (0x3FFF & data_short); //mask top bits
             /*update encoder 1 data struct*/
             w = encoder_data[LEFT_MOTOR].next_theta - encoder_data[LEFT_MOTOR].last_theta;
             if (w < -MAX_VELOCITY) {
@@ -431,7 +434,7 @@ static void run_encoder_SM(void) {
         case(ENC_NEXT):
             encoder_data[RIGHT_MOTOR].last_theta = encoder_data[RIGHT_MOTOR].next_theta;
             /*read the RIGHT_MOTOR angle*/
-            encoder_data[RIGHT_MOTOR].next_theta = 0x3FFF & SPI2BUF; //mask top bits
+            encoder_data[RIGHT_MOTOR].next_theta = 0x3FFF & data_short; //mask top bits
             /*update RIGHT_MOTOR data struct*/
             w = encoder_data[RIGHT_MOTOR].next_theta - encoder_data[RIGHT_MOTOR].last_theta;
             if (w < -MAX_VELOCITY) {
@@ -450,7 +453,7 @@ static void run_encoder_SM(void) {
         case ENC_LAST:
             encoder_data[HEADING].last_theta = encoder_data[HEADING].next_theta;
             /*read the HEADING angle*/
-            encoder_data[HEADING].next_theta = 0x3FFF & SPI2BUF; //mask top bits
+            encoder_data[HEADING].next_theta = 0x3FFF & data_short; //mask top bits
             /*update HEADING data struct*/
             w = encoder_data[HEADING].next_theta - encoder_data[HEADING].last_theta;
             if (w < -MAX_VELOCITY) {
@@ -502,15 +505,15 @@ int main(void) {
         vel_right = Encoder_get_velocity(RIGHT_MOTOR);
         phi = Encoder_get_angle(HEADING);
         dphi_dt = Encoder_get_velocity(HEADING);
-        if(Encoder_is_data_ready()==TRUE){
-        Encoder_get_data(enc_data);
-        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n",
-                enc_data[LEFT_MOTOR].next_theta,
-                enc_data[LEFT_MOTOR].omega,
-                enc_data[RIGHT_MOTOR].next_theta,
-                enc_data[RIGHT_MOTOR].omega,
-                enc_data[HEADING].next_theta,
-                enc_data[HEADING].omega);
+        if (Encoder_is_data_ready() == TRUE) {
+            Encoder_get_data(enc_data);
+            printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n",
+                    enc_data[LEFT_MOTOR].next_theta,
+                    enc_data[LEFT_MOTOR].omega,
+                    enc_data[RIGHT_MOTOR].next_theta,
+                    enc_data[RIGHT_MOTOR].omega,
+                    enc_data[HEADING].next_theta,
+                    enc_data[HEADING].omega);
         }
         printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right, phi, dphi_dt);
         delay(150000);

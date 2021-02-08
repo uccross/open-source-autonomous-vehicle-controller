@@ -96,7 +96,15 @@ void SPI_read_data(void);
 /***********************************/
 void delay(int cycles);
 void IMU_run_I2C_state_machine(void);
-void IMU_run_SPI_state_machine(void);
+/**
+ * @Function IMU_run_SPI_state_machine(uint8_t byte_read)
+ * @return none
+ * @param byte_read, the byte read from SPI 1 buffer SPI1BUF
+ * @brief state machine to reads IMU data registers over SPI
+ * @note called with a single SPI read of the IMU
+ * @author ahunter
+ **/
+void IMU_run_SPI_state_machine(uint8_t byte_read);
 uint8_t IMU_process_data();
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -234,8 +242,10 @@ uint8_t IMU_init(char interface_mode) {
 int8_t IMU_start_data_acq(void) {
     int8_t error = FALSE;
     if (IMU_CS_LAT == 0) {
-        printf("IMU error found, resetting...\r\n");
-        error = SPI_IMU_reset();
+        printf("IMU error found\r\n");
+        SPI1BUF; //read buffer
+        IFS0bits.SPI1RXIF = 0; //clear any interrupt flag
+        error = TRUE;
     } else {
         error = FALSE;
     }
@@ -523,9 +533,10 @@ void __ISR(_I2C1_VECTOR, IPL2AUTO) IMU_I2C_interrupt_handler(void) {
  * @author ahunter
  */
 void __ISR(_SPI_1_VECTOR, IPL5AUTO) IMU_SPI_interrupt_handler(void) {
-    LATAINV = 0x18;
-    IMU_run_SPI_state_machine();
+    uint8_t data;
+    data = SPI1BUF;
     IFS0bits.SPI1RXIF = 0; // clear interrupt flag
+    IMU_run_SPI_state_machine(data);
 }
 
 /**
@@ -668,24 +679,23 @@ void IMU_run_I2C_state_machine(void) {
 }
 
 /**
- * @Function IMU_run_SPI_state_machine()
+ * @Function IMU_run_SPI_state_machine(uint8_t byte_read)
  * @return none
+ * @param byte_read, the byte read from SPI 1 buffer SPI1BUF
  * @brief state machine to reads IMU data registers over SPI
  * @note called with a single SPI read of the IMU
  * @author ahunter
  **/
-void IMU_run_SPI_state_machine(void) {
+void IMU_run_SPI_state_machine(uint8_t byte_read) {
     static uint8_t reg_address = AGB0_REG_ACCEL_XOUT_H;
     static IMU_SPI_SM_states_t current_state = IMU_SPI_SEND_NEXT_REG;
     IMU_SM_states_t next_state = IMU_SPI_SEND_NEXT_REG;
     static uint8_t error = FALSE;
     static int8_t byte_index = -1;
-    uint8_t byte_read;
     uint8_t max_index = IMU_NUM_BYTES - 1;
     switch (current_state) {
         case IMU_SPI_SEND_NEXT_REG:
             //store spi buffer in raw data struct
-            byte_read = SPI1BUF;
             if (byte_index >= 0) {
                 IMU_raw_data[byte_index] = byte_read;
             }
@@ -698,7 +708,6 @@ void IMU_run_SPI_state_machine(void) {
             SPI1BUF = (++reg_address); //increment and send next register value
             break;
         case IMU_SPI_READ_LAST_REG:
-            byte_read = SPI1BUF;
             IMU_raw_data[byte_index] = byte_read; //store last data byte in raw data struct
             IMU_CS_LAT = 1; // deselect IMU
             IMU_data_ready = TRUE; // set data read flag

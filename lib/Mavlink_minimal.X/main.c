@@ -308,9 +308,9 @@ void publish_encoder_data(void) {
             current
             );
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-//    for (index = 0; index < msg_length; index++) {
-//        Radio_put_char(msg_buffer[index]);
-//    }
+    //    for (index = 0; index < msg_length; index++) {
+    //        Radio_put_char(msg_buffer[index]);
+    //    }
 
 }
 
@@ -432,6 +432,7 @@ int main(void) {
     uint8_t index;
     int8_t IMU_state = SUCCESS;
     uint32_t IMU_error = 0;
+    uint8_t error_report = 50;
 
     //Initialization routines
     Board_init(); //board configuration
@@ -463,9 +464,11 @@ int main(void) {
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-            if(IMU_state == ERROR){
-                IMU_error ++;
-                printf("IMU error count %d\r\n", IMU_error);
+            if (IMU_state == ERROR) {
+                IMU_error++;
+                if(IMU_error % error_report == 0) {
+                    printf("IMU error count %d\r\n", IMU_error);
+                }
             }
             Encoder_start_data_acq(); //initiate Encoder measurement with SPI
             publish_RC_signals();

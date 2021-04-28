@@ -143,7 +143,7 @@ void publish_heartbeat(void);
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
         IMU_get_data(&IMU_data);
-        publish_IMU_data();
+        //publish_IMU_data();
     }
 }
 
@@ -471,7 +471,7 @@ int main(void) {
                 }
             }
             Encoder_start_data_acq(); //initiate Encoder measurement with SPI
-            publish_RC_signals();
+            //publish_RC_signals();
             //start encoder measurements
         }
 

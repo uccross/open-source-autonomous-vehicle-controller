@@ -30,6 +30,13 @@
 #define PAGESIZE 64  //number of bytes per page
 #define NUMPAGES 512  //number of pages
 #define LOG64 6 //number of bits to shift page number to get to its address
+#define NUMSHORTS PAGESIZE >> 2
+#define NUMINTS PAGESIZE >> 4
+#define NUMLONGS PAGESIZE >> 8
+#define NUMFLOATS PAGESIZE >> 4
+#define NUMDOUBLES PAGESIZE >> 8
+#define SHORT2BYTE 1
+#define INT2BYTE 2
 
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *
@@ -63,6 +70,9 @@ static EEPROM_settings_t EEPROM_settings;
  is in a write cycle, but can indicate a device or address failure*/
 static uint8_t EEPROM_error = FALSE;
 
+/*we don't want to access EEPROM if in a write or read cycle cleared by state
+ machine*/
+static uint8_t EEPROM_busy = FALSE;
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -129,16 +139,88 @@ uint8_t EEPROM_init(void) {
     /*config EERPROM I2C interrupt*/
     /*config priority and sub-priority--must match IPL level*/
     IPC6bits.I2C1IP = 2; //priority 2
-    IPC6bits.I2C1IS = 0; //sub-priority 1
+    IPC6bits.I2C1IS = 1; //sub-priority 1
     /*clear interrupt flag*/
     IFS0bits.I2C1MIF = 0; //clear flag
     /*enable I2C master interrupt*/
     IEC0bits.I2C1MIE = 1;
     __builtin_enable_interrupts();
     I2C1CON = 0; //reset config
-    I2C1BRG = 398; //set baud rate to 100KHz
+    I2C1BRG = 98; //set baud rate to 400KHz
     I2C1CONbits.ON = 1; //enable I2C
     return SUCCESS;
+}
+
+/**
+ * @Function EEPROM_is_busy(void)
+ * @param none
+ * @return TRUE or FALSE
+ * @brief if EEPROM in write or read state returns TRUE
+ * @note 
+ * @author Aaron Hunter,
+ * @modified 
+ */
+uint8_t EEPROM_is_busy(void) {
+    return EEPROM_busy;
+}
+
+/**
+ * @Function EEPROM_is_error(void)
+ * @param none
+ * @return TRUE or FALSE
+ * @brief if EEPROM fails to ACK its address returns TRUE
+ * @note 
+ * @author Aaron Hunter,
+ * @modified 
+ */
+uint8_t EEPROM_is_error(void) {
+    return EEPROM_error;
+}
+
+/**
+ * @Function 
+ * @param uint8_t data[], pointer to data
+ * @param uint8_t length, number of bytes to write <= PAGESIZE (64 bytes)
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_byte_array(uint8_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    return EEPROM_write_data(data, length, page, offset);
+}
+
+/**
+ * @Function  EEPROM_write_short_array(uint16_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param uint16_t data[], pointer to data
+ * @param uint8_t array length)
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief casts the 16 bit data into 8 bit and passes to the internal method for storage
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_short_array(int16_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << SHORT2BYTE; //increase length variable for short type
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
+}
+
+/**
+ * @Function  EEPROM_write_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param uint16_t data[], pointer to data
+ * @param uint8_t length, number of 32 bit ints to write
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << INT2BYTE; //increase length variable for short type
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
 }
 
 /*******************************************************************************
@@ -159,16 +241,17 @@ uint8_t EEPROM_init(void) {
  */
 static int8_t EEPROM_write_data(uint8_t data[], uint8_t length, uint32_t page, uint32_t offset) {
     uint32_t address;
-
+    EEPROM_busy = TRUE;
     if ((length <= PAGESIZE)&& (page < NUMPAGES) && (offset + length < PAGESIZE)) {
         address = (page << LOG64 | offset); //set the address of data
-        EEPROM_settings.mem_high_byte = address & 0xff00; //mask off high byte
-        EEPROM_settings.mem_low_byte = address & 0xff; //mask off low byte
+        EEPROM_settings.mem_high_byte = (uint8_t) (address >> 8); //mask off high byte
+        EEPROM_settings.mem_low_byte = (uint8_t) address; //mask off low byte
         EEPROM_settings.mode = WRITE;
         EEPROM_settings.source_data = data;
         EEPROM_settings.length = length;
         EEPROM_settings.index = 0;
     } else {
+        printf("Bad address or array too large\r\n");
         return ERROR;
     }
     /*no errors, so kick of the transfer*/
@@ -189,10 +272,11 @@ static int8_t EEPROM_write_data(uint8_t data[], uint8_t length, uint32_t page, u
  */
 static int8_t EEPROM_read_data(uint8_t data[], uint8_t length, uint32_t page, uint32_t offset) {
     uint32_t address;
+    EEPROM_busy = TRUE;
     if ((length <= PAGESIZE)&& (page < NUMPAGES) && (offset + length < PAGESIZE)) {
         address = (page << LOG64 | offset); //set the address of data
-        EEPROM_settings.mem_high_byte = address & 0xff00; //mask off high byte
-        EEPROM_settings.mem_low_byte = address & 0xff; //mask off low byte
+        EEPROM_settings.mem_high_byte = (uint8_t) (address >> 8); //mask off high byte
+        EEPROM_settings.mem_low_byte = (uint8_t) address; //mask off low byte
         EEPROM_settings.mode = READ;
         EEPROM_settings.source_data = data;
         EEPROM_settings.length = length;
@@ -231,7 +315,6 @@ static void EEPROM_run_I2C_state_machine(void) {
         case(EEPROM_START): /*we get here after the start condition is sent*/
             if (EEPROM_error == TRUE) {
                 printf("No ACK from device!\r\n");
-                EEPROM_error == FALSE; //reset error state
             }
             next_state = EEPROM_SEND_DEV_ADDR_W;
             /*load device address into I2C transmit buffer with write bit set*/
@@ -333,6 +416,7 @@ static void EEPROM_run_I2C_state_machine(void) {
         case(EEPROM_STOP):
             /*stop sent so return to START state*/
             next_state = EEPROM_START;
+            EEPROM_busy = FALSE;
             break;
         default:
             EEPROM_error = TRUE;
@@ -347,33 +431,81 @@ static void EEPROM_run_I2C_state_machine(void) {
 
 void main(void) {
     int startTime;
-    int loopTime = 10; //msecs
+    int write_time = 6000; //microsecs
     Board_init();
     Serial_init();
     Sys_timer_init();
     EEPROM_init();
 
     uint8_t test_data[] = {0xde, 0xad, 0xbe, 0xef};
-    uint8_t recv_data[] = {0, 0, 0, 0};
+    uint8_t test2_data[] = {1, 2, 4, 8};
+    int16_t shorts[] = {0xaacc, 0xff00, 0xbbdd, 0xff00, 0x2112, 0xff00, 0x0202, 0x4884};
+    int32_t ints[] = {0xaaccff00, 0xbbddff00, 0x2112ff00, 0x02024884};
+    uint8_t bytes[] = {0xff, 0xca, 0x00, 0xff, 0x02, 0x02, 0x08, 0x08, 0xbb, 0xdd, 0xff, 0x00};
+
+    uint8_t recv_data[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     uint8_t index = 0;
 
     printf("EEPROM Test Harness,  %s, %s\r\n", __DATE__, __TIME__);
-    EEPROM_write_data(test_data, 4, 0, 0);
-    startTime = Sys_timer_get_msec();
-    while (Sys_timer_get_msec() < startTime + loopTime) {
+    startTime = Sys_timer_get_usec();
+    EEPROM_write_data(test_data, 4, 510, 0);
+    while (EEPROM_is_busy() == TRUE) {
         ;
     }
-    EEPROM_read_data(recv_data, 4, 0, 0);
-    startTime = Sys_timer_get_msec();
-    while (Sys_timer_get_msec() < startTime + loopTime) {
+    printf("ISR write time (usec): %d\r\n", Sys_timer_get_usec() - startTime);
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
         ;
     }
-    printf("Data returned 0x");
+    printf("u-secs busy: %d\r\n", Sys_timer_get_usec() - startTime);
+    EEPROM_write_data(test2_data, 4, 510, 4);
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
+        ;
+    }
+    EEPROM_read_data(recv_data, 8, 510, 0);
+    while (EEPROM_is_busy() == TRUE) {
+        ;
+    }
+    printf("byte array test:\t");
     for (index = 0; index < EEPROM_settings.length; index++) {
-        printf("%x", recv_data[index]);
+        printf("0x%x \t", recv_data[index]);
     }
     printf("\r\n");
-
+    printf("return: %d\r\n", EEPROM_write_short_array(shorts, 8, 128, 0));
+    //    printf("return: %d\r\n",EEPROM_write_byte_array((uint8_t*)shorts, 12, 128, 0));
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
+        ;
+    }
+    EEPROM_read_data(recv_data, 16, 128, 0);
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
+        ;
+    }
+    printf("EEPROM error = %d\r\n", EEPROM_error);
+    printf("post data:\t");
+    for (index = 0; index < EEPROM_settings.length; index++) {
+        printf("0x%x \t", recv_data[index]);
+    }
+    printf("\r\n");
+    printf("return: %d\r\n", EEPROM_write_int_array(ints, 4, 129, 0));
+    //    printf("return: %d\r\n",EEPROM_write_byte_array((uint8_t*)shorts, 12, 128, 0));
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
+        ;
+    }
+    EEPROM_read_data(recv_data, 16, 129, 0);
+    startTime = Sys_timer_get_usec();
+    while (Sys_timer_get_usec() - startTime < write_time) {
+        ;
+    }
+    printf("EEPROM error = %d\r\n", EEPROM_error);
+    printf("post data:\t");
+    for (index = 0; index < EEPROM_settings.length; index++) {
+        printf("0x%x \t", recv_data[index]);
+    }
+    printf("\r\n");
     while (1) {
         ;
     }

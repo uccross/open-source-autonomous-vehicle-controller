@@ -33,8 +33,7 @@
  * PRIVATE TYPEDEFS                                                            *
  ******************************************************************************/
 
-RCRX_channel_buffer servo_data[CHANNELS];
-//RCRX_channel_buffer* servo_data_p = &servo_data;
+
 
 typedef struct sbus_t {
     uint8_t data[SBUS_BUFFER_LENGTH];
@@ -316,6 +315,7 @@ static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels) {
 
 /*Test harness*/
 #ifdef RC_RX_TESTING
+RCRX_channel_buffer servo_data[CHANNELS];
 
 void main(void) {
     uint8_t i;

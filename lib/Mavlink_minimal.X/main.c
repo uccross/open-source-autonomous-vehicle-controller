@@ -143,7 +143,7 @@ void publish_heartbeat(void);
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
         IMU_get_data(&IMU_data);
-        //publish_IMU_data();
+        publish_IMU_data();
     }
 }
 

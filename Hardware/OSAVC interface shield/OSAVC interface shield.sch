@@ -720,7 +720,7 @@ OSAVC Interface Board
 Text Notes 8200 7650 0    50   ~ 0
 March 4, 2021
 Text Notes 10600 7650 0    50   ~ 0
-1
+1.1
 Text Label 1800 5800 0    50   ~ 0
 GND
 Text Label 1800 5700 0    50   ~ 0

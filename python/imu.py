@@ -182,7 +182,7 @@ accel_data_cald = (A_acc @ accel_data.T + B_acc).T
 mag_data_cald = (A_mag @ mag_data.T + B_mag).T
 
 plot_3d(accel_data,accel_data_cald,'Accelerometer Sensor Calibration Using Dorveaux')
-plot_3d(mag_data,mag_data,'Magnetometer Sensor Calibration Using Dorveaux')
+plot_3d(mag_data,mag_data_cald,'Magnetometer Sensor Calibration Using Dorveaux')
 
 
 
@@ -194,5 +194,14 @@ ax = fig.add_subplot(1, 1, 1)
 ax.plot(i,err_raw, color = 'red', label = 'raw')
 ax.plot(i,err_cal, color = 'blue', label = 'cal', alpha = 0.5)
 
-
+err_raw = np.linalg.norm(mag_data, axis = 1) -1
+err_cal = np.linalg.norm(mag_data_cald, axis = 1) -1
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+ax.plot(i,err_raw, color = 'red', label = 'raw')
+ax.plot(i,err_cal, color = 'blue', label = 'cal', alpha = 0.5)
+ax.set_title('Magnetometer Error')
+ax.set_xlabel('Data Index')
+ax.set_ylabel('Error [au]')
+ax.legend(loc= "upper right")
 

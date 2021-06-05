@@ -430,7 +430,8 @@ int main(void) {
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     uint8_t index;
-    int8_t IMU_state = SUCCESS;
+    int8_t IMU_state = ERROR;
+    int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
 
@@ -442,7 +443,12 @@ int main(void) {
     Sys_timer_init(); //start the system timer
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
-    IMU_init(IMU_SPI_MODE);
+    IMU_state = IMU_init(IMU_SPI_MODE);
+    if(IMU_state == ERROR && IMU_retry > 0) {
+        IMU_state = IMU_init(IMU_SPI_MODE);
+        printf("IMU failed init, retrying %f \r\n", IMU_retry);
+        IMU_retry--;
+    }
     Encoder_init();
     //initialize encoder data
     for (index = 0; index < NUM_ENCODERS; index++) {

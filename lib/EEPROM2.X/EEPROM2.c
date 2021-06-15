@@ -216,7 +216,138 @@ int8_t EEPROM_read_short_array(int16_t data[], uint8_t length, uint32_t page, ui
     return EEPROM_read_data((uint8_t *) data, length, page, offset);
 }
 
+/**
+ * @Function  EEPROM_write_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param int32_t data[], pointer to data
+ * @param uint8_t length, number of 32 bit ints to write <= PAGESIZE/4
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << INT2BYTE; //calculate the number of bytes to write
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
+}
 
+/**
+ * @Function EEPROM_read_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param int32_t data[], pointer to data storage
+ * @param uint8_t length, number of ints to read <= PAGESIZE/4
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief reads 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_read_int_array(int32_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << INT2BYTE; //calculate the number of bytes to write
+    /*cast the data into the correct type and read from the EEPROM*/
+    return EEPROM_read_data((uint8_t *) data, length, page, offset);
+}
+
+/**
+ * @Function  EEPROM_write_long_array(int64_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param int64_t data[], pointer to data
+ * @param uint8_t length, number of 64 bit ints to write <= PAGESIZE/8
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_long_array(int64_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << LONG2BYTE; //calculate the number of bytes to write
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
+}
+
+/**
+ * @Function EEPROM_read_long_array(int64_t data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param int64_t data[], pointer to data storage
+ * @param uint8_t length, number of longs to read <= PAGESIZE/8
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief reads 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_read_long_array(int64_t data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << LONG2BYTE; //calculate the number of bytes to read
+    /*cast the data pointer into the correct type and read from the EEPROM*/
+    return EEPROM_read_data((uint8_t *) data, length, page, offset);
+}
+/**
+ * @Function EEPROM_write_float_array(float data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param float data[], pointer to data
+ * @param uint8_t length, number of floats to write <= PAGESIZE/4
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_float_array(float data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << FLOAT2BYTE; //calculate the number of bytes to write
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
+}
+
+/**
+ * @Function EEPROM_read_float_array(float data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param float data[], pointer to data storage
+ * @param uint8_t length, number of floats to read <= PAGESIZE/4
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief reads 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_read_float_array(float data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << FLOAT2BYTE; //calculate the number of bytes to read
+    /*cast the data pointer into the correct type and read from the EEPROM*/
+    return EEPROM_read_data((uint8_t *) data, length, page, offset);
+}
+/**
+ * @Function EEPROM_write_double_array(double data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param double data[], pointer to data
+ * @param uint8_t length, number of doubles to write <= PAGESIZE/8
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief writes 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_write_double_array(double data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << DOUBLE2BYTE; //calculate the number of bytes to write
+    /*cast the data into the correct type and send to the EEPROM*/
+    return EEPROM_write_data((uint8_t*) data, length, page, offset);
+}
+
+/**
+ * @Function EEPROM_read_double_array(double data[], uint8_t length, uint32_t page, uint32_t offset)
+ * @param double data[], pointer to data storage 
+ * @param uint8_t length, number of doubles to read <= PAGESIZE/8
+ * @param, uint32_t page < NUMPAGES (512), which page to write the data into
+ * @param, uint32_t offset <PAGESIZE, local address within the page
+ * @return SUCCESS or ERROR
+ * @brief reads 1 to PAGESIZE bytes to EEPROM of datatype. returns ERROR if 
+ * address is incorrect or PAGESIZE is violated (array wraps around page boundary)
+ * @author Aaron Hunter
+ */
+int8_t EEPROM_read_double_array(double data[], uint8_t length, uint32_t page, uint32_t offset) {
+    length = length << DOUBLE2BYTE; //calculate the number of bytes to read
+    /*cast the data pointer into the correct type and read from the EEPROM*/
+    return EEPROM_read_data((uint8_t *) data, length, page, offset);
+}
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
  ******************************************************************************/
@@ -432,16 +563,27 @@ static int8_t EEPROM_write_data(uint8_t data[], uint8_t length, uint32_t page, u
 #ifdef EEPROM_TESTING
 
 void main(void) {
+    int8_t compare = TRUE;
     uint8_t byte;
     uint8_t i;
-    uint8_t page;
+    uint32_t page;
     uint8_t offset;
     uint8_t msg[PAGESIZE];
     uint8_t recv_msg[PAGESIZE];
     uint8_t length;
     int32_t start_time;
     int32_t end_time;
-    uint8_t EEPROM_busy = TRUE;
+    int16_t shorts[] = {0xaacc, 0xff00, 0xbbdd, 0xff00, 0x2112, 0xff00, 0x0202, 0x4884};
+    int16_t recv_shorts[PAGESIZE >> SHORT2BYTE];
+    int32_t ints[] = {0xaaccff00, 0xbbddff00, 0x2112ff00, 0x02024884};
+    int32_t recv_ints[PAGESIZE >> INT2BYTE];
+    int64_t longs[] = {0xbbddff00aaccff00, 0x020248842112ff00};
+    int64_t recv_longs[PAGESIZE >> LONG2BYTE];
+    float pi_float[] = {3.1415926535897932384626433832795F};
+    float recv_floats[PAGESIZE >> FLOAT2BYTE];
+    float * val;
+    double pi_double[] = {3.1415926535897932384626433832795L};
+    double recv_doubles[PAGESIZE>>DOUBLE2BYTE];
 
 
     Board_init();
@@ -450,6 +592,7 @@ void main(void) {
     EEPROM_init();
 
     printf("EEPROM2 Test Harness,  %s, %s\r\n", __DATE__, __TIME__);
+    /**********************************************/
     //read first byte in memory
     length = 1;
     EEPROM_read_data(&byte, length, 0, 0);
@@ -462,6 +605,7 @@ void main(void) {
         printf("%c", msg[i]);
     }
     printf("\r\n");
+    /**********************************************/
     // test a write on page 1
     page = 1;
     offset = 0;
@@ -477,6 +621,7 @@ void main(void) {
         printf("%c", msg[i]);
     }
     printf("\r\n");
+    /**********************************************/
     // test wrapper for byte array
     if (EEPROM_read_byte_array(recv_msg, length, page, offset) == SUCCESS) {
         for (i = 0; i < length; i++) {
@@ -487,10 +632,96 @@ void main(void) {
         printf("ERROR in read byte array \r\n");
     }
     if (strcmp(msg, recv_msg) == 0) {
-        printf("byte array read success!");
+        printf("byte array read success!\r\n");
     } else {
-        printf("byte array read fail!");
+        printf("byte array read fail!\r\n");
     }
+    /**********************************************/
+    // test write and read short array
+    length = sizeof (shorts) / sizeof (shorts[0]);
+    page = NUMPAGES - 1;
+    EEPROM_write_short_array(shorts, length, page, offset);
+    EEPROM_read_short_array(recv_shorts, length, page, offset);
+    compare = TRUE;
+    for (i = 0; i < length; i++) {
+        if (shorts[i] != recv_shorts[i]) {
+            compare = FALSE;
+        }
+    }
+    if (compare == FALSE) {
+        printf("Short array read/write error\r\n");
+    } else {
+        printf("Short array read/write success!\r\n");
+    }
+    /**********************************************/
+    // test write and read int array
+    length = sizeof (ints) / sizeof (ints[0]);
+    page = NUMPAGES - 2;
+    EEPROM_write_int_array(ints, length, page, offset);
+    EEPROM_read_int_array(recv_ints, length, page, offset);
+    compare = TRUE;
+    for (i = 0; i < length; i++) {
+        if (ints[i] != recv_ints[i]) {
+            compare = FALSE;
+        }
+    }
+    if (compare == FALSE) {
+        printf("Int array read/write error\r\n");
+    } else {
+        printf("Int array read/write success!\r\n");
+    }
+    /**********************************************/
+    // test write and read long array
+    length = sizeof (longs) / sizeof (longs[0]);
+    page = NUMPAGES - 3;
+    EEPROM_write_long_array(longs, length, page, offset);
+    EEPROM_read_long_array(recv_longs, length, page, offset);
+    compare = TRUE;
+    for (i = 0; i < length; i++) {
+        if (longs[i] != recv_longs[i]) {
+            compare = FALSE;
+        }
+    }
+    if (compare == FALSE) {
+        printf("Long array read/write error\r\n");
+    } else {
+        printf("Long array read/write success!\r\n");
+    }
+    /**********************************************/
+    // test write and read float array
+    length = sizeof (pi_float) / sizeof (pi_float[0]);
+    page = NUMPAGES - 4;
+    EEPROM_write_float_array(pi_float, length, page, offset);
+    EEPROM_read_float_array(recv_floats, length, page, offset);
+    compare = TRUE;
+    for (i = 0; i < length; i++) {
+        if (pi_float[i] != recv_floats[i]) {
+            compare = FALSE;
+        }
+    }
+    if (compare == FALSE) {
+        printf("Float array read/write error\r\n");
+    } else {
+        printf("Float array read/write success!\r\n");
+    }
+        /**********************************************/
+    // test write and read double array
+    length = sizeof (pi_double) / sizeof (pi_double[0]);
+    page = NUMPAGES - 5;
+    EEPROM_write_double_array(pi_double, length, page, offset);
+    EEPROM_read_double_array(recv_doubles, length, page, offset);
+    compare = TRUE;
+    for (i = 0; i < length; i++) {
+        if (pi_double[i] != recv_doubles[i]) {
+            compare = FALSE;
+        }
+    }
+    if (compare == FALSE) {
+        printf("Double array read/write error\r\n");
+    } else {
+        printf("Double array read/write success!\r\n");
+    }
+    printf("Receive Pi as a double:  %.34f \r\n", recv_doubles[0]);
 }
 #endif
 

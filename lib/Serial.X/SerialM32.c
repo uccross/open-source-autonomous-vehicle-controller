@@ -21,7 +21,7 @@
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define BUFFER_LENGTH 512
+#define BUFFER_LENGTH 2048
 #define MESSAGE_LENGTH 128
 #define BAUD_RATE 115200
 
@@ -280,6 +280,7 @@ int main(void) {
     char msg[MESSAGE_LENGTH];
     char c;
     int i;
+    int lines = 100;
     Board_init();
     //set LEDs for troubleshooting
     //    TRISAbits.TRISA4 = 0; //pin 72 Max32
@@ -289,6 +290,10 @@ int main(void) {
     printf("\r\nSerial test harness %s, %s \r\n", __DATE__, __TIME__);
     printf("System clock freq: %d (Hz)\r\n", Board_get_sys_clock());
     printf("Peripheral clock freq: %d (Hz)\r\n", Board_get_PB_clock());
+    for(i=0;i<lines;i++){
+        printf("Printing line %d \r", i);
+    }
+    printf("\nPrinted %d lines \r\n", i);
     printf("Everything after this line will be echoed: \r\n");
     printf("**********************************************\r\n");
     while (1) {
@@ -300,6 +305,5 @@ int main(void) {
 }
 #endif //SERIAL_TESTING
 
-//Now is the time for all good men to come to the aid of their country
 
 

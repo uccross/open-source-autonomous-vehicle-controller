@@ -209,7 +209,6 @@ void check_radio_events(void) {
     if (Radio_data_available()) {
         msg_byte = Radio_get_char();
         if (mavlink_parse_char(channel, msg_byte, &msg_rx, &msg_rx_status)) {
-            printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
             switch (msg_rx.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT:
                     mavlink_msg_heartbeat_decode(&msg_rx, &heartbeat);
@@ -220,8 +219,8 @@ void check_radio_events(void) {
                     mavlink_msg_command_long_decode(&msg_rx, &command_qgc);
                     printf("Command ID %d received from QGC\r\n", command_qgc.command);
                     break;
-
                 default:
+                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
                     break;
             }
         }
@@ -444,7 +443,7 @@ int main(void) {
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     IMU_state = IMU_init(IMU_SPI_MODE);
-    if(IMU_state == ERROR && IMU_retry > 0) {
+    if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
         printf("IMU failed init, retrying %f \r\n", IMU_retry);
         IMU_retry--;
@@ -472,7 +471,7 @@ int main(void) {
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_state == ERROR) {
                 IMU_error++;
-                if(IMU_error % error_report == 0) {
+                if (IMU_error % error_report == 0) {
                     printf("IMU error count %d\r\n", IMU_error);
                 }
             }

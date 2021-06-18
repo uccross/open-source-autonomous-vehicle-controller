@@ -130,6 +130,14 @@ void publish_GPS(void);
  */
 void publish_heartbeat(void);
 
+/**
+ * @Function publish_parameter(uint8_t param_id[16])
+ * @param parameter ID
+ * @brief invokes mavlink helper to send out stored parameter 
+ * @author aaron hunter
+ */
+void publish_parameter(uint8_t param_id[16]);
+
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -205,11 +213,11 @@ void check_radio_events(void) {
     //MAVLink command structs
     mavlink_heartbeat_t heartbeat;
     mavlink_command_long_t command_qgc;
+    mavlink_param_request_read_t param_read;
 
     if (Radio_data_available()) {
         msg_byte = Radio_get_char();
-        if (mavlink_parse_char(channel, msg_byte, &msg_rx, &msg_rx_status)) {
-            printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
+        if (mavlink_parse_char(channel, msg_byte, &msg_rx, &msg_rx_status))
             switch (msg_rx.msgid) {
                 case MAVLINK_MSG_ID_HEARTBEAT:
                     mavlink_msg_heartbeat_decode(&msg_rx, &heartbeat);
@@ -218,15 +226,21 @@ void check_radio_events(void) {
                     break;
                 case MAVLINK_MSG_ID_COMMAND_LONG:
                     mavlink_msg_command_long_decode(&msg_rx, &command_qgc);
-                    printf("Command ID %d received from QGC\r\n", command_qgc.command);
+                    printf("Command ID %d received from Ground Control\r\n", command_qgc.command);
                     break;
-
+                case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+                    mavlink_msg_param_request_read_decode(&msg_rx, &param_read);
+                    printf("Parameter request ID %s received from Ground Control\r\n", param_read.param_id);
+                    publish_parameter(param_read.param_id);
+                    break;
                 default:
+                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", 
+                            msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
                     break;
             }
-        }
     }
 }
+
 
 /**
  * @function check_GPS_events(void)
@@ -424,6 +438,36 @@ void publish_heartbeat(void) {
     }
 }
 
+/**
+ * @Function publish_parameter(uint8_t param_id[16])
+ * @param parameter ID
+ * @brief invokes mavlink helper to send out stored parameter 
+ * @author aaron hunter
+ */
+void publish_parameter(uint8_t param_id[16]) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    float param_value = 320.0; // value of the requested parameter
+    uint8_t param_type = MAV_PARAM_TYPE_INT16; // onboard mavlink parameter type
+    uint16_t param_count = 1; // total number of onboard parameters
+    uint16_t param_index = 1; //index of this value
+    mavlink_msg_param_value_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            param_id,
+            param_value,
+            param_type,
+            param_count,
+            param_index
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
 int main(void) {
     uint32_t cur_time = 0;
     uint32_t gps_start_time = 0;
@@ -444,7 +488,7 @@ int main(void) {
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     IMU_state = IMU_init(IMU_SPI_MODE);
-    if(IMU_state == ERROR && IMU_retry > 0) {
+    if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
         printf("IMU failed init, retrying %f \r\n", IMU_retry);
         IMU_retry--;
@@ -472,7 +516,7 @@ int main(void) {
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_state == ERROR) {
                 IMU_error++;
-                if(IMU_error % error_report == 0) {
+                if (IMU_error % error_report == 0) {
                     printf("IMU error count %d\r\n", IMU_error);
                 }
             }

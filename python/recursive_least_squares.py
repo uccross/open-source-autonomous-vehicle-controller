@@ -33,32 +33,38 @@ where x is in the implicit form (9x1)
 
 
 """
+#Batch calibration parameters
+initial_batch_size = 999
+xi = x[:initial_batch_size,:]
+
+#Least squares for initial batch
+w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0] 
 
 
 #RLS Parameters
 
 m = x.shape[1]
 lambda_ = 0.99 #Forgetting factor
-del_ = 1e5 #Initial value of P
+del_ = 1 #Initial value of P
 
 
-#Initialization
+#RLS Initialization
 
-w = np.random.rand(m,1)	#Weights [A; b]
-P = x.T@x#del_*np.eye(m)
-xi = x[0:,:]
+#w = np.random.rand(m,1)
+P = del_*np.cov(x.T)#x.T@ x#np.eye(m)
 d = 1 #Always
 
 
-index = 0
+index = initial_batch_size
 step = 1
 
+#Estimate implicit parameters with RLS
 while index < x.shape[0]:
 
 	xi = (x[index, :]).reshape([m,1])
 	alpha_ = d - xi.T@w
 	gain = (P @xi)/(lambda_ + xi.T @P @xi)
-	print("Innovation: ",alpha_)
+	#print("Innovation: ",alpha_)
 
 	#Update
 	P = P/lambda_ - gain@xi.T @P/lambda_
@@ -91,10 +97,29 @@ Q2 = T.T @Q @T
 eig_vals, eig_vecs = np.linalg.eig(Q2[:3,:3])
 
 #Recover Rotation and Scales
-rearrange = np.array([[0,0,1], [1,0,0],[0,1,0]]) #Temporary workaround
+rearrange = np.array([[0,0,1], [1,0,0],[0,1,0]]) #Temporary workaround for axis rearrange
 R = -eig_vecs @ rearrange
 scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
 
+#Recover A
+A = R@ np.diag(scales)
+
 print("\nRot: ",R)
-print("\nBias ", B)
 print("\nScales ", scales)
+print("\nA = ", A)
+print("\nBias = ", B)
+
+
+#Caluclate error
+
+data_cal = np.linalg.inv(A)@(data_raw - B).T
+errors = np.linalg.norm(data_cal.T,axis=1)-1
+mse = (errors@ errors.T)/data_cal.shape[1]
+print("\nMSE = ",mse, '\n')
+
+
+#Plot error
+num_vals = int(errors.shape[0]/25)
+error_avg = [np.mean((errors*errors)[i:i+num_vals]) for i in range(num_vals,errors.shape[0]-2)]
+plt.plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
+#plt.show()

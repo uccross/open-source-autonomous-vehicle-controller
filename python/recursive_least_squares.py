@@ -7,7 +7,7 @@ import time, sys
 #Read raw data
 filename = sys.argv[1]
 df_raw = pd.read_csv(filename)
-data_raw = df_raw.values
+data_raw = df_raw.values[:]
 
 #Create data vector
 vx = data_raw[:,0].reshape(data_raw.shape[0],1)
@@ -34,7 +34,7 @@ where x is in the implicit form (9x1)
 
 """
 #Batch calibration parameters
-initial_batch_size = 20
+initial_batch_size = 100
 xi = x[:initial_batch_size,:]
 
 #Least squares for initial batch
@@ -134,8 +134,8 @@ def plot_errors(errors):
 	"""
 	Plots a moving average of np array errors
 	"""
-	num_vals = int(errors.shape[0]/25)
-	error_avg = [np.mean((errors*errors)[i:i+num_vals]) for i in range(num_vals,errors.shape[0]-2)]
+	num_vals = int(errors.shape[0]/50)
+	error_avg = [np.mean((errors*errors)[i-num_vals:i]) for i in range(num_vals,errors.shape[0]-2)]
 	plt.plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
 	plt.show()
 
@@ -157,7 +157,14 @@ for i in range(len(running_params)):
 data_cal = np.linalg.inv(A)@(data_raw - B).T
 errors = np.linalg.norm(data_cal.T,axis=1)-1
 mse = (errors@ errors.T)/data_cal.shape[1]
-print("\nMSE = ",mse, '\n')
+print("\nTotal MSE = ",mse, '\n')
 
-
+#For drift/parameter change:
+switch_index = int(data_cal.shape[1]/2)
+errors1 = np.array(running_errors[initial_batch_size+1:switch_index-1]) #Before param change
+errors2 = np.array(running_errors[-int(data_cal.shape[1]/3):]) #Final 1/3 of the data
+mse1 = (errors1@errors1.T)/errors1.shape[0]
+mse2 = (errors2@errors2.T)/errors2.shape[0]
+print("\nMSE (before) = ", mse1)
+print("\nMSE (after) = ", mse2 )
 plot_errors(np.array(running_errors))

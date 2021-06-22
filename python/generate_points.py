@@ -23,7 +23,7 @@ B = np.array([[-0.0568], [0.055], [0.109]])
 print(B)
 
 #Variance
-var = 0.005
+var = 0.05
 
 #Generate points
 num_points = 2_000
@@ -41,6 +41,21 @@ for i in range(num_points):
 df_calib = pd.DataFrame(points)
 
 
+#Simulate Drift (1. sudden-drift)
+simulate_drift = False
+
+if simulate_drift:
+	scale_drift = np.diag(np.random.randn(3)*0.1 +1)
+	rot_drift = np.random.randn(3,3)*0.002
+	z = (scale_drift==0)*rot_drift + scale_drift
+	bias_drift = np.random.randn(3,1)*0.2
+
+	A = z@A
+	B = B+bias_drift
+	print('\n Drifted params:\n')
+	print(A)
+	print(B)
+
 #Corrupt
 points_raw = []
 for p in points:
@@ -51,6 +66,7 @@ for p in points:
 assert(len(points_raw)==len(points))
 
 df_raw = pd.DataFrame(points_raw)
+
 
 #Save CSVs
 stamp = datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')

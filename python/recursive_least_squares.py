@@ -34,12 +34,14 @@ where x is in the implicit form (9x1)
 
 """
 #Batch calibration parameters
-initial_batch_size = 999
+initial_batch_size = 20
 xi = x[:initial_batch_size,:]
 
 #Least squares for initial batch
 w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0] 
 
+#List to save intermediate weights
+running_params = [w]*initial_batch_size
 
 #RLS Parameters
 
@@ -71,46 +73,86 @@ while index < x.shape[0]:
 	w = w + alpha_*gain
 
 	index+=step
-
+	running_params.append(w)
 
 print()
 #Implicit parameters
 print (*w)
 
-w = w.reshape([9,])
 
-#Matrix form of ellipse
-Q = np.array([[w[0], w[3]/2, w[4]/2, w[6]/2],\
-				[w[3]/2, w[1], w[5]/2, w[7]/2],\
-				[w[4]/2, w[5]/2, w[2], w[8]/2],\
-				[w[6]/2, w[7]/2, w[8]/2, -1.0]])
+def recover_params(w, verbose=True):
+	"""
+	Converts implicit linear form of the ellipse to 
+	the matrix form (AX+B)@(AX+B).T = 1
 
-#Recover bias
-B = np.linalg.lstsq(Q[:3,:3], -Q[:3,3], rcond=None)[0]
+	Arguments:
+		w: Implicit parameters
+	Returns:
+		A: Scale, Rotation & Skew matrix
+		B: Bias
 
-#Translate
-T = np.eye(4)
-T[:3,3] = B
-Q2 = T.T @Q @T
+	"""
+	w = w.reshape([9,])
 
-#Find eigenvalues
-eig_vals, eig_vecs = np.linalg.eig(Q2[:3,:3])
+	#Matrix form of ellipse
+	Q = np.array([[w[0], w[3]/2, w[4]/2, w[6]/2],\
+					[w[3]/2, w[1], w[5]/2, w[7]/2],\
+					[w[4]/2, w[5]/2, w[2], w[8]/2],\
+					[w[6]/2, w[7]/2, w[8]/2, -1.0]])
 
-#Recover Rotation and Scales
-rearrange = np.array([[0,0,1], [1,0,0],[0,1,0]]) #Temporary workaround for axis rearrange
-R = -eig_vecs @ rearrange
-scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
+	#Recover bias
+	B = np.linalg.lstsq(Q[:3,:3], -Q[:3,3], rcond=None)[0]
 
-#Recover A
-A = R@ np.diag(scales)
+	#Translate
+	T = np.eye(4)
+	T[:3,3] = B
+	Q2 = T.T @Q @T
 
-print("\nRot: ",R)
-print("\nScales ", scales)
-print("\nA = ", A)
-print("\nBias = ", B)
+	#Find eigenvalues
+	eig_vals, eig_vecs = np.linalg.eig(Q2[:3,:3])
+
+	#Recover Rotation and Scales
+	rearrange = np.array([[0,0,1], [1,0,0],[0,1,0]]) #Temporary workaround for axis rearrange
+	R = -eig_vecs @ rearrange
+	scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
+
+	#Recover A
+	A = R@ np.diag(scales)
+
+	if verbose:
+		print("\nRot: ",R)
+		print("\nScales ", scales)
+		print("\nA = ", A)
+		print("\nBias = ", B)
+
+	return A, B
 
 
-#Caluclate error
+
+#Plot error
+def plot_errors(errors):
+	"""
+	Plots a moving average of np array errors
+	"""
+	num_vals = int(errors.shape[0]/25)
+	error_avg = [np.mean((errors*errors)[i:i+num_vals]) for i in range(num_vals,errors.shape[0]-2)]
+	plt.plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
+	plt.show()
+
+
+#Get final parameters (matrix form)
+A,B = recover_params(w)
+
+
+#Calculate intermaediate errors:
+running_errors = []
+for i in range(len(running_params)):
+	Ai, Bi = recover_params(running_params[i], verbose=False)
+	Xcal_i = np.linalg.inv(Ai)@(data_raw[i,:]-Bi)
+	error = np.linalg.norm(Xcal_i)-1
+	running_errors.append(error)
+
+#Caluclate total error
 
 data_cal = np.linalg.inv(A)@(data_raw - B).T
 errors = np.linalg.norm(data_cal.T,axis=1)-1
@@ -118,8 +160,4 @@ mse = (errors@ errors.T)/data_cal.shape[1]
 print("\nMSE = ",mse, '\n')
 
 
-#Plot error
-num_vals = int(errors.shape[0]/25)
-error_avg = [np.mean((errors*errors)[i:i+num_vals]) for i in range(num_vals,errors.shape[0]-2)]
-plt.plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
-#plt.show()
+plot_errors(np.array(running_errors))

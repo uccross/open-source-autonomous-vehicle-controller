@@ -34,7 +34,8 @@ where x is in the implicit form (9x1)
 
 """
 #Batch calibration parameters
-initial_batch_size = 100
+initial_batch_size = 200
+use_batch_only = False
 xi = x[:initial_batch_size,:]
 
 #Least squares for initial batch
@@ -46,7 +47,7 @@ running_params = [w]*initial_batch_size
 #RLS Parameters
 
 m = x.shape[1]
-lambda_ = 0.99 #Forgetting factor
+lambda_ = 0.98 #Forgetting factor
 del_ = 1 #Initial value of P
 
 
@@ -61,7 +62,7 @@ index = initial_batch_size
 step = 1
 
 #Estimate implicit parameters with RLS
-while index < x.shape[0]:
+while index < x.shape[0] and not use_batch_only:
 
 	xi = (x[index, :]).reshape([m,1])
 	alpha_ = d - xi.T@w
@@ -132,11 +133,30 @@ def recover_params(w, verbose=True):
 #Plot error
 def plot_errors(errors):
 	"""
-	Plots a moving average of np array errors
+	Plots a moving average and histogram of np array errors
 	"""
 	num_vals = int(errors.shape[0]/50)
 	error_avg = [np.mean((errors*errors)[i-num_vals:i]) for i in range(num_vals,errors.shape[0]-2)]
-	plt.plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
+	
+	fig,ax = plt.subplots(2)
+	fig.suptitle("RLS with forgetting factor="+str(lambda_), fontsize=15)
+
+	#Running error
+	ax[0].plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
+	ax[0].set_title("Squared error vs iteration")
+
+	#Histogram
+	ax[1].set_title("Error Histogram")
+	n, bins, __ = ax[1].hist(errors, 50)
+
+	sigma = np.std(errors)
+	mu = np.mean(errors)
+	y = ((1/(np.sqrt(2*np.pi)*sigma))*np.exp(-0.5*(1/sigma*(bins-mu))**2))*len(errors)*(bins[2]-bins[1])
+	print("Mean error: ", mu)
+	print("Sigma: ",sigma)
+  
+	ax[1].plot(bins, y, '--', color ='black')
+	
 	plt.show()
 
 
@@ -167,4 +187,5 @@ mse1 = (errors1@errors1.T)/errors1.shape[0]
 mse2 = (errors2@errors2.T)/errors2.shape[0]
 print("\nMSE (before) = ", mse1)
 print("\nMSE (after) = ", mse2 )
+#print(errors1.shape,errors2.shape)
 plot_errors(np.array(running_errors))

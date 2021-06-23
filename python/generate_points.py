@@ -50,7 +50,7 @@ if simulate_drift:
 	z = (scale_drift==0)*rot_drift + scale_drift
 	bias_drift = np.random.randn(3,1)*0.2
 
-	A = z@A
+	#A = z@A
 	B = B+bias_drift
 	print('\n Drifted params:\n')
 	print(A)

@@ -47,14 +47,14 @@ running_params = [w]*initial_batch_size
 #RLS Parameters
 
 m = x.shape[1]
-lambda_ = 0.98 #Forgetting factor
+lambda_ = 0.99 #Forgetting factor
 del_ = 1 #Initial value of P
 
 
 #RLS Initialization
 
 #w = np.random.rand(m,1)
-P = del_*np.cov(x.T)#x.T@ x#np.eye(m)
+P = np.linalg.pinv(del_*np.cov(x.T))#x.T@ x#np.eye(m)
 d = 1 #Always
 
 
@@ -118,12 +118,13 @@ def recover_params(w, verbose=True):
 	scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
 
 	#Recover A
-	A = R@ np.diag(scales)
+	A = R@ np.diag(scales) @R.T
 
 	if verbose:
 		print("\nRot: ",R)
+		print("\nCross matrix: ", R.T@R)
 		print("\nScales ", scales)
-		print("\nA = ", A)
+		print("\n---\nA = ", A)
 		print("\nBias = ", B)
 
 	return A, B
@@ -178,14 +179,22 @@ data_cal = np.linalg.inv(A)@(data_raw - B).T
 errors = np.linalg.norm(data_cal.T,axis=1)-1
 mse = (errors@ errors.T)/data_cal.shape[1]
 print("\nTotal MSE = ",mse, '\n')
+print("\nA = ",np.linalg.inv(np.linalg.pinv(A)))
+print("\nB =", B)
 
 #For drift/parameter change:
 switch_index = int(data_cal.shape[1]/2)
 errors1 = np.array(running_errors[initial_batch_size+1:switch_index-1]) #Before param change
-errors2 = np.array(running_errors[-int(data_cal.shape[1]/3):]) #Final 1/3 of the data
+errors2 = np.array(running_errors[switch_index+400:]) #After drift + 400 measurements
 mse1 = (errors1@errors1.T)/errors1.shape[0]
 mse2 = (errors2@errors2.T)/errors2.shape[0]
+std2 = np.std(errors2)
 print("\nMSE (before) = ", mse1)
 print("\nMSE (after) = ", mse2 )
+print("\nStd dev. after = ", std2)
 #print(errors1.shape,errors2.shape)
+
+
 plot_errors(np.array(running_errors))
+
+#plot_errors(np.array(errors))

@@ -56,7 +56,6 @@ def imu_calibrate(points, batch_size = 500, step_size = 20):
 
         # 3) update data, y_k+1
         y_k = (A_k @ y_k.T + B_k).T
-        # ax.scatter(y_k[:,0],y_k[:,1],y_k[:,2],s = 10,marker ='.')
 
         # iteratively compute A_tilde
         A_tilde = A_k @ A_tilde
@@ -88,29 +87,61 @@ def plot_3d(data_raw, data_cal,title = 'Inertial Sensor Calibration Using Dorvea
     ax.set_zlabel('Z')
     ax.set_title(title)
 
+#Plot error
+def plot_errors(errors):
+	"""
+	Plots a moving average and histogram of np array errors
+	"""
+	num_vals = int(errors.shape[0]/50)
+	error_avg = [np.mean((errors*errors)[i-num_vals:i]) for i in range(num_vals,errors.shape[0]-2)]
+	
+	fig,ax = plt.subplots(2)
+	fig.suptitle("Dorveaux", fontsize=15)
+
+	#Running error
+	ax[0].plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
+	ax[0].set_title("Squared error vs iteration")
+
+	#Histogram
+	ax[1].set_title("Error Histogram")
+	n, bins, __ = ax[1].hist(errors, 50)
+
+	sigma = np.std(errors)
+	mu = np.mean(errors)
+	y = ((1/(np.sqrt(2*np.pi)*sigma))*np.exp(-0.5*(1/sigma*(bins-mu))**2))*len(errors)*(bins[2]-bins[1])
+	print("Mean error: ", mu)
+	print("Sigma: ",sigma)
+  
+	ax[1].plot(bins, y, '--', color ='black')
+	
+	plt.show()
+
 
 
 def main():
-    #Read raw data
-    filename = sys.argv[1]
-    df_raw = pd.read_csv(filename)
-    data_raw = df_raw.values
+	#Read raw data
+	filename = sys.argv[1]
+	df_raw = pd.read_csv(filename)
+	data_raw = df_raw.values[:,:]
+	print(data_raw.shape)
 
 
-    #Calibrate
-    [A_cal, B_cal] = imu_calibrate(data_raw,250, 20)
-    data_cal = ((A_cal @ data_raw.T) + B_cal).T
+	#Calibrate
+	[A_cal, B_cal] = imu_calibrate(data_raw,1800,20)
+	data_cal = ((A_cal @ data_raw.T) + B_cal).T
 
-    #Plot
-    plot_3d(data_raw,data_cal, "Simulated Data")
+	#Calculate errors
+	errors = np.linalg.norm(data_cal[:],axis=1)-1
+	mse = (errors@ errors.T)/data_cal.shape[0]
 
-    #Calculate errors
-    errors = np.linalg.norm(data_cal,axis=1)-1
-    mse = (errors@ errors.T)/data_cal.shape[0]
+	#Plot/Show
+	print("\nA = ", np.linalg.inv(A_cal))
+	print("\nB = ", -B_cal)
 
-    #Show
-    print(mse)
-    plt.show()
+	print("\nMSE: ",mse)
+	#plot_3d(data_raw,data_cal, "Simulated Data")
+	plot_errors(errors)
+	plt.show()
 
 
 

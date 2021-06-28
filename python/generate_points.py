@@ -14,7 +14,7 @@ import datetime
 
 # A = np.matmul(rot, np.diag(scales))
 # A = np.matmul(skews, A)
-A = np.array([[1.0234, 0.015, 0.0543],[0.011, 1.076, 0.0039],[0.0654, 0.0325, 0.968]])
+A = np.array([[1.3, 0.03, 0.04],[0.026, 1.56, 0.0],[0.011, 0.12, 0.8]])
 
 print(A)
 
@@ -23,7 +23,7 @@ B = np.array([[-0.0568], [0.055], [0.109]])
 print(B)
 
 #Variance
-var = 0.05
+var = 0.1
 
 #Generate points
 num_points = 2_000

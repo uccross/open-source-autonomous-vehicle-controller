@@ -21,6 +21,10 @@ class Imu:
 		self.gyro = np.array(values[3:6]).reshape([3,1])
 		self.mag = np.array(values[6:9]).reshape([3,1])
 
+
+	def vec9d(self):
+		return np.array([*self.acc, *self.gyro, *self.mag])
+
 	def calibrate(p_acc, p_gyro, p_mag):
 		"""
 		Calibrates an IMU measurement using known parameters

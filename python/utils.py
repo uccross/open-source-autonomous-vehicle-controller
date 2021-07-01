@@ -23,7 +23,7 @@ class Imu:
 
 
 	def vec9d(self):
-		return np.array([*self.acc, *self.gyro, *self.mag])
+		return np.array([*self.acc, *self.gyro, *self.mag]).reshape([1,9])
 
 	def calibrate(p_acc, p_gyro, p_mag):
 		"""

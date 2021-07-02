@@ -1,0 +1,12 @@
+#Physical constants
+
+gravity: 9.7989	# m/s^2 (Santa Cruz)
+magnetic: 0.4749 # Gauss (Santa Cruz)
+
+#Recursive Least Squares
+
+lambda: 0.99
+del: 1.0
+
+use_initial_batch: False
+initial_batch_size: 200

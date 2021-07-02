@@ -51,7 +51,7 @@ class CalibParams:
 
 
 	@classmethod
-	def from_implicit(w, verbose=False):
+	def from_implicit(cls, w, verbose=False):
 		"""
 		Converts implicit linear form of the ellipse to 
 		the matrix form (AX+B)@(AX+B).T = 1

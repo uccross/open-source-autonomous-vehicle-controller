@@ -47,7 +47,7 @@ class CalibParams:
 	"""
 	def __init__(self, A, B, R=None, scales=None):
 		self.A = A
-		self.B = B.reshape([3,1])
+		self.B = B.reshape([1,3])
 
 
 	@classmethod
@@ -55,7 +55,7 @@ class CalibParams:
 		"""
 		Converts implicit linear form of the ellipse to 
 		the matrix form (AX+B)@(AX+B).T = 1
-		and nitializes class using computed A & B
+		and initializes class using computed A & B
 
 		Args:
 			w: 9x1 matrix of implicit parameters of the ellipse
@@ -95,3 +95,8 @@ class CalibParams:
 			print("\nBias = ", B)
 		
 		return cls(A,B)
+
+	def correct(self, x_raw):
+		"""Calibrates x_raw and returns x_calib"""
+
+		return np.linalg.inv(self.A) @(x_raw - self.B).T

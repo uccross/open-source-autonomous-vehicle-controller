@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 
 import time, sys
 
+from utils import Imu, CalibParams
+
 
 class RecursiveLeastSquares():
 
@@ -17,8 +19,9 @@ class RecursiveLeastSquares():
 
 		self.P = P #Ideally: inverse of covariance matrix
 
-	def create_data_vector(self, vec3d):
-		
+	def create_data_vector(self, vec3d, normalizer = 1.0):
+		vec3d = vec3d/normalizer
+
 		vx, vy, vz = vec3d
 		vxx,vyy,vzz = vec3d*vec3d
 		vxy = vx*vy
@@ -211,25 +214,29 @@ def main(argv):
 
 
 	#Get final parameters (matrix form)
-	A,B = recover_params(w)
+	
+	params = CalibParams.from_implicit(w)
 
 
 	#Calculate intermaediate errors:
 	running_errors = []
 	for i in range(len(running_params)):
-		Ai, Bi = recover_params(running_params[i], verbose=False)
-		Xcal_i = np.linalg.inv(Ai)@(data_raw[i,:]-Bi)
+		params_i = CalibParams.from_implicit(running_params[i])
+		Xcal_i = params_i.correct(data_raw[i,:])
+
 		error = np.linalg.norm(Xcal_i)-1
 		running_errors.append(error)
 
 	#Caluclate total error
 
-	data_cal = np.linalg.inv(A)@(data_raw - B).T
+	data_cal = params.correct(data_raw)
+
 	errors = np.linalg.norm(data_cal.T,axis=1)-1
 	mse = (errors@ errors.T)/data_cal.shape[1]
+	
 	print("\nTotal MSE = ",mse, '\n')
-	print("\nA = ",np.linalg.inv(np.linalg.pinv(A)))
-	print("\nB =", B)
+	print("\nA = ",params.A)
+	print("\nB =", params.B)
 
 	#For drift/parameter change:
 	switch_index = int(data_cal.shape[1]/2)

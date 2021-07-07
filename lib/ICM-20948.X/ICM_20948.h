@@ -12,6 +12,7 @@
  * PUBLIC #INCLUDES                                                            *
  ******************************************************************************/
 #include <sys/types.h>
+#include <stdfix.h>
 #include "ICM_20948_registers.h"
 
 /*******************************************************************************
@@ -24,16 +25,16 @@
  * PUBLIC TYPEDEFS                                                             *
  ******************************************************************************/
 struct IMU_device {
-    int16_t x;
-    int16_t y;
-    int16_t z;
+    sat accum x;
+    sat accum y;
+    sat accum z;
 };
 
 struct IMU_output {
     struct IMU_device acc;
     struct IMU_device gyro;
     struct IMU_device mag;
-    int16_t temp;
+    sat accum temp;
     uint16_t mag_status;
 };
 
@@ -68,14 +69,24 @@ int8_t IMU_start_data_acq(void);
 uint8_t IMU_is_data_ready(void);
 
 /**
- * @Function IMU_get_data(void)
+ * @Function IMU_get_raw_data(void)
  * @return pointer to IMU_output struct 
- * @brief returns most current data from the IMU
+ * @brief returns most current (raw) data from the IMU
  * @note 
  * @author Aaron Hunter,
  **/
-uint8_t IMU_get_data(struct IMU_output* IMU_data);
-//struct IMU_output * IMU_get_data(void);
+uint8_t IMU_get_raw_data(struct IMU_output* IMU_data);
+
+/**
+ * @Function IMU_get_scaled_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief returns most current scaled data from the IMU
+ * @note 
+ * @author Aaron Hunter,
+ **/
+uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data);
+
+
 
 
 

@@ -51,6 +51,26 @@
 #define IMU_CS_TRIS TRISEbits.TRISE0 //chip select for IMU
 #define IMU_CS_LAT LATEbits.LATE0
 
+/*IMU scaling factors*/
+#define ACCEL_SCALE 2000  // +/-2000mg
+#define ACCEL_DIV 15 // 1/2^15
+#define GYRO_SCALE 500 // +/- 500 deg/sec
+#define GYRO_DIV 15 // 1/2^15
+#define MAG_SCALE 49000 //49000 mGauss FS
+#define MAG_DIV 15 // 1/2^15
+#define E_g 1000 // expected value of gravity in mG
+#define E_b 475 //expected value of earth's mag field in mGauss
+#define PI 3.141592653589793k
+#define DEG2MRAD 17.453292519943297k
+#define T_BIAS 0
+#define T_SENSE 333.87k
+#define T_OFFSET 21
+#define RAW 0
+#define SCALED 1
+
+/*lin alg constants*/
+#define MSZ 3
+
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *
  ******************************************************************************/
@@ -71,11 +91,56 @@ typedef enum {
 } IMU_SPI_SM_states_t;
 
 
+
+
 static uint8_t IMU_raw_data[IMU_NUM_BYTES];
-static struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//struct IMU_output* IMU_data_p = &IMU_data;
+static accum acc_v_raw[3] = {0, 0, 0};
+static accum acc_v_scaled[3] = {0, 0, 0};
+static accum acc_v_cald[3] = {0, 0, 0};
+static accum mag_v_raw[3] = {0, 0, 0};
+static accum mag_v_scaled[3] = {0, 0, 0};
+static accum mag_v_cald[3] = {0, 0, 0};
+static accum gyro_v_raw[3] = {0, 0, 0};
+static accum gyro_v_scaled[3] = {0, 0, 0};
+static accum gyro_v_cald[3] = {0, 0, 0};
+static accum temp_raw = 0;
+static accum temp_scaled = 0;
+static accum temp_cald = 0;
+static int16_t status = 0;
+
 
 static volatile uint8_t IMU_data_ready = 0;
+/* test values: mag cal from Dorveaux*/
+static float A_mag_fl[3][3] = {
+    {1.13203862, -0.00193396, 0.01600852},
+    {-0.00199679, 1.17777219, 0.001252},
+    {0.00742354, 0.01193132, 1.08211695}
+};
+
+static float b_mag_fl[3] = {-0.8959708, 0.08017001, 0.1556801};
+
+
+static accum A_mag_fx[3][3] = {
+    {1, 0, 0},
+    { 0, 1, 0},
+    { 0, 0, 1}
+};
+static accum b_mag_fx[3] = {0, 0, 0};
+//static accum b_mag_fx[3] = {-0.8959708, 0.08017001, 0.1556801};
+
+static accum A_acc_fx[3][3] = {
+    {1, 0, 0},
+    { 0, 1, 0},
+    { 0, 0, 1}
+};
+static accum b_acc_fx[3] = {0, 0, 0};
+
+static accum A_gyro_fx[3][3] = {
+    {1, 0, 0},
+    {0, 1, 0},
+    {0, 0, 1}
+};
+static accum b_gyro_fx[3] = {0, 0, 0};
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
@@ -105,7 +170,68 @@ void IMU_run_I2C_state_machine(void);
  * @author ahunter
  **/
 void IMU_run_SPI_state_machine(uint8_t byte_read);
-uint8_t IMU_process_data();
+
+/**
+ * @Function IMU_process_data(void)
+ * @param none
+ * @return SUCCESS or ERROR
+ * @brief converts raw register data into module variable data
+ * @note mag data has reversed byte order
+ * @author ahunter
+ * @modified  */
+uint8_t IMU_process_data(void);
+
+/**
+ * @Function IMU_assign_data_to_output(struct IMU_output* IMU_data);
+ * @param IMU_data, a struct with accel, gyro and mag values on 3 axes
+ * @return SUCCESS or ERROR
+ * @brief sets output struct to point module vector variables
+ * @author ahunter
+ * @modified  */
+uint8_t IMU_assign_data_to_output(struct IMU_output* IMU_data);
+
+/**
+ * @Function cal_to_fix(float A[3][3], b[3], accum * A_fx, accum* b_fx);
+ * @param A input float point matrix, b input float point vector 
+ * @brief sets the fixed point cal matrix to the float values
+ * @return SUCCESS or ERROR
+ */
+int8_t cal_to_fix(float A[3][3], float b[3], accum A_fx[3][3], accum b_fx[3]);
+
+/**
+ * @function m_v_mult()
+ * Multiplies a matrix with a vector
+ * @param m A matrix to be multiplied with a vector
+ * @param v A vector to be multiplied with a matrix
+ * @param v_out The product of the matrix and vector
+ * @return SUCCESS or ERROR
+ */
+uint8_t m_v_mult(accum m[MSZ][MSZ], accum v[MSZ], accum v_out[MSZ]);
+
+/**
+ * @function v_v_add()
+ * Add a vector value to a vector
+ * @param v1 Vector to add to another vector
+ * @param v2 Vector to have a vector added to it
+ * @param v_out Vector as sum of two vectors
+ */
+void v_v_add(accum v1[MSZ], accum v2[MSZ], accum v_out[MSZ]);
+
+/**
+ * @function m_scale()
+ * Scales matrix
+ * @param s Scalar to scale matrix with
+ * @param m Matrix to be scaled
+ */
+void m_scale(accum s, accum m[MSZ][MSZ]);
+
+/**
+ * @function v_scale()
+ * Scales matrix
+ * @param s Scalar to scale matrix with
+ * @param m Matrix to be scaled
+ */
+void v_scale(accum s, accum v[MSZ]);
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
  ******************************************************************************/
@@ -228,6 +354,7 @@ uint8_t IMU_init(char interface_mode) {
         SPI_set_reg(AGB3_REG_REG_BANK_SEL, USER_BANK_0);
         /*restart interrupts*/
         __builtin_enable_interrupts();
+        /*retrieve calibration matrices and vectors*/
     }
     return SUCCESS;
 }
@@ -271,28 +398,59 @@ uint8_t IMU_is_data_ready(void) {
 }
 
 /**
- * @Function IMU_get_data(void)
+ * @Function IMU_get_raw_data(void)
  * @return pointer to IMU_output struct 
- * @brief returns most current data from the IMU
+ * @brief returns most current (raw) data from the IMU
  * @note 
  * @author Aaron Hunter,
  * @modified  */
-//struct IMU_output* IMU_get_data(void) {
-//    IMU_process_data();
-//    IMU_data_ready = FALSE; //clear the data ready flag
-//    return IMU_data_p;
-//}
+uint8_t IMU_get_raw_data(struct IMU_output* IMU_data) {
+    /*only process data if it's new*/
+    if (IMU_data_ready == TRUE) {
+        IMU_process_data();
+        IMU_data_ready = FALSE; //clear the data ready flag
+    }
+    /* set output data to point at vector components*/
+    IMU_data->acc.x = acc_v_raw[0];
+    IMU_data->acc.y = acc_v_raw[1];
+    IMU_data->acc.z = acc_v_raw[2];
+    IMU_data->gyro.x = gyro_v_raw[0];
+    IMU_data->gyro.y = gyro_v_raw[1];
+    IMU_data->gyro.z = gyro_v_raw[2];
+    IMU_data->temp = temp_raw;
+    IMU_data->mag.x = mag_v_raw[0];
+    IMU_data->mag.y = mag_v_raw[1];
+    IMU_data->mag.z = mag_v_raw[2];
+    IMU_data->mag_status = status;
+    return SUCCESS;
+}
 
 /**
- * @Function IMU_get_data(void)
+ * @Function IMU_get_scaled_data(void)
  * @return pointer to IMU_output struct 
- * @brief returns most current data from the IMU
+ * @brief returns most current scaled data from the IMU
  * @note 
  * @author Aaron Hunter,
- * @modified  */
-uint8_t IMU_get_data(struct IMU_output* IMU_data) {
-    IMU_process_data(IMU_data);
-    IMU_data_ready = FALSE; //clear the data ready flag
+ **/
+uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data) {
+    int row;
+    /*get raw data and store in module vectors*/
+    if (IMU_data_ready == TRUE) {
+        IMU_process_data();
+        IMU_data_ready = FALSE; //clear the data ready flag
+    }
+    /* set output data to point at vector components*/
+    IMU_data->acc.x = acc_v_cald[0];
+    IMU_data->acc.y = acc_v_cald[1];
+    IMU_data->acc.z = acc_v_cald[2];
+    IMU_data->gyro.x = gyro_v_scaled[0];
+    IMU_data->gyro.y = gyro_v_scaled[1];
+    IMU_data->gyro.z = gyro_v_scaled[2];
+    IMU_data->temp = temp_scaled;
+    IMU_data->mag.x = mag_v_cald[0];
+    IMU_data->mag.y = mag_v_cald[1];
+    IMU_data->mag.z = mag_v_cald[2];
+    IMU_data->mag_status = status;
     return SUCCESS;
 }
 
@@ -720,27 +878,159 @@ void IMU_run_SPI_state_machine(uint8_t byte_read) {
 }
 
 /**
- * @Function IMU_process_data(struct IMU_output* IMU_data)
- * @param IMU_data, a struct with accel, gyro and mag values on 3 axes
+ * @Function IMU_process_data(void)
+ * @param none
  * @return SUCCESS or ERROR
- * @brief converts raw register data into IMU values for output
- * @note mag data has reversed endianness
+ * @brief converts raw register data into module variable data
+ * @note mag data has reversed byte order
  * @author ahunter
  * @modified  */
-uint8_t IMU_process_data(struct IMU_output* IMU_data) {
-    IMU_data->acc.x = IMU_raw_data[0] << 8 | IMU_raw_data[1];
-    IMU_data->acc.y = IMU_raw_data[2] << 8 | IMU_raw_data[3];
-    IMU_data->acc.z = IMU_raw_data[4] << 8 | IMU_raw_data[5];
-    IMU_data->gyro.x = IMU_raw_data[6] << 8 | IMU_raw_data[7];
-    IMU_data->gyro.y = IMU_raw_data[8] << 8 | IMU_raw_data[9];
-    IMU_data->gyro.z = IMU_raw_data[10] << 8 | IMU_raw_data[11];
-    IMU_data->temp = IMU_raw_data[12] << 8 | IMU_raw_data[13];
-    IMU_data->mag.x = IMU_raw_data[16] << 8 | IMU_raw_data[15];
-    IMU_data->mag.y = IMU_raw_data[18] << 8 | IMU_raw_data[17];
-    IMU_data->mag.z = IMU_raw_data[20] << 8 | IMU_raw_data[19];
+uint8_t IMU_process_data(void) {
+    int row;
+    /*store data in module vectors*/
+    /*data needs to be converted to short then cast as fixed point */
+    acc_v_raw[0] = (sat accum) (int16_t) (IMU_raw_data[0] << 8 | IMU_raw_data[1]);
+    acc_v_raw[1] = (sat accum) (int16_t) (IMU_raw_data[2] << 8 | IMU_raw_data[3]);
+    acc_v_raw[2] = (sat accum) (int16_t) (IMU_raw_data[4] << 8 | IMU_raw_data[5]);
+    gyro_v_raw[0] = (sat accum) (int16_t) (IMU_raw_data[6] << 8 | IMU_raw_data[7]);
+    gyro_v_raw[1] = (sat accum) (int16_t) (IMU_raw_data[8] << 8 | IMU_raw_data[9]);
+    gyro_v_raw[2] = (sat accum) (int16_t) (IMU_raw_data[10] << 8 | IMU_raw_data[11]);
+    temp_raw = (sat accum) (IMU_raw_data[12] << 8 | IMU_raw_data[13]);
+    //need to orient mag data to accel and gyros by rotating around x axis
+    mag_v_raw[0] = (sat accum) (int16_t) (IMU_raw_data[16] << 8 | IMU_raw_data[15]);
+    mag_v_raw[1] = (sat accum) (int16_t) ((IMU_raw_data[18] << 8 | IMU_raw_data[17])*-1);
+    mag_v_raw[2] = (sat accum) (int16_t) ((IMU_raw_data[20] << 8 | IMU_raw_data[19])*-1);
     /*status 1 is high byte and status 2 is low byte*/
-    IMU_data->mag_status = (IMU_raw_data[14] & 0x3) << 8 | (IMU_raw_data[22] & 0x4);
+    /*status 2 indicates mag overflow only*/
+    status = (IMU_raw_data[14] << 8 | IMU_raw_data[22] & 0x8);
+
+    /*calibrate raw data and store in scaled vectors*/
+    /*scale outputs */
+    for (row = 0; row < MSZ; row++) {
+        acc_v_scaled[row] = (acc_v_raw[row] >> ACCEL_DIV) * ACCEL_SCALE;
+        mag_v_scaled[row] = (mag_v_raw[row] >> MAG_DIV) * MAG_SCALE;
+        gyro_v_scaled[row] = (gyro_v_raw[row] >> GYRO_DIV) * GYRO_SCALE;
+    }
+    temp_scaled = (temp_raw - T_BIAS) / T_SENSE + T_OFFSET;
+    temp_cald = temp_scaled;
+    /* Calibrate sensors */
+    /* apply calibration matrix to scaled values */
+    m_v_mult(A_acc_fx, acc_v_scaled, acc_v_cald);
+    m_v_mult(A_mag_fx, mag_v_scaled, mag_v_cald);
+    m_v_mult(A_gyro_fx, gyro_v_scaled, gyro_v_cald);
+    /* apply offset calibration. scale mag and accelerometer into final units 
+     * first.  These are provided by calibration routines to be scaled by the
+     * Earth's mag and grav fields */
+    /*now add offsets to calibrated values*/
+    v_v_add(acc_v_cald, b_acc_fx, acc_v_cald);
+    v_v_add(mag_v_cald, b_mag_fx, mag_v_cald);
+    v_v_add(gyro_v_cald, b_gyro_fx, gyro_v_cald);
+
     return SUCCESS;
+}
+
+int8_t sensor_scale(accum sensor[MSZ], int scale) {
+
+}
+
+/**
+ * @Function cal_to_fix(float A[3][3], b[3], accum * A_fx, accum* b_fx);
+ * @param A input float point matrix, b input float point vector 
+ * @brief sets the fixed point cal matrix to the float values
+ * @return SUCCESS or ERROR
+ */
+int8_t cal_to_fix(float A[3][3], float b[3], accum A_fx[3][3], accum b_fx[3]) {
+    int row;
+    int col;
+    for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+            {
+                A_fx[row][col] = (accum) A[row][col];
+            }
+            b_fx[col] = (accum) b[col];
+        }
+    }
+    printf("\r\n-------------------------------------------------\r\n");
+    for (row = 0; row < 3; row++) {
+        for (col = 0; col < 3; col++) {
+            printf("| ");
+            {
+                printf("%f\t", (float) A_fx[row][col]);
+            }
+
+        }
+        printf("| %f\t|\r\n", (float) b_fx[row]);
+    }
+    printf("\r\n-------------------------------------------------\r\n");
+    return SUCCESS;
+}
+/*-----------LINEAR ALGEBRA routines----------------------------------------*/
+
+/**
+ * @function m_v_mult()
+ * Multiplies a matrix with a vector
+ * @param m A matrix to be multiplied with a vector
+ * @param v A vector to be multiplied with a matrix
+ * @param v_out The product of the matrix and vector
+ * @return SUCCESS or ERROR
+ */
+uint8_t m_v_mult(accum m[MSZ][MSZ], accum v[MSZ], accum v_out[MSZ]) {
+    int row;
+    int col;
+
+    for (row = 0; row < MSZ; row++) {
+        v_out[row] = 0;
+        for (col = 0; col < MSZ; col++) {
+            v_out[row] += m[row][col] * v[col];
+        }
+    }
+    return SUCCESS;
+}
+
+/**
+ * @function v_v_add()
+ * Add a vector value to a vector
+ * @param v1 Vector to add to another vector
+ * @param v2 Vector to have a vector added to it
+ * @param v_out Vector as sum of two vectors
+ */
+void v_v_add(accum v1[MSZ], accum v2[MSZ], accum v_out[MSZ]) {
+    int row;
+
+    for (row = 0; row < MSZ; row++) {
+        v_out[row] = v1[row] + v2[row];
+    }
+}
+
+/**
+ * @function m_scale()
+ * Scales matrix
+ * @param s Scalar to scale matrix with
+ * @param m Matrix to be scaled
+ */
+void m_scale(accum s, accum m[MSZ][MSZ]) {
+    int row;
+    int col;
+
+    for (row = 0; row < MSZ; row++) {
+        for (col = 0; col < MSZ; col++) {
+            m[row][col] *= s;
+        }
+    }
+}
+
+/**
+ * @function v_scale()
+ * Scales vector
+ * @param s Scalar to scale matrix with
+ * @param m Matrix to be scaled
+ */
+void v_scale(accum s, accum v[MSZ]) {
+    int row;
+
+    for (row = 0; row < MSZ; row++) {
+        v[row] *= s;
+    }
 }
 
 #ifdef ICM_TESTING
@@ -749,7 +1039,8 @@ int main(void) {
     int value = 0;
     int i;
     int IMU_err = 0;
-    struct IMU_output* p_data;
+    struct IMU_output IMU_data_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    struct IMU_output IMU_data_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
     Board_init();
     Serial_init();
@@ -768,16 +1059,31 @@ int main(void) {
         printf("\r\nSensor failed init!\r\n");
         while (1);
     }
+    /*move these calculations to init() function as well as retrieve data from EEPROM*/
+    cal_to_fix(A_mag_fl, b_mag_fl, A_mag_fx, b_mag_fx);
+    /*scale offset vectors to engineering units*/
+    v_scale(E_g, b_acc_fx);
+    v_scale(E_b, b_mag_fx);
+    /*there is no expected value for gyros, so take measured offsets and scale
+     * them into DPS*/
+    v_scale(GYRO_SCALE, b_gyro_fx);
+    /*------------------------------------------------------------------------*/
 
     while (1) {
         IMU_start_data_acq();
         if (IMU_is_data_ready() == TRUE) {
-            IMU_get_data(&IMU_data);
-            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d\r\n",
-                    IMU_data.acc.x, IMU_data.acc.y, IMU_data.acc.z,
-                    IMU_data.gyro.x, IMU_data.gyro.y, IMU_data.gyro.z,
-                    IMU_data.mag.x, IMU_data.mag.y, IMU_data.mag.z,
-                    IMU_data.temp, IMU_data.mag_status);
+            IMU_get_raw_data(&IMU_data_raw);
+            //            printf("%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%x\r\n",
+            //                    (float) IMU_data_raw.acc.x, (float) IMU_data_raw.acc.y, (float) IMU_data_raw.acc.z,
+            //                    (float) IMU_data_raw.gyro.x, (float) IMU_data_raw.gyro.y, (float) IMU_data_raw.gyro.z,
+            //                    (float) IMU_data_raw.mag.x, (float) IMU_data_raw.mag.y, (float) IMU_data_raw.mag.z,
+            //                    (float) IMU_data_raw.temp, IMU_data_raw.mag_status);
+            IMU_get_scaled_data(&IMU_data_scaled);
+            printf("%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%x\r\n",
+                    (float) IMU_data_scaled.acc.x, (float) IMU_data_scaled.acc.y, (float) IMU_data_scaled.acc.z,
+                    (float) IMU_data_scaled.gyro.x, (float) IMU_data_scaled.gyro.y, (float) IMU_data_scaled.gyro.z,
+                    (float) (IMU_data_scaled.mag.x), (float) (IMU_data_scaled.mag.y), (float) (IMU_data_scaled.mag.z),
+                    (float) IMU_data_scaled.temp, IMU_data_scaled.mag_status);
         }
         /*delay to not overwhelm the serial port*/
         for (i = 0; i < 500000; i++) {

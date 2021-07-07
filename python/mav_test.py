@@ -35,18 +35,18 @@ print("Starting application\n")
 master = mavutil.mavlink_connection("COM5", baud=57600)
 master.wait_heartbeat()
 print('target_system {}, target component {} \n'.format(master.target_system,master.target_component))
-msg = None
-num_points = 500
-file = 'gyro_rotation_data.csv'
+# msg = None
+# num_points = 500
+# file = 'gyro_rotation_data.csv'
 
-param_id = b'A11\0'
-master.mav.param_request_read_send(master.target_system,master.target_component, param_id, -1)
+# param_id = b'A11\0'
+# master.mav.param_request_read_send(master.target_system,master.target_component, param_id, -1)
 
-try:
-    msg = master.recv_match(type = 'PARAM_VALUE', blocking = True)
-    print(msg)
-except:
-    print("msg type exception") 
+# try:
+#     msg = master.recv_match(type = 'PARAM_VALUE', blocking = True)
+#     print(msg)
+# except:
+#     print("msg type exception") 
 
 #mav_print_imu()
 

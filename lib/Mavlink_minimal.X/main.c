@@ -150,7 +150,7 @@ void publish_parameter(uint8_t param_id[16]);
  */
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
-        IMU_get_data(&IMU_data);
+        IMU_get_raw_data(&IMU_data);
         publish_IMU_data();
     }
 }

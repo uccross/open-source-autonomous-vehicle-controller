@@ -6,6 +6,7 @@ import sys, yaml
 from utils import Imu, CalibParams
 from plot_stats import Stats
 from recursive_least_squares import RecursiveLeastSquares
+import mavlink_msgs as mav
 
 #Import Parameters from yaml
 
@@ -17,6 +18,10 @@ mfe = dict_config['magnetic']	#Magnetic Field Earth
 
 delta_t = 1.0/dict_config['freq']
 theta_calc_prev = None
+
+#Mavlink parameters
+baud_rate = dict_config['baud']
+port = dict_config['port']
 
 #RLS parameters
 w_initial = None
@@ -31,12 +36,15 @@ rls_gyro = RecursiveLeastSquares(lambda_, w_initial, P_initial)
 
 stats = Stats()
 
-#Get data continuously
+#Initialize mavlink channel
+channel = mav.Channel(port, baud_rate)
+
+#Recv & calibrate data continuously
 
 while True:
 
 	#Function to get Imu data
-	#(GPIO or Sim)
+	#Using channel.recv()
 	#ToDo
 
 	#Create Imu object
@@ -59,28 +67,23 @@ while True:
 	mag_calib = p_mag.correct(raw.mag)
 	
 	#Extra steps for gyro
-	theta_calc_curr = np.cross(acc_calib, mag_calib) #May need transpose; may be in degrees
-	if theta_calc_prev == None:
-		#Skip gyro calib for first reading
-		gyro_calib = raw.gyro
-	else:
-		delta_theta = np.arccos(theta_calc_curr.T @theta_calc_prev) #May need transpose
-		x_gyro = raw.gyro * delta_t
 
-		#RLS for gyro
-		gyro_vec = rls_gyro.create_data_vector(x_gyro, delta_theta)
-		w_gyro = rls_gyro.step(gyro_vec)
-		p_gyro_temp = CalibParams.from_implicit(w_gyro)
-		p_gyro = CalibParams(p_gyro_temp.A/np.sqrt(delta_theta), p_gyro_temp.B/delta_theta)
+	delta_theta = None #ToDo: From GPS COD
+	x_gyro = raw.gyro * delta_t
 
-		#Correct gyro
-		gyro_calib = p_gyro.correct(raw.gyro)
+	#RLS for gyro
+	gyro_vec = rls_gyro.create_data_vector(x_gyro, delta_theta)
+	w_gyro = rls_gyro.step(gyro_vec)
+	p_gyro_temp = CalibParams.from_implicit(w_gyro)
+	p_gyro = CalibParams(p_gyro_temp.A/np.sqrt(delta_theta), p_gyro_temp.B/delta_theta)
+
+	#Correct gyro
+	gyro_calib = p_gyro.correct(raw.gyro)
 
 	#Calibrate
 	calib = raw.calibrate(p_acc, p_gyro, p_mag)
 
 	#Update & plot stats
-	theta_calc_prev = theta_calc_curr
 	stats.append(raw, calib)
 	if not stats.num_measurements%20:
 		stats.plot_rt()

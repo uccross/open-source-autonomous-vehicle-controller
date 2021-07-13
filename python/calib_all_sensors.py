@@ -44,10 +44,12 @@ channel = mav.Channel(port, baud_rate)
 while True:
 
 	#Function to get Imu data
-	#Using channel.recv()
-	#ToDo
+	bool_imu, imu_raw = channel.recv_imu()
+	while not bool_imu:
+		print("Waiting for IMU")
+		bool_imu, imu_raw = channel.recv_imu()
 
-	#Create Imu object
+	#Create Imu object using imu_raw attributes
 	raw = Imu(None)
 
 	#Use control input for g (if needed)
@@ -67,8 +69,13 @@ while True:
 	mag_calib = p_mag.correct(raw.mag)
 	
 	#Extra steps for gyro
-
-	delta_theta = None #ToDo: From GPS COD
+	bool_gps, gps_raw = channel.recv_gps()
+	if not bool_gps:
+		#Todo: interpolate GPS heading
+		gps_raw = None
+	#Todo: Get COD
+	#Todo: Use filter to get orientation
+	delta_theta = None 
 	x_gyro = raw.gyro * delta_t
 
 	#RLS for gyro

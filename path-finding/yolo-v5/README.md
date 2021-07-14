@@ -1,6 +1,6 @@
 ## <div align="center">Cone Detection on Raspberry Pi using Yolov5</div>
 Code for detecting cones on Raspberry Pi using the [Yolov5](https://github.com/ultralytics/yolov5) algorithm. <br>
-For starters, we will begin by simply yolov5-pytorch inference on the Raspberry-Pi<br>
+For starters, we will begin by yolov5-pytorch inference on the Raspberry-Pi<br>
 
 ```bash
 $ git clone https://github.com/uccross/open-source-autonomous-vehicle-controller

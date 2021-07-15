@@ -5,7 +5,6 @@ For starters, we will begin by yolov5-pytorch inference on the Raspberry-Pi<br>
 ```bash
 $ git clone https://github.com/uccross/open-source-autonomous-vehicle-controller
 $ git checkout dev_path-finding
-$ pip install -r requirements.txt
 ```
 From ```path-finding``` folder copy the yolov5 folder on the desired location.<br>
 

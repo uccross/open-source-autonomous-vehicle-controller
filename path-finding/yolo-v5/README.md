@@ -11,6 +11,7 @@ From ```path-finding``` folder copy the yolov5 folder on the desired location.<b
 ```bash
 $ conda create --name test python=3.7
 $ conda activate test
+$ cd yolo-v5
 $ pip install -r requirements.txt
 ```
 Now, yolov5 model is installed in the device. We are ready for inference.<br>

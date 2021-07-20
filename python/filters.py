@@ -10,7 +10,7 @@ static_filters = {'DAVEN':ahrs.filters.davenport.Davenport ,\
 					'FQA':ahrs.filters.fqa.FQA ,\
 					'OLEQ':ahrs.filters.OLEQ ,\
 					'QUEST':ahrs.filters.quest.QUEST ,\
-					#'ROLEQ':ahrs.filters.ROLEQ \
+					#'ROLEQ':ahrs.filters.ROLEQ, \
 					'SAAM':ahrs.filters.SAAM ,\
 					'TILT':ahrs.filters.Tilt ,\
 					'TRIAD':ahrs.filters.TRIAD \
@@ -43,11 +43,20 @@ def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False):
 
 #Test
 if __name__ == "__main__":
-	mag = np.array([0.004, 0.002, 0.001])
-	acc = np.array([0.001, -9.823, 0.12])
+	acc1 = np.array([34, 188, 16615])
+	mag1 = np.array([79, 156, 418])
 
+	acc2 = np.array([-10, 195, 16536])
+	mag2 = np.array([84, 165, 420])
+
+	#print("Mag: ",mag,"\nAcc: ",acc)
+
+	print("\nAngular velocity (radians/s) -")
 	for key in static_filters:
 		try:
-			print(key+": ", estimate_orientation(key, acc, mag, as_angles=True))
+			theta1 = estimate_orientation(key, acc1, mag1, as_angles=True)#*180/np.pi
+			theta2 = estimate_orientation(key, acc2, mag2, as_angles=True)#*180/np.pi
+			print(key+": ", (theta2-theta1)/20097e-6)
 		except:
-			print(key+": ERROR")
+			pass
+			#print(key+": ERROR")

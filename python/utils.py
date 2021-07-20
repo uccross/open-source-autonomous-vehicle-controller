@@ -12,7 +12,7 @@ class Imu:
 	Single IMU reading"
 	"""
 
-	def __init__(self, values):
+	def __init__(self, values, timestamp=None):
 		"""
 		values: 9d vector
 		[ax ay az gx gy gz mx my mz]
@@ -21,11 +21,13 @@ class Imu:
 		self.gyro = np.array(values[3:6]).reshape([3,1])
 		self.mag = np.array(values[6:9]).reshape([3,1])
 
+		self.stamp = timestamp
+
 
 	def vec9d(self):
 		return np.array([*self.acc, *self.gyro, *self.mag]).reshape([1,9])
 
-	def calibrate(p_acc, p_gyro, p_mag):
+	def calibrate(self, p_acc, p_gyro, p_mag):
 		"""
 		Calibrates an IMU measurement using known parameters
 		Args:
@@ -33,9 +35,9 @@ class Imu:
 
 		Reurns: Imu object of calibrated measurements
 		"""
-		xcal_acc = np.linalg.inv(p_acc.A) @(self.acc - p_acc.B)
-		xcal_gyro = np.linalg.inv(p_gyro.A) @(self.gyro - p_gyro.B)
-		xcal_mag = np.linalg.inv(p_mag.A) @(self.mag - p_mag.B)
+		xcal_acc = np.linalg.inv(p_acc.A) @(self.acc - p_acc.B.T)
+		xcal_gyro = np.linalg.inv(p_gyro.A) @(self.gyro - p_gyro.B.T)
+		xcal_mag = np.linalg.inv(p_mag.A) @(self.mag - p_mag.B.T)
 
 		return Imu([*xcal_acc, *xcal_gyro, *xcal_mag])
 

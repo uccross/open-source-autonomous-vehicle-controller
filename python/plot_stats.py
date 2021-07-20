@@ -102,8 +102,9 @@ class Stats:
 		
 		pass
 
-	def show_stats(self):
-		pass
+	def show(self):
+
+		print("MSE: ", self.mse, "Var: ", self.var)
 
 
 

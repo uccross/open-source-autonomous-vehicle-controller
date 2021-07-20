@@ -60,14 +60,18 @@
 #define MAG_SCALE 49000 //49000 mGauss FS
 #define MAG_DIV 15 // 1/2^15
 #define E_g 1000 // expected value of gravity in mG
-#define E_b 475 //expected value of earth's mag field in mGauss
+#define G2MSS 9.80665k/1000 //conversion from g to m/s/s
 #define PI 3.141592653589793k
-#define DEG2MRAD 17.453292519943297k
+#define DEG2RAD 0.017453292519943295k //conversion from degrees to rad
+#define DEG2MRAD  17.453292519943297k //conversion from degrees to mrad
+#define E_b 475 //expected value of earth's mag field in mGauss
+#define MG2GAUSS 1/1000k  //milliGauss to Gauss
 #define T_BIAS 0
 #define T_SENSE 333.87k
 #define T_OFFSET 21
 #define RAW 0
 #define SCALED 1
+#define HIGHRES 2
 
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *
@@ -980,7 +984,10 @@ static uint8_t IMU_process_data(void) {
     v_v_add(acc_v_cald, b_acc, acc_v_cald);
     v_v_add(mag_v_cald, b_mag, mag_v_cald);
     v_v_add(gyro_v_cald, b_gyro, gyro_v_cald);
-
+    /*calculate the high resolution values*/
+    v_scale(G2MSS,acc_v_cald);
+    v_scale(MG2GAUSS,mag_v_cald);
+    v_scale(DEG2MRAD, gyro_v_cald);
     return SUCCESS;
 }
 

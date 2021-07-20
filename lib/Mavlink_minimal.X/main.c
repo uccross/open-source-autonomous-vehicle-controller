@@ -38,6 +38,8 @@
 #define RAD2DEG 180.0/M_PI
 #define DEG2RAD M_PI/180.0
 #define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
+#define RAW 1
+#define SCALED 2
 
 
 /*******************************************************************************
@@ -50,7 +52,8 @@ mavlink_system_t mavlink_system = {
 static struct GPS_data GPS_data;
 RCRX_channel_buffer RC_channels[CHANNELS];
 
-struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for IMU data
+struct IMU_output IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
+struct IMU_output IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 encoder_t encoder_data[NUM_ENCODERS];
 
 /*******************************************************************************
@@ -101,11 +104,11 @@ void check_GPS_events(void);
 
 /**
  * @function publish_IMU_data()
- * @param none
+ * @param data_type RAW or SCALED
  * @brief reads module level IMU data and publishes over radio serial in Mavlink
  * @author Aaron Hunter
  */
-void publish_IMU_data(void);
+void publish_IMU_data(uint8_t data_type);
 /**
  * @Function publish_encoder_data()
  * @param none
@@ -150,8 +153,10 @@ void publish_parameter(uint8_t param_id[16]);
  */
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
-        IMU_get_raw_data(&IMU_data);
-        publish_IMU_data();
+//        IMU_get_raw_data(&IMU_raw);
+//        publish_IMU_data(RAW);
+        IMU_get_scaled_data(&IMU_scaled);
+        publish_IMU_data(SCALED);
     }
 }
 
@@ -234,13 +239,12 @@ void check_radio_events(void) {
                     publish_parameter(param_read.param_id);
                     break;
                 default:
-                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", 
+                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n",
                             msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
                     break;
             }
     }
 }
-
 
 /**
  * @function check_GPS_events(void)
@@ -263,28 +267,51 @@ void check_GPS_events(void) {
  * @brief reads module level IMU data and publishes over radio serial in Mavlink
  * @author Aaron Hunter
  */
-void publish_IMU_data(void) {
+void publish_IMU_data(uint8_t data_type) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
     uint8_t IMU_id = 0;
-    mavlink_msg_raw_imu_pack(mavlink_system.sysid,
-            mavlink_system.compid,
-            &msg_tx,
-            Sys_timer_get_usec(),
-            IMU_data.acc.x,
-            IMU_data.acc.y,
-            IMU_data.acc.z,
-            IMU_data.gyro.x,
-            IMU_data.gyro.y,
-            IMU_data.gyro.z,
-            IMU_data.mag.x,
-            IMU_data.mag.y,
-            IMU_data.mag.z,
-            IMU_id,
-            IMU_data.temp
-            );
+    if (data_type == RAW) {
+        mavlink_msg_raw_imu_pack(mavlink_system.sysid,
+                mavlink_system.compid,
+                &msg_tx,
+                Sys_timer_get_usec(),
+                (int16_t) IMU_raw.acc.x,
+                (int16_t) IMU_raw.acc.y,
+                (int16_t) IMU_raw.acc.z,
+                (int16_t) IMU_raw.gyro.x,
+                (int16_t) IMU_raw.gyro.y,
+                (int16_t) IMU_raw.gyro.z,
+                (int16_t) IMU_raw.mag.x,
+                (int16_t) IMU_raw.mag.y,
+                (int16_t) IMU_raw.mag.z,
+                IMU_id,
+                (int16_t) IMU_raw.temp
+                );
+    } else if (data_type == SCALED) {
+        mavlink_msg_highres_imu_pack(mavlink_system.sysid,
+                mavlink_system.compid,
+                &msg_tx,
+                Sys_timer_get_usec(),
+                (float) IMU_scaled.acc.x,
+                (float) IMU_scaled.acc.y,
+                (float) IMU_scaled.acc.z,
+                (float) IMU_scaled.gyro.x,
+                (float) IMU_scaled.gyro.y,
+                (float) IMU_scaled.gyro.z,
+                (float) IMU_scaled.mag.x,
+                (float) IMU_scaled.mag.y,
+                (float) IMU_scaled.mag.z,
+                0.0, //no pressure
+                0.0, //no diff pressure
+                0.0, //no pressure altitude
+                (float) IMU_scaled.temp,
+                0, //bitfields updated
+                IMU_id
+                );
+    }
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);

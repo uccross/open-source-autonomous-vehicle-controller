@@ -50,6 +50,7 @@ class Stats:
 		e = np.array([e_acc,e_gyro,e_mag]).reshape([1,3])
 
 		self.errors = np.concatenate((self.errors, e), axis=0)
+		#self.mse = np.linalg.norm(self.errors[1:,:]**2, axis=0)/(self.num_measurements+1)
 		self.mse = (self.mse*self.num_measurements + e*e)/(self.num_measurements+1)
 		self.var = np.var(self.errors[1:,:], axis=0)
 
@@ -65,13 +66,13 @@ class Stats:
 		num_bins = 40
 		
 		self.ax[0,0].clear()
-		self.ax[0,0].plot(np.convolve(self.errors[1:,0], np.ones(num_vals), 'valid')/num_vals)
+		self.ax[0,0].plot(np.convolve(self.errors[1:,0]**2, np.ones(num_vals), 'valid')/num_vals)
 
 		self.ax[1,0].clear()
-		self.ax[1,0].plot(np.convolve(self.errors[1:,1], np.ones(num_vals), 'valid')/num_vals)
+		self.ax[1,0].plot(np.convolve(self.errors[1:,1]**2, np.ones(num_vals), 'valid')/num_vals)
 
 		self.ax[2,0].clear()
-		self.ax[2,0].plot(np.convolve(self.errors[1:,2], np.ones(num_vals), 'valid')/num_vals)
+		self.ax[2,0].plot(np.convolve(self.errors[1:,2]**2, np.ones(num_vals), 'valid')/num_vals)
 		
 		#Show current MSE
 		self.ax[0,0].set_title("MSE (Accelerometer) = " +str(round(self.mse[0,0],4)))
@@ -99,7 +100,7 @@ class Stats:
 		#Second plot: calib measurements
 
 		#show
-		
+		plt.pause(0.00001)
 		pass
 
 	def show(self):

@@ -10,7 +10,7 @@ filename = sys.argv[1]
 
 df_raw = pd.read_csv(filename)
 
-data_raw = df_raw.values
+data_raw = df_raw.values[:1900,:]/2**14
 
 #Dorveaux calibration (copy pasted from Aaron's code)
 

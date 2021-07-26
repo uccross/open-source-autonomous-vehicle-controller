@@ -15,6 +15,7 @@ class RecursiveLeastSquares():
 
 		
 		self.w = w_initial #Ideally from initial batch
+		self.w_prev = w_initial	#For restoring params if not ellipsoid
 
 
 		self.P = P #Ideally: inverse of covariance matrix
@@ -34,6 +35,7 @@ class RecursiveLeastSquares():
 
 	def step(self, xi, d=1):
 		"""Runs a single iteration of RLS"""
+		self.w_prev = self.w
 
 		xi = xi.reshape([self.m,1])
 
@@ -45,6 +47,10 @@ class RecursiveLeastSquares():
 		self.P = self.P/self.lambda_ - gain@xi.T @self.P/self.lambda_
 		self.w = self.w + alpha_*gain
 
+		return self.w
+
+	def restore(self):
+		self.w = self.w_prev
 		return self.w
 
 
@@ -186,7 +192,7 @@ def main(argv):
 
 	#RLS Initialization
 
-	#w = np.random.rand(m,1)
+	#w = np.zeros([m,1])
 	P = np.linalg.pinv(del_*np.cov(x.T))#x.T@ x#np.eye(m)
 	d = 1 #Always
 
@@ -213,20 +219,27 @@ def main(argv):
 
 
 
-	#Get final parameters (matrix form)
-	
-	params = CalibParams.from_implicit(w)
-
+	last_valid_params = None
 
 	#Calculate intermaediate errors:
 	running_errors = []
 	for i in range(len(running_params)):
-		params_i = CalibParams.from_implicit(running_params[i])
+		try:
+			params_i = CalibParams.from_implicit(running_params[i])
+		except:
+			continue
 		Xcal_i = params_i.correct(data_raw[i,:])
 
 		error = np.linalg.norm(Xcal_i)-1
 		running_errors.append(error)
 
+		last_valid_params = running_params[i] #For debugging
+	
+
+	#Get final parameters (matrix form)
+	
+	params = CalibParams.from_implicit(last_valid_params)#CalibParams.from_implicit(w)
+	
 	#Caluclate total error
 
 	data_cal = params.correct(data_raw)

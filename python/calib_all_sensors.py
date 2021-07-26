@@ -25,7 +25,7 @@ baud_rate = dict_config['baud']
 port = dict_config['port']
 
 #RLS parameters
-w_initial = np.random.randn(9,1)	#Get from initial batch
+w_initial = np.zeros([9,1])	#Get from initial batch
 P_initial = np.eye(9)
 lambda_ = dict_config['lambda']
 
@@ -69,11 +69,21 @@ while True:
 	#RLS Iteration for acc & mag
 	acc_vec = rls_acc.create_data_vector(raw.acc, g)#Change g to g+ctrl
 	w_acc = rls_acc.step(acc_vec)
-	p_acc = CalibParams.from_implicit(w_acc)
+	try:
+		p_acc = CalibParams.from_implicit(w_acc)
+	except:
+		w_acc = rls_acc.restore()
+		p_acc = CalibParams.from_implicit(w_acc)
 	
 	mag_vec = rls_mag.create_data_vector(raw.mag, mfe)
 	w_mag = rls_mag.step(mag_vec)
-	p_mag = CalibParams.from_implicit(w_mag)
+	
+	try:
+		p_mag = CalibParams.from_implicit(w_mag)
+	except:
+		w_mag = rls_mag.restore()
+		p_mag = CalibParams.from_implicit(w_mag)
+
 
 	#Correct magnetometer and accelerometer
 	acc_calib = p_acc.correct(raw.acc)
@@ -112,6 +122,7 @@ while True:
 	
 	if not stats.num_measurements%20:
 		pass
-		#stats.plot_rt()
+		stats.plot_rt()
 		print(raw.acc,calib.acc)
 		stats.show()
+plt.show()

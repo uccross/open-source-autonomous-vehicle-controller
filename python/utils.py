@@ -41,7 +41,7 @@ class Imu:
 
 		return Imu([*xcal_acc, *xcal_gyro, *xcal_mag])
 
-
+debug=0
 #
 class CalibParams:
 	"""
@@ -62,6 +62,7 @@ class CalibParams:
 		Args:
 			w: 9x1 matrix of implicit parameters of the ellipse
 		"""
+		global debug
 		w = w.reshape([9,])
 
 		#Matrix form of ellipse
@@ -84,7 +85,15 @@ class CalibParams:
 		#Recover Rotation and Scales
 		rearrange = np.array([[0,0,1], [1,0,0],[0,1,0]]) #Temporary workaround for axis rearrange
 		R = -eig_vecs @ rearrange
+
+		
 		scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
+		if  np.sum(np.isnan(scales)):
+			print(Q2[3,3]>=0 and np.product(eig_vals<0) or Q2[3,3]<=0 and np.product(eig_vals>0))
+			debug +=1
+			print(debug)
+			raise Exception('Complex scales -- Not an Ellipsoid')
+			return None
 
 		#Recover A
 		A = R@ np.diag(scales) @R.T

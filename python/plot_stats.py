@@ -30,7 +30,7 @@ class Stats:
 
 		#Temporary (load globally from yaml later)
 		self.gravity = 9.799
-		self.magnetic = 0.4749 #Gauss
+		self.magnetic = 0.57#0.4749 #Gauss
 		self.attitude = None #Gyro: Not implemented yet
 
 		self.fig, self.ax = plt.subplots(3,2)
@@ -50,8 +50,10 @@ class Stats:
 		e = np.array([e_acc,e_gyro,e_mag]).reshape([1,3])
 
 		self.errors = np.concatenate((self.errors, e), axis=0)
-		#self.mse = np.linalg.norm(self.errors[1:,:]**2, axis=0)/(self.num_measurements+1)
-		self.mse = (self.mse*self.num_measurements + e*e)/(self.num_measurements+1)
+
+		#Update stats
+		self.mse = e**2
+		#self.mse = (self.mse*self.num_measurements + e*e)/(self.num_measurements+1)
 		self.var = np.var(self.errors[1:,:], axis=0)
 
 		self.num_measurements +=1
@@ -63,16 +65,20 @@ class Stats:
 
 		#Plot rolling averages
 		num_vals = 40 #Average of 40 values
-		num_bins = 40
+		if self.num_measurements < num_vals:
+			return 
+		max_prev = 1000 #Plot these many previous values
+
+		x_labels = np.arange(max(0, self.num_measurements-max_prev+1), self.num_measurements-num_vals+2)
 		
 		self.ax[0,0].clear()
-		self.ax[0,0].plot(np.convolve(self.errors[1:,0]**2, np.ones(num_vals), 'valid')/num_vals)
+		self.ax[0,0].plot(x_labels, np.convolve(self.errors[-max_prev:,0]**2, np.ones(num_vals), 'valid')/num_vals)
 
 		self.ax[1,0].clear()
-		self.ax[1,0].plot(np.convolve(self.errors[1:,1]**2, np.ones(num_vals), 'valid')/num_vals)
+		self.ax[1,0].plot(x_labels, np.convolve(self.errors[-max_prev:,1]**2, np.ones(num_vals), 'valid')/num_vals)
 
 		self.ax[2,0].clear()
-		self.ax[2,0].plot(np.convolve(self.errors[1:,2]**2, np.ones(num_vals), 'valid')/num_vals)
+		self.ax[2,0].plot(x_labels, np.convolve(self.errors[-max_prev:,2]**2, np.ones(num_vals), 'valid')/num_vals)
 		
 		#Show current MSE
 		self.ax[0,0].set_title("MSE (Accelerometer) = " +str(round(self.mse[0,0],4)))
@@ -81,26 +87,29 @@ class Stats:
 
 
 		#Plot histograms
+		num_bins = 40
+		max_errors = 1000 #Plot these many previous values
+
 		self.ax[0,1].clear()
 		self.ax[0,1].set_title("Error distribution: Accelerometer, " \
-								+"Variance = "+str(np.round(np.var(self.errors[1:,0]),10)))
+								+"Variance = "+str(np.round(np.var(self.errors[-max_errors:,0]),10)))
 		self.ax[0,1].hist(self.errors[1:,0], num_bins)
 
 		self.ax[1,1].clear()
 		self.ax[1,1].set_title("Error distribution: Gyroscope, "\
-								+"Variance = "+str(np.round(np.var(self.errors[1:,1]),10)))
+								+"Variance = "+str(np.round(np.var(self.errors[-max_errors:,1]),10)))
 
 		self.ax[1,1].hist(self.errors[1:,1], num_bins)
 
 		self.ax[2,1].clear()
 		self.ax[2,1].set_title("Error distribution: Magnetometer, "\
-								+"Variance = "+str(np.round(np.var(self.errors[1:,2]),10)))
+								+"Variance = "+str(np.round(np.var(self.errors[-max_errors:,2]),10)))
 		self.ax[2,1].hist(self.errors[1:,2], num_bins)
 
 		#Second plot: calib measurements
 
 		#show
-		plt.pause(0.00001)
+		plt.pause(1e-9)
 		pass
 
 	def show(self):

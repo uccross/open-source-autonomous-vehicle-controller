@@ -42,7 +42,7 @@ stats = Stats()
 
 #Temporary code for testing:
 test_utils.get_next_meas.index = 1
-df_imu = pd.read_csv('tests/imu_raw/test_data.csv', header=None)
+df_imu = pd.read_csv(sys.argv[1], header=None)
 
 #Recv & calibrate data continuously
 while True:

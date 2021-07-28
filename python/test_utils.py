@@ -18,9 +18,9 @@ def get_next_meas(df_imu):
 
 	fs = 2**15
 
-	acc = df_imu.loc[get_next_meas.index, 2:4].to_numpy(dtype=np.float32)*2*9.80665/fs
-	gyro = df_imu.loc[get_next_meas.index, 5:7].to_numpy(dtype=np.float32)*(500*np.pi/180)/fs
-	mag = df_imu.loc[get_next_meas.index, 8:10].to_numpy(dtype=np.float32)*0.0049/fs
+	acc = df_imu.loc[get_next_meas.index, 2:4].to_numpy(dtype=np.float32)#*2*9.80665/fs
+	gyro = df_imu.loc[get_next_meas.index, 5:7].to_numpy(dtype=np.float32)#*(500*np.pi/180)/fs
+	mag = df_imu.loc[get_next_meas.index, 8:10].to_numpy(dtype=np.float32)#*0.0049/fs
 
 	values = acc.tolist() + gyro.tolist() + mag.tolist()
 

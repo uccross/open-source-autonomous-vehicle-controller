@@ -145,7 +145,8 @@ def main(argv):
 	#Read raw data
 	filename = argv[1]
 	df_raw = pd.read_csv(filename)
-	data_raw = df_raw.values[:]
+	normalizer = 9.8
+	data_raw = df_raw.values[:]/normalizer
 
 
 	#Create data vector
@@ -173,7 +174,7 @@ def main(argv):
 
 	"""
 	#Batch calibration parameters
-	initial_batch_size = 200
+	initial_batch_size = 40
 	use_batch_only = False
 	xi = x[:initial_batch_size,:]
 

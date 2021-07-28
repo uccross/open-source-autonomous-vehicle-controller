@@ -1,7 +1,7 @@
 #Physical constants
 
 gravity: 9.7989 #m/s^2 (Santa Cruz)
-magnetic: 0.4749 #Gauss (Santa Cruz)
+magnetic: 0.57 #0.4749 #Gauss (Santa Cruz)
 
 #IMU specifications
 freq: 100 #Hz

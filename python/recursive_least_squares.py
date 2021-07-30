@@ -193,7 +193,7 @@ def main(argv):
 
 	#RLS Initialization
 
-	#w = np.zeros([m,1])
+	w = np.zeros([m,1])
 	P = np.linalg.pinv(del_*np.cov(x.T))#x.T@ x#np.eye(m)
 	d = 1 #Always
 

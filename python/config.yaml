@@ -17,3 +17,9 @@ del: 1.0
 
 use_initial_batch: False
 initial_batch_size: 200
+
+#Screening
+
+use_tolerance: True
+acc_tolerance: 5 #Percent
+mag_tolerance: 15 #Percent

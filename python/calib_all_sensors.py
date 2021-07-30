@@ -16,6 +16,9 @@ dict_config = yaml.safe_load(f)
 
 g = dict_config['gravity']
 mfe = dict_config['magnetic']	#Magnetic Field Earth
+use_tolerance = dict_config['use_tolerance']
+g_tolerance = g*dict_config['acc_tolerance']/100
+m_tolerance = mfe*dict_config['mag_tolerance']/100
 
 delta_t = 1.0/dict_config['freq']
 theta_calc_prev = None
@@ -64,13 +67,18 @@ while True:
 	raw = Imu(imu_raw, stamp)
 
 	#Use control input for g (if needed)
-	ctlr_acc = None
+	ctlr_acc = np.zeros([3,1]) #Replace with acc from dynamic model or encoders
+	raw.acc = raw.acc - ctlr_acc
 
 	#RLS Iteration for acc & mag
 	acc_vec = rls_acc.create_data_vector(raw.acc, g)#Change g to g+ctrl
 	w_acc = rls_acc.step(acc_vec)
 	try:
 		p_acc = CalibParams.from_implicit(w_acc)
+		
+		#Prune outliers
+		if use_tolerance:
+			assert(np.abs(np.linalg.norm(raw.acc)-g)<g_tolerance)
 	except:
 		w_acc = rls_acc.restore()
 		p_acc = CalibParams.from_implicit(w_acc)
@@ -80,6 +88,10 @@ while True:
 	
 	try:
 		p_mag = CalibParams.from_implicit(w_mag)
+		
+		#Prune outliers
+		if use_tolerance:
+			assert(np.abs(np.linalg.norm(raw.mag)-mfe)<m_tolerance)
 	except:
 		w_mag = rls_mag.restore()
 		p_mag = CalibParams.from_implicit(w_mag)

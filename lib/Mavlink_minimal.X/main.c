@@ -20,6 +20,7 @@
 #include "common/mavlink.h"
 #include "NEO_M8N.h"
 #include "RC_RX.h"
+#include "RC_servo.h"
 #include "ICM_20948.h"
 #include "AS5047D.h"
 
@@ -40,7 +41,7 @@
 #define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
 #define RAW 1
 #define SCALED 2
-
+#define CTS_2_USEC 1  //divide by 2 scaling of counts to usec with right shift
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -49,9 +50,14 @@ mavlink_system_t mavlink_system = {
     1, // System ID (1-255)
     MAV_COMP_ID_AUTOPILOT1 // Component ID (a MAV_COMPONENT value)
 };
-static struct GPS_data GPS_data;
-RCRX_channel_buffer RC_channels[CHANNELS];
 
+enum RC_channels {
+    ACCELERATOR = 2,
+    STEERING,
+    SWITCH_D,
+}; //map to the car controls from the RC receiver
+RCRX_channel_buffer RC_channels[CHANNELS];
+static struct GPS_data GPS_data;
 struct IMU_output IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
 struct IMU_output IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 encoder_t encoder_data[NUM_ENCODERS];
@@ -141,6 +147,26 @@ void publish_heartbeat(void);
  */
 void publish_parameter(uint8_t param_id[16]);
 
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts);
+
+/**
+ * @Function set_control_output(void)
+ * @param none
+ * @return none
+ * @brief converts RC input signals to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_control_output(void);
+
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -153,8 +179,8 @@ void publish_parameter(uint8_t param_id[16]);
  */
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
-//        IMU_get_raw_data(&IMU_raw);
-//        publish_IMU_data(RAW);
+        //        IMU_get_raw_data(&IMU_raw);
+        //        publish_IMU_data(RAW);
         IMU_get_scaled_data(&IMU_scaled);
         publish_IMU_data(SCALED);
     }
@@ -495,6 +521,48 @@ void publish_parameter(uint8_t param_id[16]) {
     }
 }
 
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts) {
+    int16_t normalized_pulse; //converted to microseconds and centered at 0
+    uint16_t pulse_width; //servo output in microseconds
+    normalized_pulse = (raw_counts - RC_RX_MID_COUNTS) >> CTS_2_USEC;
+    pulse_width = normalized_pulse + RC_SERVO_CENTER_PULSE;
+    return pulse_width;
+}
+
+/**
+ * @Function set_control_output(void)
+ * @param none
+ * @return none
+ * @brief converts RC input signals to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_control_output(void) {
+    int tol = 100;
+        if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
+            // update pulsewidths for each servo output
+            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+        } else {
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+        }
+//    printf("Switch D: %d \r\n", RC_channels[SWITCH_D]);
+//    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+//    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+//    RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+}
+
 int main(void) {
     uint32_t cur_time = 0;
     uint32_t gps_start_time = 0;
@@ -514,6 +582,7 @@ int main(void) {
     Sys_timer_init(); //start the system timer
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
+    RC_servo_init(); // start the servo subsystem
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
@@ -540,6 +609,7 @@ int main(void) {
         //publish control and sensor signals
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
+            set_control_output(); // set actuator outputs
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_state == ERROR) {
                 IMU_error++;

@@ -2,8 +2,8 @@
 This method is used to run the tflite model without using tensorflow and pytorch dependencies.<br>
 - (Optional) Create a virtual environment.
 ```bash
-- chmod +x run.sh
-- ./run.sh
+chmod +x run.sh
+./run.sh
 ```
 Now let's test the model. I have added the trained tflite weights in this folder and created separated scripts for video, image and webcam inference. <br>
 

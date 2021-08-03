@@ -65,6 +65,11 @@ Copy the tflite folder from the yolo-v5 folder into the yolov5 folder.
 Then we have to do some configuration. Copy the ```./yolo-v5/data/coco128.yaml```'s content into ```./yolov5/data/coco.yaml``` and ```./yolov5/data/coco128.yaml```. <br>
 Now, change the parameter ```nc``` to 1 in the file ```yolov5/models/yolo5s.yaml```.
 <br>
+**Update** Getting FPS: Add following snippet in ```detect.py``` at Line number 192.
+```bash
+fps = 1 / (t2 - t1)
+im0 = cv2.putText(im0, "Time: {:.2f}FPS".format(fps), (0, 30), cv2.FONT_HERSHEY_COMPLEX_SMALL, 1, (0, 0, 255), 2)
+```
 Now run the following command for inference on image
 ```bash
 $ !python detect.py --weight [path-to-yolov5]/yolov5/tflite/best-fp16.tflite --img 320 --source [path-to-yolo-v5]/data/images/test.jpg

@@ -9,9 +9,9 @@ Now let's test the model. I have added the trained tflite weights in this folder
 
 Image inference <br>
 ```bash
-python3 yolov5_tflite_image_inference.py -weights yolov5s-fp16.tflite -i test/bus.jpg --img_size 320
+python3 yolov5_tflite_image_inference.py --weights yolov5s-fp16.tflite -i test/bus.jpg --img_size 320
 ```
 Video Inference <br>
 ```bash
-python3 yolov5_tflite_video_inference.py -weights yolov5s-fp16.tflite -i [path-to-video] --img_size 320
+python3 yolov5_tflite_video_inference.py --weights yolov5s-fp16.tflite -v [path-to-video] --img_size 320
 ```

@@ -31,7 +31,8 @@
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define CONTROL_PERIOD 20 //50 Hz control and sensor update rate
-#define ENCODER_TWO_PI 0x4fff
+#define ENCODER_TWO_PI 0x4fff  //counts to 2 pi conversion 
+#define WHEEL_RADIUS 0.0325 //meters
 #define RPS_TO_RPM (60*1000/CONTROL_PERIOD)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define BUFFER_SIZE 1024
@@ -344,13 +345,43 @@ void publish_IMU_data(uint8_t data_type) {
     }
 }
 
-/**
- * @Function publish_encoder_data()
- * @param none
- * @brief publishes motor data and steering angle data over MAVLink to radio
- * @return none
- * @author Aaron Hunter
- */
+///**
+// * @Function publish_encoder_data()
+// * @param none
+// * @brief publishes motor data and steering angle data over MAVLink using 
+// * WHEEL_DISTANCE msg
+// * @return none
+// * @author Aaron Hunter
+// */
+//void publish_encoder_data(void) {
+//    mavlink_message_t msg_tx;
+//    uint16_t msg_length;
+//    uint8_t msg_buffer[BUFFER_SIZE];
+//    uint16_t index = 0;
+//    uint8_t i;
+//    double distance[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+//    // encode the distance traveled into the first NUM_ENCODER distances
+//    for (i = 0; i < NUM_ENCODERS; i++) {
+//        distance[i] = ((double) encoder_data[i].omega  / ENCODER_TWO_PI)* (double) WHEEL_RADIUS;
+//    }
+//    //encode the exact angle for the steering servo--not necessary for the wheel encoders
+//    distance[i+1] = (double) encoder_data[HEADING].next_theta / ENCODER_TWO_PI;
+//
+//
+//    mavlink_msg_wheel_distance_pack(
+//            mavlink_system.sysid,
+//            mavlink_system.compid,
+//            &msg_tx,
+//            (uint64_t) Sys_timer_get_usec(),
+//            (uint8_t) (NUM_ENCODERS+1),
+//            distance
+//            );
+//    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+//    for (index = 0; index < msg_length; index++) {
+//        Radio_put_char(msg_buffer[index]);
+//    }
+//}
+ // publish with ESC_STATUS
 void publish_encoder_data(void) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
@@ -547,20 +578,20 @@ static uint16_t calc_pw(uint16_t raw_counts) {
  */
 void set_control_output(void) {
     int tol = 100;
-        if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
-            // update pulsewidths for each servo output
-            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
-        } else {
-            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
-        }
-//    printf("Switch D: %d \r\n", RC_channels[SWITCH_D]);
-//    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-//    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-//    RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+    if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
+        // update pulsewidths for each servo output
+        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+    } else {
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+    }
+    //    printf("Switch D: %d \r\n", RC_channels[SWITCH_D]);
+    //    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+    //    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+    //    RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
 }
 
 int main(void) {

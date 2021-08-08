@@ -42,6 +42,7 @@ class Imu:
 		return Imu([*xcal_acc, *xcal_gyro, *xcal_mag])
 
 debug=0
+
 #
 class CalibParams:
 	"""
@@ -107,7 +108,28 @@ class CalibParams:
 		
 		return cls(A,B)
 
+	@classmethod
+	def from_saved(cls, filename):
+		"""
+		Initiates class from parameters stored in a YAML file
+		"""
+		p = np.loadtxt(filename)
+
+		#TODO: Load matrices from yaml
+		A = p[:3,:3]
+		B = p[:3,3]
+
+		return cls(A,B)
+
+	
 	def correct(self, x_raw):
 		"""Calibrates x_raw and returns x_calib"""
 
 		return np.linalg.inv(self.A) @(x_raw - self.B).T
+
+	def save(self, filename):
+		"""Saves parameters in a file as a 4x4 transformation matrix"""
+		p = np.vstack((np.hstack((self.A,self.B)),[0,0,0,1]))
+		np.savetxt(filename, p)
+		return None
+

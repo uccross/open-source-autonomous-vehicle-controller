@@ -7,7 +7,7 @@ magnetic: 0.57 #0.4749 #Gauss (Santa Cruz)
 freq: 100 #Hz
 
 #Mavlink
-port: COM3
+port: 'COM3'
 baud: 57600
 
 #Recursive Least Squares
@@ -15,11 +15,19 @@ baud: 57600
 lambda: 0.99
 del: 1.0
 
-use_initial_batch: False
+use_initial_batch: True
 initial_batch_size: 200
+
+#Batch Parameters
+acc_file: 'batch_params/acc.txt'
+gyro_file: 'batch_params/gyro.txt'
+mag_file: 'batch_params/mag.txt'
 
 #Screening
 
 use_tolerance: True
 acc_tolerance: 5 #Percent
 mag_tolerance: 15 #Percent
+
+
+

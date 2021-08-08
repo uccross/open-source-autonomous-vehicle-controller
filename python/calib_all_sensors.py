@@ -27,10 +27,19 @@ theta_calc_prev = None
 baud_rate = dict_config['baud']
 port = dict_config['port']
 
+#Initial batch calibration parameters
+b_use_batch = dict_config['use_initial_batch']
+if b_use_batch:
+	p_acc_init = CalibParams.from_saved(dict_config['acc_file'])
+	p_gyro_init = CalibParams.from_saved(dict_config['gyro_file'])
+	p_mag_init = CalibParams.from_saved(dict_config['mag_file'])
+
 #RLS parameters
 w_initial = np.zeros([9,1])	#Get from initial batch
 P_initial = np.eye(9)
 lambda_ = dict_config['lambda']
+
+#-------------------------------------------------------
 
 #Create RLS and Stats objects 
 #(Temporarily using the same initializations)
@@ -45,6 +54,7 @@ stats = Stats()
 
 #Temporary code for testing:
 test_utils.get_next_meas.index = 1
+test_utils.get_next_meas_calib.index = 1
 df_imu = pd.read_csv(sys.argv[1], header=None)
 
 #Recv & calibrate data continuously
@@ -59,9 +69,13 @@ while True:
 	"""
 
 	#Temporary: Get test data:
-	if test_utils.get_next_meas.index>2000:
+	if test_utils.get_next_meas.index>2000 or test_utils.get_next_meas_calib.index>2000:
 		break
-	imu_raw, stamp = test_utils.get_next_meas(df_imu)
+	
+	if b_use_batch:
+		imu_raw, stamp = test_utils.get_next_meas_calib(df_imu, [p_acc_init,p_gyro_init,p_mag_init])
+	else:
+		imu_raw, stamp = test_utils.get_next_meas(df_imu)
 
 	#Create Imu object using imu_raw attributes
 	raw = Imu(imu_raw, stamp)

@@ -54,7 +54,7 @@ class CalibParams:
 
 
 	@classmethod
-	def from_implicit(cls, w, verbose=False):
+	def from_implicit(cls, w, verbose=False, check_validity=True):
 		"""
 		Converts implicit linear form of the ellipse to 
 		the matrix form (AX+B)@(AX+B).T = 1
@@ -89,7 +89,7 @@ class CalibParams:
 
 		
 		scales = np.sqrt(-Q2[3,3]/eig_vals) @ rearrange
-		if  np.sum(np.isnan(scales)):
+		if  np.sum(np.isnan(scales)) and check_validity:
 			print(Q2[3,3]>=0 and np.product(eig_vals<0) or Q2[3,3]<=0 and np.product(eig_vals>0))
 			debug +=1
 			print(debug)
@@ -115,9 +115,9 @@ class CalibParams:
 		"""
 		p = np.loadtxt(filename)
 
-		#TODO: Load matrices from yaml
 		A = p[:3,:3]
-		B = p[:3,3]
+		B = p[:3,3].T
+		print(A,B)
 
 		return cls(A,B)
 
@@ -129,7 +129,7 @@ class CalibParams:
 
 	def save(self, filename):
 		"""Saves parameters in a file as a 4x4 transformation matrix"""
-		p = np.vstack((np.hstack((self.A,self.B)),[0,0,0,1]))
+		p = np.vstack((np.hstack((self.A, self.B.T)),[0,0,0,1]))
 		np.savetxt(filename, p)
 		return None
 

@@ -27,7 +27,7 @@ mag_file: 'batch_params/mag.txt'
 
 use_tolerance: True
 acc_tolerance: 5 #Percent
-mag_tolerance: 15 #Percent
+mag_tolerance: 25 #Percent
 
 
 

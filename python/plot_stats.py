@@ -33,6 +33,7 @@ class Stats:
 		self.magnetic = 0.57#0.4749 #Gauss
 		self.attitude = None #Gyro: Not implemented yet
 
+		#Figure
 		self.fig, self.ax = plt.subplots(3,2)
 		self.fig.suptitle("Errors", fontsize=15)
 

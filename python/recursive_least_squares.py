@@ -174,12 +174,26 @@ def main(argv):
 
 	"""
 	#Batch calibration parameters
-	initial_batch_size = 40
+	initial_batch_size = 100
 	use_batch_only = False
 	xi = x[:initial_batch_size,:]
 
 	#Least squares for initial batch
-	w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0] 
+	w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0]
+
+	#Save Initial batch results in a file
+	save_batch_params = False
+
+	if save_batch_params:
+		try:
+			batch_params = CalibParams.from_implicit(w)
+		except:
+			#If not an ellipsoid, retain bias and change A to identity
+			batch_params = CalibParams.from_implicit(w, check_validity=False)
+			batch_params.A = np.eye(3)
+
+		batch_params.save('batch_params/'+argv[1].split('/')[-1][:-3]+'txt')
+		exit()
 
 	#List to save intermediate weights
 	running_params = [w]*initial_batch_size

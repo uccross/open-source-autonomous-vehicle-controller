@@ -23,10 +23,29 @@ class Imu:
 
 		self.stamp = timestamp
 
+	
+	def normalize(self, norms, calculate_norm = False):
+		"""
+		Normalizes all values to have a desired or actual norm of 1.0
+		(Not in use currently)
 
+		norms: list of len 3 with the desired norms for acc, gyro, mag respectively
+		"""
+		if calculate_norm:
+			self.acc = self.acc/np.linalg.norm(self.acc)
+			self.gyro = self.gyro/np.linalg.norm(self.gyro)
+			self.mag = self.mag/np.linalg.norm(self.mag)
+		else:
+			gravity, omega, magfield = norms
+			self.acc = self.acc/gravity
+			self.gyro = self.gyro/omega
+			self.mag = self.mag/magfield
+
+	
 	def vec9d(self):
 		return np.array([*self.acc, *self.gyro, *self.mag]).reshape([1,9])
 
+	
 	def calibrate(self, p_acc, p_gyro, p_mag):
 		"""
 		Calibrates an IMU measurement using known parameters

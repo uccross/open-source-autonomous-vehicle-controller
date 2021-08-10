@@ -145,7 +145,7 @@ def main(argv):
 	#Read raw data
 	filename = argv[1]
 	df_raw = pd.read_csv(filename)
-	normalizer = 9.8
+	normalizer = 9.8 #0.57
 	data_raw = df_raw.values[:]/normalizer
 
 
@@ -233,8 +233,10 @@ def main(argv):
 	print (*w)
 
 
-
+	#Initialize variables
 	last_valid_params = None
+	params_i = CalibParams.from_implicit(running_params[0],check_validity=False)
+
 
 	#Calculate intermaediate errors:
 	running_errors = []
@@ -242,7 +244,7 @@ def main(argv):
 		try:
 			params_i = CalibParams.from_implicit(running_params[i])
 		except:
-			continue
+			pass
 		Xcal_i = params_i.correct(data_raw[i,:])
 
 		error = np.linalg.norm(Xcal_i)-1

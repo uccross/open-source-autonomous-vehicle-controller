@@ -110,6 +110,9 @@ while True:
 		w_mag = rls_mag.restore()
 		p_mag = CalibParams.from_implicit(w_mag)
 
+	#Fix constant / denormalize
+	p_mag.B = p_mag.B*mfe
+	p_acc.B = p_acc.B*g
 
 	#Correct magnetometer and accelerometer
 	acc_calib = p_acc.correct(raw.acc)

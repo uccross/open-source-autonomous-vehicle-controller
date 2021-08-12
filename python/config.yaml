@@ -19,15 +19,15 @@ use_initial_batch: True
 initial_batch_size: 200
 
 #Batch Parameters
-acc_file: 'batch_params/acc.txt'
+acc_file: 'batch_params/acc_car.txt'
 gyro_file: 'batch_params/gyro.txt'
-mag_file: 'batch_params/mag.txt'
+mag_file: 'batch_params/mag_car.txt'
 
 #Screening
 
 use_tolerance: True
-acc_tolerance: 5 #Percent
-mag_tolerance: 25 #Percent
+acc_tolerance: 15 #Percent
+mag_tolerance: 50 #Percent
 
 
 

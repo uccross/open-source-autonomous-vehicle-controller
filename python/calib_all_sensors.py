@@ -69,7 +69,7 @@ while True:
 	"""
 
 	#Temporary: Get test data:
-	if test_utils.get_next_meas.index>2000 or test_utils.get_next_meas_calib.index>2000:
+	if test_utils.get_next_meas.index>5000 or test_utils.get_next_meas_calib.index>2000:
 		break
 	
 	if b_use_batch:

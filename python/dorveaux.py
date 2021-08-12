@@ -10,7 +10,7 @@ filename = sys.argv[1]
 
 df_raw = pd.read_csv(filename)
 
-data_raw = df_raw.values[:1900,:]/2**14
+data_raw = df_raw.values[:,:]/0.43
 
 #Dorveaux calibration (copy pasted from Aaron's code)
 
@@ -41,6 +41,10 @@ def imu_calibrate(points, num_iters=1):
     for k in range(num_iters):
         for i in range(n):
             norm_y = np.linalg.norm(y_k[i])
+
+            if norm_y>1.05:
+                #continue
+                pass
             # generate design matrix M
             M[i][0:3] = y_k[i]
             M[i][3] = 1
@@ -157,7 +161,7 @@ print("\nA = ", np.linalg.inv(A_cal))
 print("\nB = ", -B_cal)
 
 print("\nMSE: ",mse)
-#plot_3d(data_raw,data_cal, "Simulated Data")
+plot_3d(data_raw,data_raw, "Simulated Data")
 plot_errors(errors)
 plt.show()
 

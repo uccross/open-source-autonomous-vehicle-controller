@@ -145,7 +145,7 @@ def main(argv):
 	#Read raw data
 	filename = argv[1]
 	df_raw = pd.read_csv(filename)
-	normalizer = 9.8 #0.57
+	normalizer =0.57
 	data_raw = df_raw.values[:]/normalizer
 
 
@@ -174,7 +174,7 @@ def main(argv):
 
 	"""
 	#Batch calibration parameters
-	initial_batch_size = 100
+	initial_batch_size = 400
 	use_batch_only = False
 	xi = x[:initial_batch_size,:]
 
@@ -182,7 +182,7 @@ def main(argv):
 	w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0]
 
 	#Save Initial batch results in a file
-	save_batch_params = False
+	save_batch_params = True
 
 	if save_batch_params:
 		try:
@@ -207,7 +207,7 @@ def main(argv):
 
 	#RLS Initialization
 
-	w = np.zeros([m,1])
+	#w = np.zeros([m,1])
 	P = np.linalg.pinv(del_*np.cov(x.T))#x.T@ x#np.eye(m)
 	d = 1 #Always
 
@@ -224,6 +224,10 @@ def main(argv):
 
 		xi = (x[index, :]).reshape([m,1])
 		w = rls.step(xi)
+		# if np.linalg.norm(xi[m-3:])<1.2:
+		# 	w = rls.step(xi)
+		# else:
+		# 	print("outlier", index, np.linalg.norm(xi[m-3:]))
 
 		index+=step
 		running_params.append(w)

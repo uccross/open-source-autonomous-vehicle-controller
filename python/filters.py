@@ -90,7 +90,7 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 	params = yaml.safe_load(f)
 
 	#Iterate through list of filters and estimate attitude:
-	if key in ['DAVEN', 'FLAE']:
+	if key in ['DAVEN', 'FLAE', 'QUEST']:
 		#Create object
 		filter_ = static_filters[key](acc_raw, mag_raw,\
 										weights = np.array(params[key][2]),\
@@ -105,10 +105,26 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 		
 		return np.array(angles)
 
-	elif key == 'FAMC':
-		filter_ = static_filters[key](acc_raw,mag_raw)
+	elif key in ['FAMC', 'FQA', 'SAAM', 'TILT']:
+		filter_ = static_filters[key](acc_raw, mag_raw, *params[key])
 		q = filter_.Q
 		return Rotation.from_quat(q).as_euler('xyz')
+
+
+	elif key in ['OLEQ']:
+		filter_ = static_filters[key](acc_raw, mag_raw, *params[key])#np.array(params[key][0]), frame=params[key][1])
+		angles = []
+		for i in range (num_vals):
+			angles.append(estimate_orientation(filter_, acc_raw[i], mag_raw[i], as_angles=True, create_filter=False))
+	
+	# elif key == 'TRIAD':
+	# 	angles = []
+	# 	for i in range(num_vals):
+	# 		filter_ = static_filters[key](acc_raw[i], mag_raw[i], *params[key])
+	# 		q = filter_.A
+	# 		angles.append(Rotation.from_quat(q).as_euler('xyz'))
+	# 	return np.array(angles)
+
 
 	else:
 		print("Key not found: ", key)

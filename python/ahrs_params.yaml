@@ -1,7 +1,26 @@
 #Davenport quaternion
+DAVEN: [ 13.02, 9.7989, [ 1, 1 ], None ]
 
-DAVEN: [ 13.02, 9.7989, [ 1,1 ] ,None ]
+#Fast acc-mag combination
+FAMC: []
 
 #Fast Linear
-
 FLAE: [ 13.02, 9.7989, [ 0.5, 0.5 ], 'symbolic' ]
+
+#Factored Quaternion
+FQA: [[ 0.22529115994742355, 0.0, -0.9742914826937288 ]]
+
+#Optimal linear quaternion
+OLEQ: [[ 1, 1 ], [ 0.9742914826937288, 0.0, 0.22529115994742355 ], 'NED' ]
+
+#Quaternion Estimator
+QUEST: [ 13.02, 9.7989, [ 1, 1 ], None ]
+
+#Super-fast
+SAAM: []
+
+#Gravity based
+TILT: []
+
+#Tri-axial general
+TRIAD: [ [0, 0, 1], [ 0.9742914826937288, 0.0, 0.22529115994742355 ], 'quaternion', 'NED' ] 

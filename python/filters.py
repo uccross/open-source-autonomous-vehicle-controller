@@ -1,7 +1,10 @@
 import numpy as np
+import pandas as pd
 from scipy.spatial.transform import Rotation
 
 import ahrs
+
+import sys, yaml
 
 #Dictionary of static filters
 static_filters = {'DAVEN':ahrs.filters.davenport.Davenport ,\
@@ -18,7 +21,7 @@ static_filters = {'DAVEN':ahrs.filters.davenport.Davenport ,\
 
 
 #
-def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False):
+def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False, create_filter=True):
 	"""
 	Estimates the orientation using acc, mag & the given filter
 	Args:
@@ -26,12 +29,18 @@ def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False):
 		acc: numpy array of size 3
 		mag: numpy arrat of size 3
 		args: list of args for filter object
-	
+		as_angles: return angles instead of quaternions
+		create_filter: If true, creates new filter object of type filtername
+						if false, uses filter_name as the object	
 	Returns:
 		quaternion (np array) if as_angles is False
 		euler angles if as_angles is True
 	"""
-	filter_ = static_filters[filter_name](*args)
+	if create_filter:
+		filter_ = static_filters[filter_name](*args)
+	else:
+		filter_ = filter_name
+
 
 	q = filter_.estimate(acc, mag)
 
@@ -41,8 +50,10 @@ def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False):
 		r = Rotation.from_quat(q).as_euler('xyz')
 		return r
 
-#Test
-if __name__ == "__main__":
+#TESTS
+
+#Tst 1: Single values, all filters, default params
+def test1(*args):
 	acc1 = np.array([34, 188, 16615])
 	mag1 = np.array([79, 156, 418])
 
@@ -60,3 +71,50 @@ if __name__ == "__main__":
 		except:
 			pass
 			#print(key+": ERROR")
+
+
+#Test 2: Multiple values from files, single filter, params from yaml
+def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
+
+	#Create matrices for first num_val values of mag & acc
+	num_vals = 100
+	df_acc = pd.read_csv(csv_acc)
+	df_mag = pd.read_csv(csv_mag)
+
+	acc_raw = df_acc.values[:num_vals,:]
+	mag_raw = df_mag.values[:num_vals,:]
+
+	#Import parameters for each AHRS algorithm from YAML
+
+	f = open(ahrs_params_file)
+	params = yaml.safe_load(f)
+
+	#Iterate through list of filters and estimate attitude:
+	if key in ['DAVEN', 'FLAE']:
+		#Create object
+		filter_ = static_filters[key](acc_raw, mag_raw,\
+										weights = np.array(params[key][2]),\
+										magnetic_dip = params[key][0],\
+										gravity = params[key][1],\
+										method = params[key][3])
+		#print(filter_.estimate(acc_raw[0], mag_raw[0]))
+
+		angles = []
+		for i in range (num_vals):
+			angles.append(estimate_orientation(filter_, acc_raw[i], mag_raw[i], as_angles=True, create_filter=False))
+		
+		return np.array(angles)
+
+	elif key == 'FAMC':
+		filter_ = static_filters[key](acc_raw,mag_raw)
+		q = filter_.Q
+		return Rotation.from_quat(q).as_euler('xyz')
+
+	else:
+		print("Key not found: ", key)
+		return
+
+#Main
+if __name__ == "__main__":
+	#test1()
+	print(test2(*sys.argv[1:], 'DAVEN'))

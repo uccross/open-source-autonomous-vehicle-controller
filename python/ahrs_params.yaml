@@ -1,0 +1,7 @@
+#Davenport quaternion
+
+DAVEN: [ 13.02, 9.7989, [ 1,1 ] ,None ]
+
+#Fast Linear
+
+FLAE: [ 13.02, 9.7989, [ 0.5, 0.5 ], 'symbolic' ]

@@ -30,9 +30,12 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //50 Hz control and sensor update rate
+#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_FREQUENCY (1000/CONTROL_PERIOD) //frequency in Hz
 #define ENCODER_TWO_PI 0x4fff  //counts to 2 pi conversion 
+#define PI 3.141592653589793
 #define WHEEL_RADIUS 0.0325 //meters
+#define WHEEL_CIRCUMFERENCE WHEEL_RADIUS*2*PI
 #define RPS_TO_RPM (60*1000/CONTROL_PERIOD)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define BUFFER_SIZE 1024
@@ -62,6 +65,11 @@ static struct GPS_data GPS_data;
 struct IMU_output IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
 struct IMU_output IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 encoder_t encoder_data[NUM_ENCODERS];
+static uint8_t pub_GPS = TRUE;
+static uint8_t pub_RC_servo = FALSE;
+static uint8_t pub_RC_signals = TRUE;
+static uint8_t pub_IMU = TRUE;
+static uint8_t pub_Encoder = TRUE;
 
 /*******************************************************************************
  * TYPEDEFS                                                                    *
@@ -116,6 +124,13 @@ void check_GPS_events(void);
  * @author Aaron Hunter
  */
 void publish_IMU_data(uint8_t data_type);
+/**
+ * @function publish_RC_signals_raw(void)
+ * @param none
+ * @brief scales raw RC signals
+ * @author Aaron Hunter
+ */
+void publish_RC_signals_raw(void);
 /**
  * @Function publish_encoder_data()
  * @param none
@@ -183,7 +198,9 @@ void check_IMU_events(void) {
         //        IMU_get_raw_data(&IMU_raw);
         //        publish_IMU_data(RAW);
         IMU_get_scaled_data(&IMU_scaled);
-        publish_IMU_data(SCALED);
+        if (pub_IMU == TRUE) {
+            publish_IMU_data(SCALED);
+        }
     }
 }
 
@@ -197,7 +214,9 @@ void check_IMU_events(void) {
 void check_encoder_events(void) {
     if (Encoder_is_data_ready() == TRUE) {
         Encoder_get_data(encoder_data);
-        publish_encoder_data();
+        if (pub_Encoder == TRUE) {
+            publish_encoder_data();
+        }
     }
 }
 
@@ -223,6 +242,9 @@ void RC_channels_init(void) {
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
         RCRX_get_cmd(RC_channels);
+        if (pub_RC_signals == TRUE) {
+            publish_RC_signals_raw();
+        }
     }
 }
 
@@ -353,64 +375,67 @@ void publish_IMU_data(uint8_t data_type) {
 // * @return none
 // * @author Aaron Hunter
 // */
+
+void publish_encoder_data(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    uint8_t i;
+    double distance[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // encode the distance traveled into the first NUM_ENCODER distances
+    for (i = 0; i < NUM_ENCODERS; i++) {
+        distance[i] = ((double) encoder_data[i].omega / ENCODER_TWO_PI) * WHEEL_CIRCUMFERENCE;
+    }
+    //encode the exact angle for the steering servo--not necessary for the wheel encoders
+    distance[i + 1] = (double) encoder_data[HEADING].next_theta / ENCODER_TWO_PI;
+
+
+    mavlink_msg_wheel_distance_pack(
+            mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            (uint64_t) Sys_timer_get_usec(),
+            (uint8_t) (NUM_ENCODERS + 1),
+            distance
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    //    printf("first char %x \r\n", msg_buffer[0]);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+    //    printf("last char %x \r\n", msg_buffer[index - 1]);
+}
+// publish with ESC_STATUS
+//
 //void publish_encoder_data(void) {
 //    mavlink_message_t msg_tx;
 //    uint16_t msg_length;
 //    uint8_t msg_buffer[BUFFER_SIZE];
 //    uint16_t index = 0;
-//    uint8_t i;
-//    double distance[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//    // encode the distance traveled into the first NUM_ENCODER distances
-//    for (i = 0; i < NUM_ENCODERS; i++) {
-//        distance[i] = ((double) encoder_data[i].omega  / ENCODER_TWO_PI)* (double) WHEEL_RADIUS;
-//    }
-//    //encode the exact angle for the steering servo--not necessary for the wheel encoders
-//    distance[i+1] = (double) encoder_data[HEADING].next_theta / ENCODER_TWO_PI;
+//    int32_t rpm[4];
+//    float voltage[4] = {0, 0, 0, 0};
+//    float current[4] = {0, 0, 0, 0};
 //
-//
-//    mavlink_msg_wheel_distance_pack(
+//    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
+//    mavlink_msg_esc_status_pack(
 //            mavlink_system.sysid,
 //            mavlink_system.compid,
 //            &msg_tx,
-//            (uint64_t) Sys_timer_get_usec(),
-//            (uint8_t) (NUM_ENCODERS+1),
-//            distance
+//            Sys_timer_get_usec(),
+//            LEFT_MOTOR,
+//            rpm,
+//            voltage,
+//            current
 //            );
 //    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
 //    for (index = 0; index < msg_length; index++) {
 //        Radio_put_char(msg_buffer[index]);
 //    }
 //}
- // publish with ESC_STATUS
-void publish_encoder_data(void) {
-    mavlink_message_t msg_tx;
-    uint16_t msg_length;
-    uint8_t msg_buffer[BUFFER_SIZE];
-    uint16_t index = 0;
-    int32_t rpm[4];
-    float voltage[4] = {0, 0, 0, 0};
-    float current[4] = {0, 0, 0, 0};
-
-    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
-    mavlink_msg_esc_status_pack(
-            mavlink_system.sysid,
-            mavlink_system.compid,
-            &msg_tx,
-            Sys_timer_get_usec(),
-            LEFT_MOTOR,
-            rpm,
-            voltage,
-            current
-            );
-    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-    //    for (index = 0; index < msg_length; index++) {
-    //        Radio_put_char(msg_buffer[index]);
-    //    }
-
-}
 
 /**
  * @function publish_RC_signals(void)
@@ -442,6 +467,39 @@ void publish_RC_signals(void) {
             scaled_channels[5],
             scaled_channels[6],
             scaled_channels[7],
+            rssi);
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
+ * @function publish_RC_signals_raw(void)
+ * @param none
+ * @brief scales raw RC signals
+ * @author Aaron Hunter
+ */
+void publish_RC_signals_raw(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    uint8_t RC_port = 0; //first 8 channels 
+    uint8_t rssi = 255; //unknown--may be able to extract from receiver
+    mavlink_msg_rc_channels_raw_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            RC_port,
+            RC_channels[0],
+            RC_channels[1],
+            RC_channels[2],
+            RC_channels[3],
+            RC_channels[4],
+            RC_channels[5],
+            RC_channels[6],
+            RC_channels[7],
             rssi);
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     for (index = 0; index < msg_length; index++) {
@@ -588,10 +646,6 @@ void set_control_output(void) {
         RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
         RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
     }
-    //    printf("Switch D: %d \r\n", RC_channels[SWITCH_D]);
-    //    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-    //    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-    //    RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
 }
 
 int main(void) {
@@ -649,19 +703,20 @@ int main(void) {
                 }
             }
             Encoder_start_data_acq(); //initiate Encoder measurement with SPI
-            publish_RC_signals();
-            //start encoder measurements
         }
 
         //publish GPS
         if (cur_time - gps_start_time > GPS_PERIOD) {
             gps_start_time = cur_time; //reset GPS timer
-            publish_GPS();
+            if (pub_GPS == TRUE) {
+                publish_GPS();
+            }
         }
         //publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat();
+
         }
     }
     return 0;

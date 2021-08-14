@@ -50,6 +50,13 @@ def estimate_orientation(filter_name, acc, mag, args=[], as_angles=False, create
 		r = Rotation.from_quat(q).as_euler('xyz')
 		return r
 
+def get_delta_theta(angles):
+	"""
+	Finds the magnitude of difference between consecutive angles
+	angles: np array of shape [n,3] containing xyz euler angles
+	"""
+	return np.linalg.norm(angles[:-1,:]-angles[1:,:], axis=1)
+
 #TESTS
 
 #Tst 1: Single values, all filters, default params
@@ -116,7 +123,9 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 		angles = []
 		for i in range (num_vals):
 			angles.append(estimate_orientation(filter_, acc_raw[i], mag_raw[i], as_angles=True, create_filter=False))
-	
+		return np.array(angles)
+
+
 	# elif key == 'TRIAD':
 	# 	angles = []
 	# 	for i in range(num_vals):
@@ -130,7 +139,52 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 		print("Key not found: ", key)
 		return
 
+#Test3
+def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
+	#Create matrices for first num_val values of mag & acc
+	num_vals = 100
+	df_acc = pd.read_csv(csv_acc)
+	df_mag = pd.read_csv(csv_mag)
+
+	acc_raw = df_acc.values[:num_vals,:]
+	mag_raw = df_mag.values[:num_vals,:]
+
+	#Import parameters for each AHRS algorithm from YAML
+
+	f = open(ahrs_params_file)
+	params = yaml.safe_load(f)
+
+	#Dictionary for results
+	results = {}
+
+	#Iterate through list of filters and estimate attitude:
+
+	for key in static_filters:
+		try:
+			angles = test2(csv_acc, csv_mag, ahrs_params_file, key)
+		except:
+			continue
+
+		results[key] = angles
+
+	#Calculate stats on results (Currently random stats)
+	print( np.std(results['DAVEN']-results['FAMC'], axis=0) )
+	print( np.std(results['DAVEN']-results['FLAE'], axis=0) )
+	print( np.std(results['DAVEN']-results['FQA'], axis=0) )
+	print( np.std(results['DAVEN']-results['OLEQ'], axis=0) )
+	print( np.std(results['DAVEN']-results['QUEST'], axis=0) )
+	print( np.std(results['DAVEN']-results['SAAM'], axis=0) )
+	print( np.std(results['DAVEN']-results['TILT'], axis=0) )
+
+	#End
+	return
+
+
 #Main
 if __name__ == "__main__":
 	#test1()
-	print(test2(*sys.argv[1:], 'DAVEN'))
+
+	#print(test2(*sys.argv[1:], 'DAVEN'))
+	#print ( get_delta_theta(test2(*sys.argv[1:])) )
+	test3(*sys.argv[1:])
+

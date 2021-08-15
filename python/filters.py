@@ -139,7 +139,7 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 		print("Key not found: ", key)
 		return
 
-#Test3
+#Test3: Multiple values from files, multiple filters, params from YAML
 def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
 	#Create matrices for first num_val values of mag & acc
 	num_vals = 100
@@ -167,14 +167,15 @@ def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
 
 		results[key] = angles
 
-	#Calculate stats on results (Currently random stats)
-	print( np.std(results['DAVEN']-results['FAMC'], axis=0) )
-	print( np.std(results['DAVEN']-results['FLAE'], axis=0) )
-	print( np.std(results['DAVEN']-results['FQA'], axis=0) )
-	print( np.std(results['DAVEN']-results['OLEQ'], axis=0) )
-	print( np.std(results['DAVEN']-results['QUEST'], axis=0) )
-	print( np.std(results['DAVEN']-results['SAAM'], axis=0) )
-	print( np.std(results['DAVEN']-results['TILT'], axis=0) )
+
+
+	#Compare results of reference filter to all other filters
+	#Difference between results should be constant, i.e. std.dev should be near zero
+	ref = 'OLEQ'
+	for key in static_filters:
+		if key == 'TRIAD':
+			continue
+		print( np.std(results[ref]-results[key], axis=0) *180/np.pi, key )
 
 	#End
 	return

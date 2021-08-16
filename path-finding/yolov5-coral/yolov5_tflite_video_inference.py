@@ -35,7 +35,7 @@ def detect_video(weights,video_filepath,img_size,conf_thres,iou_thres):
         image_resized = letterbox_image(Image.fromarray(frame),size)
         image_array = np.asarray(image_resized)
 
-        normalized_image_array = image_array.astype(np.float32) / 255.0
+        normalized_image_array = image_array.astype(np.uint8) / 255.0
         t1 = time.time()
         result_boxes, result_scores, result_class_names = yolov5_tflite_obj.detect(normalized_image_array)
         t2 = time.time()

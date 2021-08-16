@@ -121,9 +121,9 @@ class yolov5_tflite:
 
     def detect(self,image):
         original_size = image.shape[:2]
-        input_data = np.ndarray(shape=(1, self.image_size, self.image_size, 3), dtype=np.float32)
+        input_data = np.ndarray(shape=(1, self.image_size, self.image_size, 3), dtype=np.uint8)
         #image = cv2.resize(image,(self.image_size,self.image_size))
-        #input_data[0] = image.astype(np.float32)/255.0
+        #input_data[0] = image.astype(np.uint8)/255.0
         input_data[0] = image
         
         #self.interpreter.allocate_tensors()

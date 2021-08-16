@@ -25,7 +25,7 @@ def detect_image(weights,image_url,img_size,conf_thres,iou_thres):
     #image = ImageOps.fit(image, size, Image.ANTIALIAS)
     image_array = np.asarray(image_resized)
 
-    normalized_image_array = image_array.astype(np.float32) / 255.0
+    normalized_image_array = image_array.astype(np.uint8) / 255.0
 
     
 

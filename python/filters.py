@@ -85,11 +85,13 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 
 	#Create matrices for first num_val values of mag & acc
 	num_vals = 100
+	start_index = 150
+
 	df_acc = pd.read_csv(csv_acc)
 	df_mag = pd.read_csv(csv_mag)
 
-	acc_raw = df_acc.values[:num_vals,:]
-	mag_raw = df_mag.values[:num_vals,:]
+	acc_raw = df_acc.values[start_index:num_vals+start_index,:]
+	mag_raw = df_mag.values[start_index:num_vals+start_index,:]
 
 	#Import parameters for each AHRS algorithm from YAML
 
@@ -141,18 +143,6 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 
 #Test3: Multiple values from files, multiple filters, params from YAML
 def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
-	#Create matrices for first num_val values of mag & acc
-	num_vals = 100
-	df_acc = pd.read_csv(csv_acc)
-	df_mag = pd.read_csv(csv_mag)
-
-	acc_raw = df_acc.values[:num_vals,:]
-	mag_raw = df_mag.values[:num_vals,:]
-
-	#Import parameters for each AHRS algorithm from YAML
-
-	f = open(ahrs_params_file)
-	params = yaml.safe_load(f)
 
 	#Dictionary for results
 	results = {}
@@ -171,7 +161,8 @@ def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
 
 	#Compare results of reference filter to all other filters
 	#Difference between results should be constant, i.e. std.dev should be near zero
-	ref = 'OLEQ'
+	ref = 'DAVEN'
+	print("\nReference: ", key, '\n')
 	for key in static_filters:
 		if key == 'TRIAD':
 			continue

@@ -182,7 +182,7 @@ def main(argv):
 	w = np.linalg.lstsq(xi, np.ones([initial_batch_size,1]), rcond=None)[0]
 
 	#Save Initial batch results in a file
-	save_batch_params = True
+	save_batch_params = False
 
 	if save_batch_params:
 		try:
@@ -193,6 +193,7 @@ def main(argv):
 			batch_params.A = np.eye(3)
 
 		batch_params.save('batch_params/'+argv[1].split('/')[-1][:-3]+'txt')
+		print( "Saved batch parameters. Exiting...")
 		exit()
 
 	#List to save intermediate weights
@@ -287,6 +288,7 @@ def main(argv):
 
 	plot_errors(np.array(running_errors), rls.lambda_)
 
+	#pd.DataFrame(data_cal.T).to_csv('tests/real/mag_calib.csv')
 	#plot_errors(np.array(errors))
 
 if __name__ == "__main__":

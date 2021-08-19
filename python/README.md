@@ -1,6 +1,6 @@
 # IMU Calibration and Online Self-correction
 
-The code contained in this folder was written as a part of the **Google Summer of Code 2021 **program ([GSoC Project Page](https://summerofcode.withgoogle.com/projects/#4925832792899584))
+The code contained in this folder was written as a part of the **Google Summer of Code 2021** program ([GSoC Project Page](https://summerofcode.withgoogle.com/projects/#4925832792899584))
 
 This folder contains code for performing continuous online calibration of an Inertial Measurement Unit (IMU) using Recursive Least Squares ([RLS](https://en.wikipedia.org/wiki/Recursive_least_squares_filter)) and offline batch calibration of an IMU using Dorveaux's iterative least squares based method. The folder also includes code for performing attitude estimation by fusion of accelerometer and magnetometer data using filters from Attitude & Heading Registration System ([AHRS](https://ahrs.readthedocs.io/en/latest/index.html)).
 Tools for testing single-stage calibration/2-stage calibration, plotting the results, saving results and tuning parameters have also been included.
@@ -29,7 +29,7 @@ cd open-source-autonomous-vehicle-controller/python
 ---
 ## Usage
 
-###Testing offline calibration
+### Testing offline calibration
 
 The raw data of a single sensor is stored in a csv file with three columns (one for each axis).
 

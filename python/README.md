@@ -1,4 +1,4 @@
-#IMU Calibration and Online Self-correction
+# IMU Calibration and Online Self-correction
 
 The code contained in this folder was written as a part of the **Google Summer of Code 2021 **program ([GSoC Project Page](https://summerofcode.withgoogle.com/projects/#4925832792899584))
 
@@ -7,7 +7,7 @@ Tools for testing single-stage calibration/2-stage calibration, plotting the res
 
 ---
 
-###Software Dependencies
+### Software Dependencies
 
 * Python 3.6.9
 * Numpy 1.19.5
@@ -27,7 +27,7 @@ git clone https://github.com/uccross/open-source-autonomous-vehicle-controller/
 cd open-source-autonomous-vehicle-controller/python
 ```
 ---
-##Usage
+## Usage
 
 ###Testing offline calibration
 
@@ -42,7 +42,7 @@ If the parameters vary over time, use the Dorveaux fixed-lag method:
 python3 dorveaux_fixed_lag.py <name_of_csv_file>
 ```
 
-###Testing RLS
+### Testing RLS
 
 Recursive least squares calibration can be done with or without an initial batch. For testing RLS for a single sensor set the parameter `initial_batch_size` to the requried size in `python/recursive_least_squares.py`. 
 Setting the `use_batch_only` parameter to **True** will perform only least squares based calibration of the initial batch without proceeding to RLS.
@@ -56,7 +56,7 @@ python3 recursive_least_squares.py <path_to_sensor_data>
 ```
 **TODO:** Handle NaN values while calcuating MSE
 
-###Testing full online calibration
+### Testing full online calibration
 
 The parameters for full online calibration are stored in the file `config.yaml`. The steps to simulate a continuous sensor data stream and perform RLS-based online calibration are as follows:
 
@@ -84,7 +84,7 @@ Use the same command as before
 ```
 python3 calib_all_sensors.py <path_to_logfile>
 ```
-###AHRS
+### AHRS
 The AHRS sensor fusion algorithms combine the measurements from the three sensors of the IMU to estimate orientation. The file `filters.py` in this repository contains an implementation of a framework to test and compare these algorithms. Currently, the framework contains static filters (i.e. without a dynamic model of a vehicle) that use accelerometer and magnetometer data only (i.e. not gyroscope) to estimate an orientation.
 
 Three tests have been implemented with other helper functions for analysing the results. The tests can be called from the main function with command line arguments. Each test is described in the respective docstring.
@@ -97,14 +97,14 @@ E.g. for test #3:
 python3 filters.py <acc_csv> <mag_csv> ahrs_params.yaml <filter_name>
 ```
 ---
-##Files/Directories Included
+## Files/Directories Included
 Following is a short description of the files included and their contents.
 
-###utils.py 
+### utils.py 
 Contains all the common classes and utility functions required for the code. The `Imu` class is used for a single 9-axis IMU measurement, along with functions to normalize, vectorize and calibrate using supplied parameters.
 The `CalibParams` class contains the matrices **A** (rotation/skew and scales) and **B** (Bias). It can be initialized through implicit parameters, from a file and directly. It also contains functions to correct raw measurements and save parameters.
 
-###recursive_least_squares.py
+### recursive_least_squares.py
 
 Contains the `RecursiveLeastSquares` class. This class stores the RLS parameters and implicit weights for a single sensor. It also contains functions to convert measurements to the implicit ellipsoid form, to perform RLS iterations and to restore previous weights in case of complex scales or invalid weights.
 The function `recover_params()` converts implicit weights into the matrix form (A,B) and `plot_errors()` plots the error histogram and the MSE over time.
@@ -112,34 +112,35 @@ The function `recover_params()` converts implicit weights into the matrix form (
 The `main()` function takes a single sensor logfile as a parameter and performs an initial batch calibration, followed by RLS for the remaining data.
 
 
-###test_utils.py
+### test_utils.py
 
 This includes utilities required to test calibration. The `send_next_meas()` and `send_next_meas_calib()` functions read a logfile and supply IMU raw/ precalibrated measurements for RLS calibration. The calibration code calls one of these functions wach time it is ready for a new measurement. While working with a real system, this function can directly be replaced with a function that reads and processes a new mavlink message.
 
-###config.yaml
+### config.yaml
 This file contains all configuration parameters needed for RLS, outlier screening, 2-stage calibration, mavlink, etc.
 
-###plot_stats.py
+### plot_stats.py
 
 The `Stats` class stores raw and calibrated measurements and computes statistics such as MSE, standard deviation, etc. The `append()` function adds a new set of measurements and updates the stats accordingly, while the `plot_rt()` function updates a pyplot with the recent measurements and stats. The plot is currently updated after every `num_vals`(default: 40) measurements.
 
 **TODO:** Replace matplotlib.pyplot functions with a faster animation library to improve speed.
 
 
-###calib_all_sensors.py
+### calib_all_sensors.py
 This code combines all the previous codes to perform online single stage or 2-stage calibration and plot the error stats in real time. The gyroscope online recalibration code has been commented out and can be used once AHRS (or any other filter) provides an accurate orientation estimate. Further, skeleton code has been inculded to easily incorporate kinematic/ dynamic models of the vehicles, whenever ready.
 
-###dorveaux.py
+### dorveaux.py
 Performs batch calibration on normalized measurements of a single 3-axis sensor using Dorveaux's iterative least squares based ellipsoid fitting and plots the MSE, histograms and 3D points (calibrated & raw).
 
-###dorveaux_fixed_lag.py
+### dorveaux_fixed_lag.py
 Uses Dorveaux's method to estimate calibration parameters of successively recieved data by using only a fixed number of most-recent values, so that changing IMU parameters can be dealt with.
 
-###filters.py
+### filters.py
 Uses nine static filters from the [ahrs](https://github.com/Mayitzin/ahrs) library in the `static_filters` dictionary. 
 The `estimate_orientation()` function takes a filter name as an input, along with single measurements from the accelerometer and gyroscope to estimate an orientation using default parameters. The filter names are according to the keys used in the `static_filters` dictionary. Output can be obtained in the angular form as well as quaternion form. The `get_delta_theta()` function calculates the magnitude of difference between consecutive angles, given an array of XYZ Euler angles.
 
 Three tests have been implemented currently.
+
 **Test 1** calculates a pair of orientations given a filter name and 2 pairs of accelerometer-magnetometer measurements.
 
 **Test2** takes acc and mag data from CSV files, parameters from a YAML file and a filter name as a command line argument to give an array of orientations in the form of Euler angles.
@@ -148,13 +149,13 @@ Three tests have been implemented currently.
 
 The main function calls one or more of these tests.
 
-###ahrs_params.yaml
+### ahrs_params.yaml
 This file contains the tunable parameters of each implemented static filter and is read by filters.py.
 
-###tests/
+### tests/
 This folder contains simulated and real datasets used for the tests.
 
-###batch_params/
+### batch_params/
 This folder contains the stored/ default batch parameters for 2-stage calibration in numpy readable format. They are stored in the form of a 4x4 3D transformation matrix. The default matrix as an identity matrix.
 
 ## Future Work
@@ -168,11 +169,11 @@ This folder contains the stored/ default batch parameters for 2-stage calibratio
 * **More AHRS filters** (Dynamic filters and gyro-based filters)
 
 ---
-##More Info
+## More Info
 The theoretical overview, mathematical derivations and the results of the tests are included in the [Final Report]()
 
 ---
-##Contributers:
+## Contributers:
 
 * **Rishikesh Vanarse** *([Github](https://github.com/rmvanarse), [Website](https://rmvanarse.github.io))*, Computer Science, BITS Pilani, Goa
 * **Aaron Hunter** *([Github](https://github.com/2ahunter))*

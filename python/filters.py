@@ -142,7 +142,7 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 		return
 
 #Test3: Multiple values from files, multiple filters, params from YAML
-def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
+def test3(csv_acc, csv_mag, ahrs_params_file, ref, *args, **kwargs):
 
 	#Dictionary for results
 	results = {}
@@ -161,7 +161,7 @@ def test3(csv_acc, csv_mag, ahrs_params_file, *args, **kwargs):
 
 	#Compare results of reference filter to all other filters
 	#Difference between results should be constant, i.e. std.dev should be near zero
-	ref = 'DAVEN'
+	#ref = 'DAVEN'
 	print("\nReference: ", key, '\n')
 	for key in static_filters:
 		if key == 'TRIAD':

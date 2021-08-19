@@ -145,7 +145,7 @@ def main(argv):
 	#Read raw data
 	filename = argv[1]
 	df_raw = pd.read_csv(filename)
-	normalizer =0.57
+	normalizer =9.8
 	data_raw = df_raw.values[:]/normalizer
 
 

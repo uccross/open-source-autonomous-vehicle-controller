@@ -161,7 +161,7 @@ print("\nA = ", np.linalg.inv(A_cal))
 print("\nB = ", -B_cal)
 
 print("\nMSE: ",mse)
-plot_3d(data_raw,data_raw, "Simulated Data")
+plot_3d(data_raw,data_cal, "Simulated Data")
 plot_errors(errors)
 plt.show()
 

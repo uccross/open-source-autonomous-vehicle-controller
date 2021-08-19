@@ -1,0 +1,7 @@
+#Cache
+*/__pycache__/*
+
+#Test sets
+
+python/tests/*
+

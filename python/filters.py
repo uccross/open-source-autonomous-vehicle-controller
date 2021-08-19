@@ -61,6 +61,11 @@ def get_delta_theta(angles):
 
 #Tst 1: Single values, all filters, default params
 def test1(*args):
+	"""
+	For debugging
+	Hardcoded values: consecutive acc-mag pairs and timestamp difference
+	Prints angular velocity estimated by all static filters
+	"""
 	acc1 = np.array([34, 188, 16615])
 	mag1 = np.array([79, 156, 418])
 
@@ -82,7 +87,11 @@ def test1(*args):
 
 #Test 2: Multiple values from files, single filter, params from yaml
 def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
-
+	"""
+	Takes input from logged acc & mag csv files
+	Loads params from yaml file
+	Returns attitude estimates for each acc-mag pair using the given filter (key)
+	"""
 	#Create matrices for first num_val values of mag & acc
 	num_vals = 100
 	start_index = 150
@@ -143,7 +152,9 @@ def test2(csv_acc, csv_mag, ahrs_params_file, key, *args):
 
 #Test3: Multiple values from files, multiple filters, params from YAML
 def test3(csv_acc, csv_mag, ahrs_params_file, ref, *args, **kwargs):
-
+	"""
+	Runs test 2 for all filters and compares results with a given filter
+	"""
 	#Dictionary for results
 	results = {}
 
@@ -174,7 +185,7 @@ def test3(csv_acc, csv_mag, ahrs_params_file, ref, *args, **kwargs):
 
 #Main
 if __name__ == "__main__":
-	#test1()
+	test1()
 
 	#print(test2(*sys.argv[1:], 'DAVEN'))
 	#print ( get_delta_theta(test2(*sys.argv[1:])) )

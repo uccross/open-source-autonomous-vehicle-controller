@@ -71,7 +71,8 @@ Run the following command to test full online calibration:
 python3 calib_all_sensors.py <path_to_logfile>
 ```
 **Note:** Since there is no reference to the true orientation available, it is assumed that the gyroscope uses only initial batch calibration. Hence, the gyroscope errors are currently not evaluated here.
-###2-stage calibration
+
+### 2-stage calibration
 
 In two stage calibration, the microcontroller pre-calibrates the raw data using the initial batch parameters. RLS then works on this pre-calibrated data to improve calibration. This is simulated using the `get_next_meas_calib()` function in `test_utils.py`, which takes in batch parameters and the logfile as input and returns an array containing pre-calibrated measurements from acc, gyro and mag.
 

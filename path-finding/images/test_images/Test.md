@@ -1,0 +1,1 @@
+This folder will contain the cone image used for testing with their corresponding annotations file. I have uploaded test folder in [drive](https://drive.google.com/drive/folders/1IbGJLT6tTYOvOQPo30r8Hk-nJSFMWQcy?usp=sharing).

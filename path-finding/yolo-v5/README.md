@@ -23,6 +23,11 @@ Creating virtual environment and installing the dependencies. First move into th
 ```bash
 python -m venv tflite-env
 source activate tflite-env/bin/activate
+sudo apt-get -y install libjpeg-dev libtiff5-dev libjasper-dev libpng12-dev
+sudo apt-get -y install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev
+sudo apt-get -y install libxvidcore-dev libx264-dev
+sudo apt-get -y install qt4-dev-tools libatlas-base-dev
+
 pip install -r requirements.txt
 ```
 Let's install tflite interpreter and pytorch on the device<br>
@@ -31,7 +36,7 @@ $ pip install https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp37
 ```
 First install dependencies of pytorch and then install it from using wheel files
 ```bash
-$ sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools
+sudo apt install libopenblas-dev libblas-dev m4 cmake cython python3-dev python3-yaml python3-setuptools
 $ pip install https://github.com/Kashu7100/pytorch-armv7l/raw/main/torch-1.7.0a0-cp37-cp37m-linux_armv7l.whl
 $ pip install https://github.com/Kashu7100/pytorch-armv7l/raw/main/torchvision-0.8.0a0%2B45f960c-cp37-cp37m-linux_armv7l.whl
 ```
@@ -46,16 +51,16 @@ I have trained two different models, one with the lower(256x320) and one with hi
 Running the inference on a image.
 
 ```bash
-$ python detect.py --weights [weight-path] --conf 0.25 --img 320 --source [path-to-yolo-v5]/data/images/test.jpg
+python detect.py --weights [weight-path] --conf 0.25 --img 320 --source [path-to-yolo-v5]/data/images/test.jpg
 ```
 
 Running the inference on a video.
 ```bash
-$ python detect.py --weights [weight-path] --conf 0.25 --img 320 --source [path-to-yolo-v5]/data/videos/test.mp4
+python detect.py --weights [weight-path] --conf 0.25 --img 320 --source [path-to-yolo-v5]/data/videos/test.mp4
 ```
 Now, for changing the source to webcam, just give 0 or 1 for the ```--source``` in the command.
 ```bash
-$ python detect.py --weights [weight-path] --conf 0.25 --img 320 --source 0
+python detect.py --weights [weight-path] --conf 0.25 --img 320 --source 0
 ```
 
 The output will get saved in exp folder in ```./yolo-v5/runs/detect/```.
@@ -72,15 +77,15 @@ im0 = cv2.putText(im0, "Time: {:.2f}FPS".format(fps), (0, 30), cv2.FONT_HERSHEY_
 ```
 Now run the following command for inference on image
 ```bash
-$ !python detect.py --weight [path-to-yolov5]/yolov5/tflite/best-fp16.tflite --img 320 --source [path-to-yolo-v5]/data/images/test.jpg
+python detect.py --weight [path-to-yolov5]/yolov5/tflite/best-fp16.tflite --img 320 --source [path-to-yolo-v5]/data/images/test.jpg
 ```
 Running the inference on video.
 ```bash
-$ !python detect.py --weight [path-to-yolov5]/yolov5/tflite/best-fp16.tflite --img 320 --source [path-to-yolo-v5]/data/images/test.mp4
+python detect.py --weight [path-to-yolov5]/yolov5/tflite/best-fp16.tflite --img 320 --source [path-to-yolo-v5]/data/images/test.mp4
 ```
 Let's change the source to the webcam.
 ```bash
-$ !python detect.py --weight [path-to-yolov5]/yolov5/best-fp16.tflite --img 320 --source 0
+python detect.py --weight [path-to-yolov5]/yolov5/best-fp16.tflite --img 320 --source 0
 ```
 The output will get saved in ```./yolov5/runs/detect```.<br>
 I have added a tf model as well in the tflite folder. To test them just replace best-fp16.tflite with best.pb in the above commands.

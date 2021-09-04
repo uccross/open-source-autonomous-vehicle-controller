@@ -154,7 +154,7 @@ plot_3d(data_raw,data_cal)
 
 # test the accelerometer data
 data_raw = np.zeros((num_points, 12))
-with open('test_data.csv', newline='') as f:
+with open('imu_tmbl_070121.csv', newline='') as f:
     reader = csv.reader(f)
     i = 0  # row index
     j = 0  # column index

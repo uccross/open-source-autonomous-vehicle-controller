@@ -228,10 +228,6 @@ static void RCRX_run_RX_state_machine(uint8_t char_in) {
             if (char_in == START_BYTE) {
                 byte_counter = 0;
                 parsing_RX = TRUE; //set parsing flag
-                // set read index to most recent messsage
-                RCRX_msgs.read_index = RCRX_msgs.write_index;
-                //advance write index and wrap
-                RCRX_msgs.write_index = (RCRX_msgs.write_index + 1) % RX_NUM_MSGS;
                 //store the start byte 
                 RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = char_in;
                 byte_counter++;
@@ -252,6 +248,10 @@ static void RCRX_run_RX_state_machine(uint8_t char_in) {
         case GET_END:
             if (char_in == END_BYTE) {
                 RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = END_BYTE;
+                // set read index to most recent messsage
+                RCRX_msgs.read_index = RCRX_msgs.write_index;
+                //advance write index and wrap
+                RCRX_msgs.write_index = (RCRX_msgs.write_index + 1) % RX_NUM_MSGS;
                 new_data_avail = TRUE;
                 parse_error = FALSE; //clear previous parsing error
             } else {

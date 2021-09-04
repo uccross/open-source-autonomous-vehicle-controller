@@ -3,15 +3,15 @@
   <executable name="dist/default/production/Mavlink_minimal.X.production.elf">                 
     <memory name="program">                 
       <units>bytes</units>                 
-      <length>531968</length>                 
-      <used>63900</used>                     
-      <free>468068</free>                     
+      <length>531968</length>
+      <used>74304</used>                     
+      <free>457664</free>
     </memory>                              
     <memory name="data">              
       <units>bytes</units>                 
-      <length>131072</length>                 
-      <used>9656</used>                     
-      <free>121416</free>                     
+      <length>131072</length>
+      <used>12032</used>                     
+      <free>119040</free>
     </memory>                              
   </executable>                            
 </project>                                 

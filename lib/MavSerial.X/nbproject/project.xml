@@ -3,8 +3,8 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>Mavlink_minimal</name>
-            <creation-uuid>00bb4bd1-5ec6-45b2-8d06-27fcd3303582</creation-uuid>
+            <name>MavSerial</name>
+            <creation-uuid>d72b2ac7-782b-4364-9622-b4c6bafecf63</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
             <cpp-extensions/>
@@ -14,19 +14,23 @@
             <make-dep-projects/>
             <sourceRootList>
                 <sourceRootElem>../Board.X</sourceRootElem>
-                <sourceRootElem>../Serial.X</sourceRootElem>
-                <sourceRootElem>../Radio_serial.X</sourceRootElem>
-                <sourceRootElem>../../modules/c_library_v2</sourceRootElem>
                 <sourceRootElem>../System_timer.X</sourceRootElem>
-                <sourceRootElem>../NEO_M8N.X</sourceRootElem>
-                <sourceRootElem>../RC_RX.X</sourceRootElem>
-                <sourceRootElem>../ICM-20948.X</sourceRootElem>
-                <sourceRootElem>../AS5047D.X</sourceRootElem>
-                <sourceRootElem>../RC_servo.X</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
                     <name>default</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>ECHO</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>TRANSMIT_ONLY</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>SEND_AND_RECEIVE_MAVLINK</name>
                     <type>2</type>
                 </confElem>
             </confList>

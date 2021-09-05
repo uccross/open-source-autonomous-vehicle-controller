@@ -11,7 +11,6 @@
  ******************************************************************************/
 
 #include "System_timer.h" // The header file for this source file. 
-#include "SerialM32.h" // The header file for this source file. 
 #include "Board.h"   //Max32 setup      
 #include <xc.h>
 #include <stdio.h>
@@ -98,6 +97,7 @@ void __ISR(_TIMER_5_VECTOR, ipl4auto) Timer5_handler(void) {
 
 //Testing harness
 #ifdef SYSTEM_TIMER_TESTING
+#include "SerialM32.h" // The header file for this source file. 
 
 void main(void) {
     uint32_t cur_time = 0;

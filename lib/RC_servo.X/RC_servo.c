@@ -12,7 +12,6 @@
 
 #include "RC_servo.h" // The header file for this source file.
 #include "Board.h"   //Max32 setup
-#include "SerialM32.h"
 #include "xc.h"
 #include <stdio.h>
 #include <sys/types.h>
@@ -175,6 +174,7 @@ void RC_servo_delay(int cycles) {
 
 /*Test harness*/
 #ifdef RCSERVO_TESTING
+#include "SerialM32.h"
 
 void main(void) {
     uint16_t test_pulse = RC_SERVO_CENTER_PULSE;

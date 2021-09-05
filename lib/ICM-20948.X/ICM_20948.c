@@ -12,7 +12,11 @@
 
 #include "ICM_20948.h" // The header file for this source file. 
 #include "ICM_20948_registers.h"  //register definitions for the device
+
+#ifdef USB_DEBUG
 #include "SerialM32.h"
+#endif
+
 #include "Board.h"
 #include <stdio.h>
 #include <string.h>
@@ -139,16 +143,17 @@ static void I2C_stop(void);
 static void I2C_restart(void);
 static int I2C_send_byte(unsigned char byte);
 static unsigned char I2C_read_byte(void);
-static uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr);
+uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr);
 static uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting);
 static uint8_t SPI_read_reg(uint8_t reg_addr);
 static uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value);
 static uint8_t SPI_read_reg(uint8_t reg_addr);
-static void SPI_read_data(void);
+void SPI_read_data(void);
 
 /***********************************/
-static void delay(int cycles);
-static void IMU_run_I2C_state_machine(void);
+void delay(int cycles);
+static uint8_t IMU_run_I2C_state_machine(void);
+static void IMU_read_data();
 /**
  * @Function IMU_run_SPI_state_machine(uint8_t byte_read)
  * @return none
@@ -301,10 +306,18 @@ uint8_t IMU_init(char interface_mode) {
         SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_0);
         value = SPI_read_reg(AGB0_REG_WHO_AM_I);
         if (value != ICM_DEV_ID) {
+            
+#ifdef USB_DEBUG
             printf("IMU not found!\r\n");
+#endif
+            
             return ERROR;
         }
+        
+#ifdef USB_DEBUG
         printf("IMU returned who am I = 0x%x \r\n", value);
+#endif
+        
         SPI_set_reg(AGB0_REG_USER_CTRL, 0x30); //enable master I2C, disable slave I2C interface
         SPI_set_reg(AGB0_REG_PWR_MGMT_1, 0x01); //clear sleep bit and set clock to best available
         /*switch to user bank 3 to configure slave devices*/
@@ -318,10 +331,18 @@ uint8_t IMU_init(char interface_mode) {
         }
         value = SPI_read_reg(AGB3_REG_I2C_SLV4_DI); /*read the data returned by the mag*/
         if (value != MAG_DEV_ID) {
+            
+#ifdef USB_DEBUG
             printf("Magnetometer not found!\r\n");
+#endif
+            
             return ERROR;
         }
-        printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
+        
+#ifdef USB_DEBUG
+        printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/  
+#endif
+        
         SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR); /*load the I2C address of the magnetometer*/
         /*set the mag parameters on mag control 2 register*/
         SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_CNTL2);
@@ -357,7 +378,11 @@ uint8_t IMU_init(char interface_mode) {
 int8_t IMU_start_data_acq(void) {
     int8_t error = FALSE;
     if (IMU_CS_LAT == 0) {
+        
+#ifdef USB_DEBUG
         printf("IMU error found\r\n");
+
+#endif
         SPI1BUF; //read buffer
         IFS0bits.SPI1RXIF = 0; //clear any interrupt flag
         error = TRUE;
@@ -421,7 +446,6 @@ uint8_t IMU_get_raw_data(struct IMU_output* IMU_data) {
  * @author Aaron Hunter,
  **/
 uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data) {
-    int row;
     /*get raw data and store in module vectors*/
     if (IMU_data_ready == TRUE) {
         IMU_process_data();
@@ -573,7 +597,7 @@ int8_t IMU_get_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]) {
  * @note ~500nsec for one delay, then +12.5 nsec for every increment higher
  * @author ahunter
  */
-static void delay(int cycles) {
+void delay(int cycles) {
     int i;
     for (i = 0; i < cycles; i++) {
         ;
@@ -612,22 +636,19 @@ static int I2C_send_byte(unsigned char byte) {
     return SUCCESS;
 }
 
-static uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr) {
+uint8_t I2C_read_reg(uint8_t i2c_addr, uint8_t reg_addr) {
     uint8_t ret_val;
-    uint8_t err_state;
     I2C_start();
     I2C_send_byte(i2c_addr << 1 | WRITE); //read from device
     I2C_send_byte(reg_addr);
     I2C_restart();
-    err_state = I2C_send_byte(i2c_addr << 1 | READ);
+    I2C_send_byte(i2c_addr << 1 | READ);
     ret_val = I2C_read_byte();
     I2C_stop();
     return ret_val;
 }
 
 static uint8_t I2C_set_reg(uint8_t i2c_addr, uint8_t reg_addr, uint8_t setting) {
-    uint8_t ret_val;
-    uint8_t err_state;
     I2C_start();
     I2C_send_byte(i2c_addr << 1 | WRITE); //read from device
     I2C_send_byte(reg_addr);
@@ -706,7 +727,7 @@ static uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value) {
  * @returns none
  * @author ahunter
  */
-static void SPI_read_data(void) {
+void SPI_read_data(void) {
     int i;
     int num_bytes = IMU_NUM_BYTES;
     uint8_t val = 0;
@@ -766,8 +787,8 @@ static void __ISR(_SPI_1_VECTOR, IPL5AUTO) IMU_SPI_interrupt_handler(void) {
  */
 static void IMU_read_data() {
     uint8_t i;
-    uint8_t err_state;
     uint8_t num_bytes = IMU_NUM_BYTES; // TODO fix this for final version to reflect whole array
+    
     LATAINV = 0x8;
     I2C_start();
     LATAINV = 0x8;
@@ -815,7 +836,7 @@ static void IMU_read_data() {
  * preferred implementation
  * @author ahunter
  */
-static void IMU_run_I2C_state_machine(void) {
+static uint8_t IMU_run_I2C_state_machine(void) {
     static IMU_SM_states_t current_state = IMU_SEND_ADDR_W;
     IMU_SM_states_t next_state = IMU_SEND_ADDR_W;
     static uint8_t error = FALSE;
@@ -893,6 +914,8 @@ static void IMU_run_I2C_state_machine(void) {
             break;
     }
     current_state = next_state;
+    
+    return error;
 }
 
 /**
@@ -907,7 +930,6 @@ static void IMU_run_SPI_state_machine(uint8_t byte_read) {
     static uint8_t reg_address = AGB0_REG_ACCEL_XOUT_H;
     static IMU_SPI_SM_states_t current_state = IMU_SPI_SEND_NEXT_REG;
     IMU_SM_states_t next_state = IMU_SPI_SEND_NEXT_REG;
-    static uint8_t error = FALSE;
     static int8_t byte_index = -1;
     uint8_t max_index = IMU_NUM_BYTES - 1;
     switch (current_state) {
@@ -961,7 +983,7 @@ static uint8_t IMU_process_data(void) {
     mag_v_raw[2] = (accum) (int16_t) ((IMU_raw_data[20] << 8 | IMU_raw_data[19])*-1);
     /*status 1 is high byte and status 2 is low byte*/
     /*status 2 indicates mag overflow only*/
-    status = (IMU_raw_data[14] << 8 | IMU_raw_data[22] & 0x8);
+    status = ((IMU_raw_data[14] << 8) | (IMU_raw_data[22] & 0x8));
 
     /*calibrate raw data and store in scaled vectors*/
     /*scale outputs */

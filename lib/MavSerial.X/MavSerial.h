@@ -99,7 +99,6 @@ char MavSerial_getMavMsg(mavlink_message_t* r_message);
  */
 void MavSerial_sendMavPacket(mavlink_message_t* msg);
 
-
 /**
  * @function MavSerial_ParseWrapper(void)
  * @brief Calls mavlink byte parsing state machine. Should be called in main

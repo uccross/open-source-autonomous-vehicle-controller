@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>nmea0183v4</name>
+            <creation-uuid>92648889-9460-415b-9939-a83cc1367d4c</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <c-extensions>c</c-extensions>
+            <cpp-extensions/>
+            <header-extensions>h</header-extensions>
+            <asminc-extensions/>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>C:\Users\ladyb\OneDrive\Documents\reboat\libraries\board.X</sourceRootElem>
+                <sourceRootElem>C:\Users\ladyb\OneDrive\Documents\reboat\libraries\serial.X</sourceRootElem>
+                <sourceRootElem>C:\Users\ladyb\OneDrive\Documents\reboat\libraries\serial2.X</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>default</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>CHECKSUM_TEST</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>READ_NMEA_STREAM</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>READ_STANDARD_MSGS</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>READ_RMC_CSV</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>

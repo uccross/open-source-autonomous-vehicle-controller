@@ -281,7 +281,7 @@ char MavSerial_getMavMsg(mavlink_message_t* r_message) {
     return is_new_msg;
 }
 
-void MavSerial_send_mav_packet(mavlink_message_t *msg) {
+void MavSerial_sendMavPacket(mavlink_message_t *msg) {
     int bytes_sent = 0;
     uint8_t num_to_send = 0;
     num_to_send = mavlink_msg_to_send_buffer(tx_buf, msg);
@@ -291,7 +291,6 @@ void MavSerial_send_mav_packet(mavlink_message_t *msg) {
 }
 
 void MavSerial_ParseWrapper(void) {
-
     if (((rx_buf_tail_index + 1) % MAV_SERIAL_RX_BUF_SIZE) !=
             rx_buf_head_index) {
         if (mavlink_parse_char(MAVLINK_COMM_0, (uint8_t) MavSerial_GetChar(),
@@ -305,7 +304,7 @@ int MavSerial_SendAck(uint8_t sys_id, uint8_t result,
     /* Send a command acknowledgment */
     mavlink_msg_command_ack_pack(sys_id, 1, msg, MAV_CMD_ACK_OK, result, 0, 0, 0, 0);
 
-    MavSerial_send_mav_packet(msg);
+    MavSerial_sendMavPacket(msg);
     return SUCCESS;
 }
 
@@ -584,7 +583,7 @@ int main(void) {
 
         if ((t_new - t_old) >= RATE_1HZ) {
             t_old = t_new;
-            MavSerial_send_mav_packet(&msg);
+            MavSerial_sendMavPacket(&msg);
             LATAbits.LATA3 ^= 1; /* Set LED4 */
         }
     }
@@ -649,12 +648,12 @@ int main(void) {
                     vehicle_mode,
                     1, vehicle_state);
 
-            MavSerial_send_mav_packet(&msg);
+            MavSerial_sendMavPacket(&msg);
 
             /* Send System Status */
             mavlink_msg_sys_status_pack(SYS_ID, 1, &msg, 0, 0, 0, 500, 11000, -1,
                     -1, 0, 0, 0, 0, 0, 0);
-            MavSerial_send_mav_packet(&msg);
+            MavSerial_sendMavPacket(&msg);
 
             if (need_to_ack == TRUE) {
                 /* Send a command acknowledgment */
@@ -665,7 +664,7 @@ int main(void) {
                         0,
                         0, /* @TODO: add TARGET SYSTEM */
                         0); /* @TODO: add TARGET COMPONENT */
-                MavSerial_send_mav_packet(&msg);
+                MavSerial_sendMavPacket(&msg);
                 need_to_ack = FALSE;
             }
 

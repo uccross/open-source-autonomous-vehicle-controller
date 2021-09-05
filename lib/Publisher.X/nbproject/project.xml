@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>Publisher</name>
+            <creation-uuid>5f22a4aa-bb7d-4a83-812b-4ffa32a60f37</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <c-extensions>c</c-extensions>
+            <cpp-extensions/>
+            <header-extensions>h</header-extensions>
+            <asminc-extensions/>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>../MavSerial.X</sourceRootElem>
+                <sourceRootElem>../Board.X</sourceRootElem>
+                <sourceRootElem>../ICM-20948.X</sourceRootElem>
+                <sourceRootElem>../nmea0183v4.X</sourceRootElem>
+                <sourceRootElem>../RC_RX.X</sourceRootElem>
+                <sourceRootElem>../System_timer.X</sourceRootElem>
+                <sourceRootElem>../RC_servo.X</sourceRootElem>
+                <sourceRootElem>../../modules/c_library_v2/common</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>default</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>PUBLISHER_UNIT_TESTS</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>

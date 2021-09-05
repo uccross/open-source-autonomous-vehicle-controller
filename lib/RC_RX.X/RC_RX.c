@@ -12,7 +12,9 @@
  ******************************************************************************/
 
 #include "RC_RX.h" // The header file for this source file. 
-#include "SerialM32.h" // The header file for this source file. 
+#ifdef USB_DEBUG
+#include "SerialM32.h"
+#endif
 #include "Board.H"   //Max32 setup      
 #include <xc.h>
 #include <stdio.h>
@@ -70,7 +72,7 @@ typedef enum {
  * @note 
  * @author Aaron Hunter,
  * @modified */
-static void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf);
+void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf);
 
 /**
  * @Function  RCRX_UART_interrupt_handler(void)
@@ -78,7 +80,7 @@ static void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf);
  * @note 
  * @author Aaron Hunter
  * @modified  */
-static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
+void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
 
 /**
  * @Function void RCRX_run_RX_state_machine(uint8_t char_in);
@@ -87,7 +89,7 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
  * @brief Runs the RX state machine for receiving data, it is called from 
  * within the interrupt and reads the current character
  * @author Aaron Hunter */
-static void RCRX_run_RX_state_machine(uint8_t char_in);
+void RCRX_run_RX_state_machine(uint8_t char_in);
 
 /**
  * @Function uint8_t RCRX_calc_cmd(RCRX_channel_buffer* channels)
@@ -96,7 +98,7 @@ static void RCRX_run_RX_state_machine(uint8_t char_in);
  * @brief converts sbus raw data into 11 bit channel data
  * @author Aaron Hunter 
  */
-static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels);
+uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels);
 
 
 /*******************************************************************************
@@ -134,7 +136,9 @@ uint8_t RCRX_init(void) {
     // turn on UART
     U5MODEbits.ON = 1;
     __builtin_enable_interrupts();
+#ifdef USB_DEBUG
     printf("Radio control receiver initialized.\r\n");
+#endif
     return SUCCESS;
 
 }
@@ -178,7 +182,7 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
  * @note 
  * @author Aaron Hunter,
  * @modified */
-static void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf) {
+void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf) {
     int i;
     int j;
     buf->read_index = 0;
@@ -196,7 +200,7 @@ static void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf) {
  * @note 
  * @author Aaron Hunter
  * @modified  */
-static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
+void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
     if (IFS2bits.U5RXIF) { //check for received data flag
         //run the state machine with the new character from the RX buffer
         //        printf("%x ", U5RXREG);
@@ -218,7 +222,7 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
  * @brief Runs the RX state machine for receiving data, it is called from 
  * within the interrupt and reads the current character
  * @author Aaron Hunter */
-static void RCRX_run_RX_state_machine(uint8_t char_in) {
+void RCRX_run_RX_state_machine(uint8_t char_in) {
     static RCRX_state_t current_state = WAIT_FOR_START;
     RCRX_state_t next_state = WAIT_FOR_START;
 
@@ -289,7 +293,7 @@ void RCRX_delay(int cycles) {
  * @brief converts sbus raw data into 11 bit channel data
  * @author Aaron Hunter 
  */
-static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels) {
+uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels) {
     channels[0] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][1]\
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] << 8) &0x7ff);
     channels[1] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][2] >> 3 \

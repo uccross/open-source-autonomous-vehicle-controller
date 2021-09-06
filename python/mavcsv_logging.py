@@ -74,11 +74,13 @@ echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
     echo_sensor_orientation,
     echo_sensor_covariance)
 try:
+    print("    updating dictionary wit Echo message...")
     msgs_dict.update(echo_msg.to_dict())
-    rint("Collected message from echo sounder sensor")
+    print("Collected message from echo sounder sensor")
+
 except:
-    print('Echo msg error, or dict error!')
-    time.sleep(1)
+    print('    Echo msg error, or dict error!')
+    time.sleep(10)
 
 
 # Put all  keys for all the incoming messages into the headers list

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import time
 from pymavlink import mavutil
+import ctypes as ct
 from brping import Ping1D
 import os
 import csv
@@ -125,7 +126,7 @@ with open(csv_file, 'w', newline='') as csvfile:
                 (time.time() - start_time)*1000,
                 echo_sensor_min,
                 echo_sensor_max,
-                echo_sensor_distance,
+                ct.c_uint16(echo_sensor_distance),
                 echo_sensor_type,
                 echo_sensor_id,
                 echo_sensor_orientation,

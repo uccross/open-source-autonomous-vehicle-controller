@@ -89,7 +89,7 @@ with open(csv_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=headers)
     writer.writeheader()
     start_time = time.time()
-    logging_time = 30
+    logging_time = 600
     # currently we log for a specified period of time
     while time.time() - start_time < logging_time:
         try:
@@ -108,7 +108,7 @@ with open(csv_file, 'w', newline='') as csvfile:
 
             # Echo depth sounder sensor [Placed here only temporarily]
             echo_data = myPing.get_distance()
-            echo_distane = echo_data["distane"]
+            echo_distane = echo_data["distance"]
             echo_confidence = echo_data["confidence"]
 
             echo_msg = [

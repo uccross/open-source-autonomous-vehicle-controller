@@ -116,31 +116,36 @@ with open(csv_file, 'w', newline='') as csvfile:
             # and write it to the file
             writer.writerow(msgs_dict)
 
-            # Echo depth sounder sensor [Placed here only temporarily]
-            echo_data = myPing.get_distance()
-            echo_sensor_distance = echo_data["distance"]
-            echo_confidence = echo_data["confidence"]
+            if msg.get_type() == 'GPS_RAW_INT':
+                # Echo depth sounder sensor [Placed here only temporarily]
 
-            echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
-                (time.time() - start_time)*1000,
-                echo_sensor_min,
-                echo_sensor_max,
-                echo_sensor_distance,
-                echo_sensor_type,
-                echo_sensor_id,
-                echo_sensor_orientation,
-                echo_sensor_covariance)
+                # Use the same time from GPS_RAW_INT, but in msec not usec
+                echo_sensor_time = msg.time_usec/100 
+                
+                echo_data = myPing.get_distance()
+                echo_sensor_distance = echo_data["distance"]
+                echo_confidence = echo_data["confidence"]
+                
+                echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
+                    echo_sensor_time,
+                    echo_sensor_min,
+                    echo_sensor_max,
+                    echo_sensor_distance,
+                    echo_sensor_type,
+                    echo_sensor_id,
+                    echo_sensor_orientation,
+                    echo_sensor_covariance)
 
-            print("Type:")
-            print(type(echo_msg))
+                print("Type:")
+                print(type(echo_msg))
 
-            print("\r\nMsg:")
-            print(echo_msg)
+                print("\r\nMsg:")
+                print(echo_msg)
 
-            # add msg to the msgs_dict
-            msgs_dict.update(echo_msg.to_dict())
-            # and write it to the file
-            writer.writerow(msgs_dict)
+                # add msg to the msgs_dict
+                msgs_dict.update(echo_msg.to_dict())
+                # and write it to the file
+                writer.writerow(msgs_dict)
 
         except:
             time.sleep(1) # TODO:get rid of this sleep

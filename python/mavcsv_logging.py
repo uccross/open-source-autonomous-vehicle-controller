@@ -48,13 +48,6 @@ print("Collecting messages from micro for {} seconds to get all keys".format(wai
 while time.time() - start_time < wait_time:
     try:
         msg = master.recv_match(blocking=True)
-
-        print("Type:")
-        print(type(msg))
-
-        print("\r\nMsg:")
-        print(msg)
-
         # add msg to the msgs_dict
         msgs_dict.update(msg.to_dict())
     except:
@@ -91,6 +84,7 @@ try:
 
     msgs_dict.update(echo_msg.to_dict())
     print("Collected message from echo sounder sensor")
+    time.sleep(1)
 
 except:
     print('    Echo msg error, or dict error!')

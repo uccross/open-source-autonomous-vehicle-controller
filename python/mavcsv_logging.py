@@ -128,7 +128,7 @@ with open(csv_file, 'w', newline='') as csvfile:
             echo_confidence = echo_data["confidence"]
 
             echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
-                (time.time - start_time)*1000,
+                (time.time() - start_time)*1000,
                 echo_sensor_min,
                 echo_sensor_max,
                 echo_sensor_distance,

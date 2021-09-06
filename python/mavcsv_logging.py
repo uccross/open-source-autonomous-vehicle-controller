@@ -64,8 +64,7 @@ echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
 echo_sensor_id = 33
 echo_sensor_orientation = 270  # Degrees (pointing down)
 echo_sensor_covariance = 0
-
-echo_msg = [
+echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
     0,
     echo_sensor_min,
     echo_sensor_max,
@@ -73,7 +72,7 @@ echo_msg = [
     echo_sensor_type,
     echo_sensor_id,
     echo_sensor_orientation,
-    echo_sensor_covariance]
+    echo_sensor_covariance)
 try:
     msgs_dict.update(echo_msg.to_dict())
 except:
@@ -111,7 +110,7 @@ with open(csv_file, 'w', newline='') as csvfile:
             echo_distane = echo_data["distance"]
             echo_confidence = echo_data["confidence"]
 
-            echo_msg = [
+            echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
                 (time.time - start_time)*1000,
                 echo_sensor_min,
                 echo_sensor_max,
@@ -119,7 +118,7 @@ with open(csv_file, 'w', newline='') as csvfile:
                 echo_sensor_type,
                 echo_sensor_id,
                 echo_sensor_orientation,
-                echo_sensor_covariance]
+                echo_sensor_covariance)
 
             print("Type:")
             print(type(echo_msg))

@@ -68,7 +68,7 @@ echo_sensor_min = 0  # Units: mm, Minimum
 echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
 echo_sensor_distance = 0  # Units: mm
 echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
-echo_sensor_id = 33
+echo_sensor_id = 0
 echo_sensor_orientation = 270  # Degrees (pointing down)
 echo_sensor_covariance = 0
 echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
@@ -124,7 +124,7 @@ with open(csv_file, 'w', newline='') as csvfile:
 
             # Echo depth sounder sensor [Placed here only temporarily]
             echo_data = myPing.get_distance()
-            echo_distane = echo_data["distance"]
+            echo_sensor_distance = echo_data["distance"]
             echo_confidence = echo_data["confidence"]
 
             echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(

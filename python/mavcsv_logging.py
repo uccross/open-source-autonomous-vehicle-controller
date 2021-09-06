@@ -48,6 +48,13 @@ print("Collecting messages from micro for {} seconds to get all keys".format(wai
 while time.time() - start_time < wait_time:
     try:
         msg = master.recv_match(blocking=True)
+
+        print("Type:")
+        print(type(msg))
+
+        print("\r\nMsg:")
+        print(msg)
+
         # add msg to the msgs_dict
         msgs_dict.update(msg.to_dict())
     except:
@@ -75,6 +82,13 @@ echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
     echo_sensor_covariance)
 try:
     print("    updating dictionary wit Echo message...")
+
+    print("Type:")
+    print(type(echo_msg))
+
+    print("\r\nMsg:")
+    print(echo_msg)
+
     msgs_dict.update(echo_msg.to_dict())
     print("Collected message from echo sounder sensor")
 

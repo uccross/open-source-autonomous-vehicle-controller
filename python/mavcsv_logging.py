@@ -56,8 +56,22 @@ while time.time() - start_time < wait_time:
 print("Finished collecting messages from micro")
 
 print("Collecting message from echo sounder sensor")
+echo_sensor_min = 0  # Units: mm, Minimum
+echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
+echo_sensor_distance = 0  # Units: mm
+echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
+echo_sensor_id = 33
+echo_sensor_orientation = 270  # Degrees (pointing down)
+echo_sensor_covariance = 0
 echo_msg = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN(
-    [(time.time - start_time)*1000, 0, 3000, ]
+    [0,
+     echo_sensor_min,
+     echo_sensor_max,
+     echo_sensor_distance,
+     echo_sensor_type,
+     echo_sensor_id,
+     echo_sensor_orientation,
+     echo_sensor_covariance]
 )
 msgs_dict.update(echo_msg.to_dict())
 
@@ -92,7 +106,14 @@ with open(csv_file, 'w', newline='') as csvfile:
             echo_confidence = echo_data["confidence"]
 
             echo_msg = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN(
-                [(time.time - start_time)*1000, 0, 3000, ]
+                [(time.time - start_time)*1000,
+                 echo_sensor_min,
+                 echo_sensor_max,
+                 echo_sensor_distance,
+                 echo_sensor_type,
+                 echo_sensor_id,
+                 echo_sensor_orientation,
+                 echo_sensor_covariance]
             )
             print("Type:")
             print(type(echo_msg))

@@ -40,7 +40,7 @@ while time.time() - start_time < wait_time:
     except:
         print('msg error, or dict error!')
         
-print("Finished collecting messages").
+print("Finished collecting messages")
 
 # Put all  keys for all the incoming messages into the headers list 
 headers = list(msgs_dict)

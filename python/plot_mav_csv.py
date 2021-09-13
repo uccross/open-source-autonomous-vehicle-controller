@@ -12,6 +12,16 @@
     'lat' is a parameter within that message type we want to plot,
     'lon' is a parameter also within that message type we want to plot.
 
+    Extra parameters for 3D plots can be added too:
+    python plot_mav_csv.py ../../my_data/2021_08_12.csv GPS_RAW_INT lat lon current_distance
+
+    where '../../my_data/2021_08_12.csv' is the file path and name, 
+    'GPS_RAW_INT' is the MAVLink message type,
+    'lat' is a parameter within that message type we want to plot,
+    'lon' is a parameter also within that message type we want to plot
+    'current_distance' is a parameter from a DIFFERENT sensor associated with 
+    time and place that the
+
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
 import csv
@@ -66,7 +76,7 @@ column_header_0 = arguments.column_header_0
 column_header_1 = arguments.column_header_1
 column_header_2 = arguments.column_header_2
 
-data_start_index = 17000  # @TODO: make this a mandatory argument
+data_start_index = 0  # @TODO: make this a mandatory argument
 
 # -1 because we don't count the scpit name itself.
 num_args = len(sys.argv) - 1

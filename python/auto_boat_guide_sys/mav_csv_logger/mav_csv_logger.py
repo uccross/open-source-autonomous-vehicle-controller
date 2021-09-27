@@ -129,6 +129,8 @@ class mav_csv_logger():
                 time.sleep(1) # TODO:get rid of this sleep
                 print('msg error, or dict error!')
 
+        self.log_con.close()
+
         if msg != None:
             return msg.get_type()
 
@@ -213,10 +215,24 @@ if __name__ == '__main__':
         print("Failed to initialize Ping!")
         exit(1)
 
+    msg_list=[mavutil.mavlink.MAVLink_distance_sensor_message(
+            0,
+            echo_sensor_min=0,
+            echo_sensor_max=300000,
+            echo_sensor_distance=0,
+            echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
+            echo_sensor_id=0,
+            echo_sensor_orientation=270,
+            echo_sensor_covariance=0)]
+
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
-                               log_file=log_file)
+                               log_file=log_file, msg_list=msg_list)
 
     # currently we log for a specified period of time
     start_time = time.time()
-    logging_time = 20
+    logging_time = 2
     while (time.time() - start_time) < logging_time:
+        my_logger.log()
+
+    print('mav_csv_logger.py module test finished')
+    

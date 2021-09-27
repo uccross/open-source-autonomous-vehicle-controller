@@ -111,7 +111,6 @@ class mav_csv_logger():
         msg = None
 
         with open(self.csv_file, 'a'):
-        # try:
             msg = self.log_con.recv_match(blocking=True)
 
             print("Type:")
@@ -120,14 +119,15 @@ class mav_csv_logger():
             print("\r\nMsg:")
             print(msg)
 
+        try:
             # add msg to the msgs_dict
             self.msgs_dict.update(msg.to_dict())
             # and write it to the file
             self.writer.writerow(self.msgs_dict)
 
-        # except:
-            # time.sleep(1)  # TODO:get rid of this sleep
-            # print('msg error, or dict error!')
+        except:
+            time.sleep(1)  # TODO:get rid of this sleep
+            print('msg error, or dict error!')
 
         self.log_con.close()
 

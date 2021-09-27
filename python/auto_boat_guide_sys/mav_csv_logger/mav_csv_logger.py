@@ -17,13 +17,13 @@ class mav_csv_logger():
                  log_file='./logfile.log', csv_file='./logfile.csv',
                  msg_list=[mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
-            echo_sensor_min=0,
-            echo_sensor_max=300000,
-            echo_sensor_distance=0,
-            echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
-            echo_sensor_id=0,
-            echo_sensor_orientation=270,
-            echo_sensor_covariance=0)]):
+            0, # echo_sensor_min
+            300000, # echo_sensor_max
+            0, # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN, # echo_sensor_type
+            0, # echo_sensor_id
+            270, # echo_sensor_orientation
+            0)]): # echo_sensor_covariance
         """
         :param port: The usb com port for serial communication between the 
         raspberry pi and the Max32 (or similar microcontroller)

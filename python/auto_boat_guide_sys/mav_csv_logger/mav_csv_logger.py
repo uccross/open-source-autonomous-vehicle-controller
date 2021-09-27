@@ -111,23 +111,23 @@ class mav_csv_logger():
         msg = None
 
         with open(self.csv_file, 'a'):
-            try:
-                msg = self.log_con.recv_match(blocking=True)
+        # try:
+            msg = self.log_con.recv_match(blocking=True)
 
-                print("Type:")
-                print(type(msg))
+            print("Type:")
+            print(type(msg))
 
-                print("\r\nMsg:")
-                print(msg)
+            print("\r\nMsg:")
+            print(msg)
 
-                # add msg to the msgs_dict
-                self.msgs_dict.update(msg.to_dict())
-                # and write it to the file
-                self.writer.writerow(self.msgs_dict)
+            # add msg to the msgs_dict
+            self.msgs_dict.update(msg.to_dict())
+            # and write it to the file
+            self.writer.writerow(self.msgs_dict)
 
-            except:
-                time.sleep(1)  # TODO:get rid of this sleep
-                print('msg error, or dict error!')
+        # except:
+            # time.sleep(1)  # TODO:get rid of this sleep
+            # print('msg error, or dict error!')
 
         self.log_con.close()
 
@@ -164,12 +164,12 @@ class mav_csv_logger():
 
         return None
 
-
+###############################################################################
 if __name__ == '__main__':
     from brping import Ping1D
     import argparse
 
-    ############################################################################
+    ###########################################################################
     # Parse Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--baudrate', type=int, dest='baudrate',

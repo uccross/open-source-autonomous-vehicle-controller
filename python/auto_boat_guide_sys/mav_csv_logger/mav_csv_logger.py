@@ -217,14 +217,14 @@ if __name__ == '__main__':
         exit(1)
 
     msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
-        0,
-        echo_sensor_min=0,
-        echo_sensor_max=300000,
-        echo_sensor_distance=0,
-        echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
-        echo_sensor_id=0,
-        echo_sensor_orientation=270,
-        echo_sensor_covariance=0)]
+            0,
+            0, # echo_sensor_min
+            300000, # echo_sensor_max
+            0, # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN, # echo_sensor_type
+            0, # echo_sensor_id
+            270, # echo_sensor_orientation
+            0)]
 
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
                                log_file=log_file, msg_list=msg_list)

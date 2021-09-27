@@ -17,13 +17,13 @@ class mav_csv_logger():
                  log_file='./logfile.log', csv_file='./logfile.csv',
                  msg_list=[mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
-            0, # echo_sensor_min
-            300000, # echo_sensor_max
-            0, # echo_sensor_distance
-            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN, # echo_sensor_type
-            0, # echo_sensor_id
-            270, # echo_sensor_orientation
-            0)]): # echo_sensor_covariance
+            0,  # echo_sensor_min
+            300000,  # echo_sensor_max
+            0,  # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+            0,  # echo_sensor_id
+            270,  # echo_sensor_orientation
+            0)]):  # echo_sensor_covariance
         """
         :param port: The usb com port for serial communication between the 
         raspberry pi and the Max32 (or similar microcontroller)
@@ -85,13 +85,13 @@ class mav_csv_logger():
 
     def add_msg_type(self, msg=mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
-            echo_sensor_min=0,
-            echo_sensor_max=300000,
-            echo_sensor_distance=0,
-            echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
-            echo_sensor_id=0,
-            echo_sensor_orientation=270,
-            echo_sensor_covariance=0)):
+            0,  # echo_sensor_min
+            300000,  # echo_sensor_max
+            0,  # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+            0,  # echo_sensor_id
+            270,  # echo_sensor_orientation
+            0)):
         """
         :param msg: A MAVLink message to be added to the dicitonary. This 
         message should probably come from a sensor that is NOT connected to the 
@@ -126,7 +126,7 @@ class mav_csv_logger():
                 self.writer.writerow(self.msgs_dict)
 
             except:
-                time.sleep(1) # TODO:get rid of this sleep
+                time.sleep(1)  # TODO:get rid of this sleep
                 print('msg error, or dict error!')
 
         self.log_con.close()
@@ -164,6 +164,7 @@ class mav_csv_logger():
 
         return None
 
+
 if __name__ == '__main__':
     from brping import Ping1D
     import argparse
@@ -176,7 +177,7 @@ if __name__ == '__main__':
                             communication. Default is 115200')
     parser.add_argument('-c', '--com', type=str, dest='com', default="COM4",
                         help='Specify COM port number for serial \
-                        communication with micro. Default is 4, as in COM4') # /dev/ttyUSB1
+                        communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
 
     parser.add_argument('--ebaudrate', type=int, dest='ebaudrate',
                         default=115200, help='Specify baudrate for serial \
@@ -215,15 +216,15 @@ if __name__ == '__main__':
         print("Failed to initialize Ping!")
         exit(1)
 
-    msg_list=[mavutil.mavlink.MAVLink_distance_sensor_message(
-            0,
-            echo_sensor_min=0,
-            echo_sensor_max=300000,
-            echo_sensor_distance=0,
-            echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
-            echo_sensor_id=0,
-            echo_sensor_orientation=270,
-            echo_sensor_covariance=0)]
+    msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+        0,
+        echo_sensor_min=0,
+        echo_sensor_max=300000,
+        echo_sensor_distance=0,
+        echo_sensor_type=mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,
+        echo_sensor_id=0,
+        echo_sensor_orientation=270,
+        echo_sensor_covariance=0)]
 
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
                                log_file=log_file, msg_list=msg_list)
@@ -235,4 +236,3 @@ if __name__ == '__main__':
         my_logger.log()
 
     print('mav_csv_logger.py module test finished')
-    

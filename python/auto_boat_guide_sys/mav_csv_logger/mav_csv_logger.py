@@ -231,7 +231,7 @@ if __name__ == '__main__':
 
     # currently we log for a specified period of time
     start_time = time.time()
-    logging_time = 2
+    logging_time = 10
     while (time.time() - start_time) < logging_time:
         my_logger.log()
 

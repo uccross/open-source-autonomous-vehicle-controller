@@ -64,10 +64,8 @@ class mav_csv_logger():
 
         # If the extra_headers list is not empty, add the extra headers
         if extra_headers != []:
-            print("Appending extra headers")
-            print(type(self.headers))
-            print(type(extra_headers))
-            self.headers.append(extra_headers[0])
+            print("Adding extra headers")
+            self.headers += extra_headers)
 
         print("CSV Header: {}".format(self.headers))
 

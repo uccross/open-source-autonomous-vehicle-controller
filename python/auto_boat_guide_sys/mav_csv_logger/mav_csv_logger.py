@@ -58,6 +58,8 @@ class mav_csv_logger():
         # Add all additional messages for expected sensors that are directly
         # connected to the Raspberry Pi via USB
         for msg in msg_list:
+            print("added: {}".format(msg.get_type()))
+            print("msg: {}".format(msg))
             self.add_msg_type(msg)
 
         # Put all  keys for all the incoming messages into the headers list
@@ -200,20 +202,15 @@ if __name__ == '__main__':
             print("Failed to initialize Ping!")
             exit(1)
 
-        # Make sure all messages have all fields specified
         msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
             0,  # echo_sensor_min
             300000,  # echo_sensor_max
-            100,  # echo_sensor_distance
+            0,  # echo_sensor_distance
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0, # echo_sensor_covariance
-            1,#horizontal_fov
-            1,#vertical_fov
-            [0, 0, 0, 0],#quarternion
-            1)]#signal_quality
+            0)]
 
         i = 0
 
@@ -236,7 +233,7 @@ if __name__ == '__main__':
             if status == 'HEARTBEAT':
                 for msg in msg_list:
                     my_logger.log(msg)
-
+                    
                 i += 100
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(

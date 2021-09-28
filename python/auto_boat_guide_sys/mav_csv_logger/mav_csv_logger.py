@@ -200,6 +200,7 @@ if __name__ == '__main__':
             print("Failed to initialize Ping!")
             exit(1)
 
+        # Make sure all messages have all fields specified
         msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
             0,  # echo_sensor_min
@@ -208,7 +209,11 @@ if __name__ == '__main__':
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0)]
+            0, # echo_sensor_covariance
+            1,#horizontal_fov
+            1,#vertical_fov
+            [0, 0, 0, 0],#quarternion
+            1)]#signal_quality
 
         i = 0
 

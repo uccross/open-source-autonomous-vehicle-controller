@@ -120,7 +120,7 @@ class mav_csv_logger():
         :return: The MAVLink message type if not none, else return None
         """
 
-        with open(self.csv_file, 'a', newline='') as csvfile:
+        with open(self.csv_file, 'a') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
             self.writer.writeheader()
             # try:
@@ -181,7 +181,7 @@ if __name__ == '__main__':
                             in COM3')  # /dev/ttyUSB0
 
     parser.add_argument('--csv_file', type=str, dest='csv_file',
-                        default="./csv_file.csv",
+                        default="./log_file",
                         help='log file path')
 
     parser.add_argument('--log_file', type=str, dest='log_file',

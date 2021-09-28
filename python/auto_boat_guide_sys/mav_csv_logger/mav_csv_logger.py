@@ -180,6 +180,9 @@ if __name__ == '__main__':
                         help='Specify COM port number for serial \
                         communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
 
+    parser.add_argument('-e', '--echo', dest='echo_sensor',
+                        action='store_true', help='To use Blue Robotic\'s echo\
+                            sensor')
     parser.add_argument('--ebaudrate', type=int, dest='ebaudrate',
                         default=115200, help='Specify baudrate for serial \
                             communication with echo sounder. Default is \
@@ -190,7 +193,7 @@ if __name__ == '__main__':
                             in COM3')  # /dev/ttyUSB0
 
     parser.add_argument('--csv_file', type=str, dest='csv_file',
-                        default="./csv_file",
+                        default="./csv_file.csv",
                         help='log file path')
 
     parser.add_argument('--log_file', type=str, dest='log_file',
@@ -201,6 +204,7 @@ if __name__ == '__main__':
 
     baudrate = arguments.baudrate
     com = arguments.com
+    echo_sensor = arguments.echo_sensor
     sensor_com = arguments.ecom
     sensor_baudrate = arguments.ebaudrate
     csv_file = arguments.csv_file
@@ -210,22 +214,23 @@ if __name__ == '__main__':
     # Example of a sensor connected to the Raspberry Pi over USB
 
     # Ping Echo Sounder for depth measurements in water
-    myPing = Ping1D()
-    myPing.connect_serial(sensor_com, sensor_baudrate)
+    if echo_sensor:
+        myPing = Ping1D()
+        myPing.connect_serial(sensor_com, sensor_baudrate)
 
-    if myPing.initialize() is False:
-        print("Failed to initialize Ping!")
-        exit(1)
+        if myPing.initialize() is False:
+            print("Failed to initialize Ping!")
+            exit(1)
 
-    msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
-        0,
-        0,  # echo_sensor_min
-        300000,  # echo_sensor_max
-        0,  # echo_sensor_distance
-        mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
-        0,  # echo_sensor_id
-        270,  # echo_sensor_orientation
-        0)]
+        msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+            0,
+            0,  # echo_sensor_min
+            300000,  # echo_sensor_max
+            0,  # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+            0,  # echo_sensor_id
+            270,  # echo_sensor_orientation
+            0)]
 
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
                                log_file=log_file, msg_list=msg_list)
@@ -239,20 +244,21 @@ if __name__ == '__main__':
     while (time.time() - start_time) < logging_time:
         status = my_logger.log()
 
-        if status != None:
-            for msg in msg_list:
-                my_logger.add_message_row_to_csv(msg)
+        if echo_sensor:
+            if status != None:
+                for msg in msg_list:
+                    my_logger.add_message_row_to_csv(msg)
 
-        msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
-        0,
-        0,  # echo_sensor_min
-        300000,  # echo_sensor_max
-        i,  # echo_sensor_distance
-        mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
-        0,  # echo_sensor_id
-        270,  # echo_sensor_orientation
-        0)]
+            msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+            0,
+            0,  # echo_sensor_min
+            300000,  # echo_sensor_max
+            i,  # echo_sensor_distance
+            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+            0,  # echo_sensor_id
+            270,  # echo_sensor_orientation
+            0)]
 
-        i += 100
+            i += 100
 
     print('mav_csv_logger.py module test finished')

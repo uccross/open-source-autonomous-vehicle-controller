@@ -198,36 +198,37 @@ if __name__ == '__main__':
         echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
 
         # currently we log for a specified period of time
-        start_time = time.time()
-        logging_time = 4
-        while (time.time() - start_time) < logging_time:
 
-            echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
-            echo_sensor_id = 0
-            echo_sensor_orientation = 270  # Degrees (pointing down)
-            echo_sensor_covariance = 0
+        echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
+        echo_sensor_id = 0
+        echo_sensor_orientation = 270  # Degrees (pointing down)
+        echo_sensor_covariance = 0
 
-            echo_data = myPing.get_distance()
-            echo_sensor_distance = echo_data["distance"]  # Units: mm
-            echo_confidence = echo_data["confidence"]
+        echo_data = myPing.get_distance()
+        echo_sensor_distance = echo_data["distance"]  # Units: mm
+        echo_confidence = echo_data["confidence"]
 
-            echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
-                echo_sensor_time,
-                echo_sensor_min,
-                echo_sensor_max,
-                echo_sensor_distance,
-                echo_sensor_type,
-                echo_sensor_id,
-                echo_sensor_orientation,
-                echo_sensor_covariance)
+        echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message()
+        print("echo field names")
+        print(echo_msg.ordered_fieldnames)
 
-            echo_sensor_time += 1
+        echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
+            echo_sensor_time,
+            echo_sensor_min,
+            echo_sensor_max,
+            echo_sensor_distance,
+            echo_sensor_type,
+            echo_sensor_id,
+            echo_sensor_orientation,
+            echo_sensor_covariance)
 
-            msg_list = [echo_msg]
+        echo_sensor_time += 1
 
-            for msg in msg_list:
-                print("msg type to be added: {}".format(msg.get_type()))
-                print("msg to be added: {}".format(msg))
+        msg_list = [echo_msg]
+
+        for msg in msg_list:
+            print("msg type to be added: {}".format(msg.get_type()))
+            print("msg to be added: {}".format(msg))
 
         i = 0
 

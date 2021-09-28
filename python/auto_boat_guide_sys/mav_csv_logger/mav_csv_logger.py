@@ -270,6 +270,6 @@ if __name__ == '__main__':
                 echo_sensor_orientation,
                 echo_sensor_covariance)
 
-            msg_list = [echo_msg]
+            msg_list = []
 
     print('mav_csv_logger.py module test finished')

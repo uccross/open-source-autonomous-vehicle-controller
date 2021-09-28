@@ -53,25 +53,19 @@ class mav_csv_logger():
 
         # Listen to the usb serial port connecting the microcontroller and the
         # Raspberry Pi
-        self.wait_for_msg_types_from_micro()
-
-        # Add all additional messages for expected sensors that are directly
-        # connected to the Raspberry Pi via USB
-        print("Adding MAVLink messages for sensors NOT connected to the microcontroller")
-        for msg in msg_list:
-            print("added: {}".format(msg.get_type()))
-            print("msg: {}".format(msg))
-            self.msgs_dict.update(msg.to_dict())
+        self.collect_msg_types(wait_time=5, extra_msg_list=msg_list)
 
         # Put all  keys for all the incoming messages into the headers list
         self.headers = list(self.msgs_dict)
+        print("CSV Header: {}".format(self.headers))
+
         with open(self.csv_file, 'w', newline='') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
             self.writer.writeheader()
 
         return None
 
-    def wait_for_msg_types_from_micro(self, wait_time=5):
+    def collect_msg_types(self, wait_time=5, extra_msg_list=None):
         """
         :param wait_time:
         """
@@ -80,9 +74,22 @@ class mav_csv_logger():
             try:
                 msg = self.mav_conn.recv_match(blocking=True)
                 # add msg to the msgs_dict
+                print("added msg type: {}".format(msg.get_type()))
+                print("msg content: {}".format(msg))
                 self.msgs_dict.update(msg.to_dict())
+
             except:
                 print('msg error, or dict error!')
+
+        # Add all additional messages for expected sensors that are directly
+        # connected to the Raspberry Pi via USB
+        if extra_msg_list:
+            print(
+                "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
+            for msg in extra_msg_list:
+                print("added extra msg type: {}".format(msg.get_type()))
+                print("extra msg content: {}".format(msg))
+                self.msgs_dict.update(msg.to_dict())
 
         return None
 
@@ -199,7 +206,7 @@ if __name__ == '__main__':
             echo_sensor_id = 0
             echo_sensor_orientation = 270  # Degrees (pointing down)
             echo_sensor_covariance = 0
-    
+
             echo_data = myPing.get_distance()
             echo_sensor_distance = echo_data["distance"]  # Units: mm
             echo_confidence = echo_data["confidence"]
@@ -215,7 +222,7 @@ if __name__ == '__main__':
                 echo_sensor_covariance)
 
             msg_list = [echo_msg]
-            
+
             for msg in msg_list:
                 print("msg type to be added: {}".format(msg.get_type()))
                 print("msg to be added: {}".format(msg))

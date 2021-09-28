@@ -208,7 +208,7 @@ if __name__ == '__main__':
             0,
             0,  # echo_sensor_min
             300000,  # echo_sensor_max
-            0,  # echo_sensor_distance
+            100,  # echo_sensor_distance
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
@@ -223,8 +223,7 @@ if __name__ == '__main__':
     else:
         msg_list = []
 
-    print("MAVLink msg list for sensors connected directly to companion\
-         computer (Raspberry Pi):")
+    print("MAVLink msg list for sensors connected directly to companion computer (Raspberry Pi):")
     for msg in msg_list:
         print(msg)
 

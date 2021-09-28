@@ -211,7 +211,11 @@ if __name__ == '__main__':
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0)]
+            0, # covariance
+            0, # signal quality
+            0, # vertical_fov
+            [0, 0, 0, 0], # quaternion
+            0)] # horizontal_fov
 
         i = 0
 

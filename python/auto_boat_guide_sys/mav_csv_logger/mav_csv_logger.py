@@ -110,7 +110,8 @@ class mav_csv_logger():
         """
         msg = None
 
-        with open(self.csv_file, 'a'):
+        with open(self.csv_file, 'a') as csvfile:
+            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
             try:
                 msg = self.log_con.recv_match(blocking=True)
 

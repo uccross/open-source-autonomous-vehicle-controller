@@ -23,7 +23,8 @@ class mav_csv_logger():
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0)]):  # echo_sensor_covariance
+            0)],  # echo_sensor_covariance
+            extra_headers=[]):
         """
         :param port: The usb com port for serial communication between the
         raspberry pi and the Max32 (or similar microcontroller)
@@ -32,6 +33,9 @@ class mav_csv_logger():
         :param csv_file: The file path for the csv file
         :param msg_list: A list of MAVLink messages that may also be added to
         the set of message types to be logged to the csv file.
+        :param extra_headers: A list of any additional headers that might not
+        get collected EVEN after specifying additional messages in msg_list.
+            example: extra_headers=['signal_quality', 'horizontal_fov']
         """
         self.mav_conn = mavutil.mavlink_connection(port, baud)  # usb on Pi
         self.mav_conn.wait_heartbeat(timeout=5)
@@ -57,6 +61,11 @@ class mav_csv_logger():
 
         # Put all  keys for all the incoming messages into the headers list
         self.headers = list(self.msgs_dict)
+
+        # If the extra_headers list is not empty, add the extra headers
+        if extra_headers != []:
+            self.headers.append(extra_headers)
+
         print("CSV Header: {}".format(self.headers))
 
         with open(self.csv_file, 'w', newline='') as csvfile:
@@ -81,15 +90,15 @@ class mav_csv_logger():
             except:
                 print('msg error, or dict error!')
 
-            # Add all additional messages for expected sensors that are directly
-            # connected to the Raspberry Pi via USB
-            if extra_msg_list:
-                print(
-                    "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
-                for msg in extra_msg_list:
-                    print("added extra msg type: {}".format(msg.get_type()))
-                    print("extra msg content: {}".format(msg))
-                    self.msgs_dict.update(msg.to_dict())
+        # Add all additional messages for expected sensors that are directly
+        # connected to the Raspberry Pi via USB
+        if extra_msg_list:
+            print(
+                "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
+            for msg in extra_msg_list:
+                print("added extra msg type: {}".format(msg.get_type()))
+                print("extra msg content: {}".format(msg))
+                self.msgs_dict.update(msg.to_dict())
 
         return None
 
@@ -204,10 +213,7 @@ if __name__ == '__main__':
         echo_sensor_orientation = 270  # Degrees (pointing down)
         echo_sensor_covariance = 0
 
-        echo_data = myPing.get_distance()
-        echo_sensor_distance = echo_data["distance"]  # Units: mm
-        echo_confidence = echo_data["confidence"]
-
+        echo_sensor_distance = 1
 
         echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
             echo_sensor_time,
@@ -234,11 +240,16 @@ if __name__ == '__main__':
         msg_list = []
 
     if echo_sensor:
-        print("MAVLink msg list for sensors connected directly to companion computer (Raspberry Pi):")
+        print("MAVLink msg list for sensors connected directly to companion\
+ computer (Raspberry Pi):")
         for msg in msg_list:
             print(msg)
 
-    my_logger = mav_csv_logger(com, baudrate, csv_file, log_file, msg_list)
+    extra_headers = ['vertical_fov', 'signal_quality',
+                     'horizontal_fov', 'quaternion']
+
+    my_logger = mav_csv_logger(
+        com, baudrate, csv_file, log_file, msg_list, extra_headers)
 
     status = None
 

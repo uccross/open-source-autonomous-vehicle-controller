@@ -61,7 +61,7 @@ class mav_csv_logger():
         for msg in msg_list:
             print("added: {}".format(msg.get_type()))
             print("msg: {}".format(msg))
-            self.add_msg_type(msg)
+            self.msgs_dict.update(msg.to_dict())
 
         # Put all  keys for all the incoming messages into the headers list
         self.headers = list(self.msgs_dict)
@@ -83,26 +83,6 @@ class mav_csv_logger():
                 self.msgs_dict.update(msg.to_dict())
             except:
                 print('msg error, or dict error!')
-
-        return None
-
-    def add_msg_type(self, msg=mavutil.mavlink.MAVLink_distance_sensor_message(
-            0,
-            0,  # echo_sensor_min
-            300000,  # echo_sensor_max
-            0,  # echo_sensor_distance
-            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
-            0,  # echo_sensor_id
-            270,  # echo_sensor_orientation
-            0)):
-        """
-        :param msg: A MAVLink message to be added to the dicitonary. This
-        message should probably come from a sensor that is NOT connected to the
-        microcontroller but *is* connected to the raspberry pi, because the
-        function 'wait_for_msg_types_from_micro()' only listens to the serial
-        port associated with the micrcontroller.
-        """
-        self.msgs_dict.update(msg.to_dict())
 
         return None
 

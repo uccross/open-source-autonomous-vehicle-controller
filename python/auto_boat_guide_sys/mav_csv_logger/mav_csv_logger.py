@@ -139,11 +139,16 @@ class mav_csv_logger():
             #     time.sleep(1)  # TODO:get rid of this sleep
             #     print('msg error, or dict error!')
 
-        # self.mav_conn.close()
+        self.mav_conn.close()
 
         return msg.get_type()
 
+    def close_log(self):
+        self.mav_conn.close()
 
+
+###############################################################################
+# MODULE TEST EXAMPLE
 ###############################################################################
 if __name__ == '__main__':
     import argparse
@@ -190,7 +195,7 @@ if __name__ == '__main__':
     log_file = arguments.log_file
 
     ###########################################################################
-    # Example of a sensor connected to the Raspberry Pi over USB
+    # Example of an echo distance sensor connected to the Raspberry Pi over USB
 
     # Ping Echo Sounder for depth measurements in water
     if echo_sensor:

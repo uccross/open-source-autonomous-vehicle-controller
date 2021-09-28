@@ -120,8 +120,9 @@ class mav_csv_logger():
         :return: The MAVLink message type if not none, else return None
         """
 
-        with open(self.csv_file, 'a', encoding='utf_16_be') as csvfile:
+        with open(self.csv_file, 'a') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
+            self.writer.writeheader()
             # try:
 
             print("Type:")

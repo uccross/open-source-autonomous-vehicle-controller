@@ -122,7 +122,6 @@ class mav_csv_logger():
 
         with open(self.csv_file, 'a') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
-            self.writer.writeheader()
             # try:
 
             print("Type:")

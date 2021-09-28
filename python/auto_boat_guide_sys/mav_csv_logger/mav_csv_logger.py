@@ -64,7 +64,10 @@ class mav_csv_logger():
 
         # If the extra_headers list is not empty, add the extra headers
         if extra_headers != []:
+            print("Appending extra headers")
             self.headers.append(extra_headers)
+
+        print(type(self.headers))
 
         print("CSV Header: {}".format(self.headers))
 
@@ -94,7 +97,8 @@ class mav_csv_logger():
         # connected to the Raspberry Pi via USB
         if extra_msg_list:
             print(
-                "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
+                "Adding extra MAVLink messages for sensors NOT connected to the\
+ microcontroller")
             for msg in extra_msg_list:
                 print("added extra msg type: {}".format(msg.get_type()))
                 print("extra msg content: {}".format(msg))

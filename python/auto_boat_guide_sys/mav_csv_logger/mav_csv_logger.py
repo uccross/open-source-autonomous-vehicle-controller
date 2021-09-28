@@ -204,7 +204,7 @@ if __name__ == '__main__':
             0,
             0,  # echo_sensor_min
             300000,  # echo_sensor_max
-            0,  # echo_sensor_distance
+            100,  # echo_sensor_distance
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
@@ -231,7 +231,7 @@ if __name__ == '__main__':
             if status == 'HEARTBEAT':
                 for msg in msg_list:
                     my_logger.log(msg)
-                    
+
                 i += 100
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(

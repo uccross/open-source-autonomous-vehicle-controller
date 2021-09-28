@@ -186,7 +186,7 @@ if __name__ == '__main__':
             exit(1)
 
         time.sleep(1)
-        echo_sensor_time = 1
+        echo_sensor_time = 1000
         echo_sensor_min = 0  # Units: mm, Minimum
         echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
 

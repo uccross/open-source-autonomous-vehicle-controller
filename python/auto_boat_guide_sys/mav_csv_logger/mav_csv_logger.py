@@ -219,8 +219,7 @@ if __name__ == '__main__':
                 echo_sensor_type,
                 echo_sensor_id,
                 echo_sensor_orientation,
-                echo_sensor_covariance,
-                0)
+                echo_sensor_covariance)
 
             msg_list = [echo_msg]
 

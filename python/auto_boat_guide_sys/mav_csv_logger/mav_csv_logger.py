@@ -231,6 +231,8 @@ if __name__ == '__main__':
             if status == 'HEARTBEAT':
                 for msg in msg_list:
                     my_logger.log(msg)
+                    
+                i += 100
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
                 0,
@@ -242,6 +244,5 @@ if __name__ == '__main__':
                 270,  # echo_sensor_orientation
                 0)]
 
-            i += 100
 
     print('mav_csv_logger.py module test finished')

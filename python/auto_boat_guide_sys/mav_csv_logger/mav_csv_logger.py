@@ -120,8 +120,11 @@ class mav_csv_logger():
         :return: The MAVLink message type if not none, else return None
         """
 
-        with open(self.csv_file, 'w', newline='') as csvfile:
-            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
+        with open(self.csv_file, 'a') as csvfile:
+            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers,
+                                         delimiter=',',
+                                         quotechar='"',
+                                         quoting=csv.QUOTE_MINIMAL)
             self.writer.writeheader()
             # try:
 
@@ -294,7 +297,7 @@ if __name__ == '__main__':
                 echo_sensor_covariance)
 
             msg_list = [echo_msg]
-    
+
     my_logger.close_log()
 
     print('mav_csv_logger.py module test finished')

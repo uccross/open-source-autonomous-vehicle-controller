@@ -190,11 +190,6 @@ if __name__ == '__main__':
         echo_sensor_min = 0  # Units: mm, Minimum
         echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
 
-        echo_data = myPing.get_distance()
-        echo_sensor_distance = echo_data["distance"]  # Units: mm
-        echo_confidence = echo_data["confidence"]
-
-
         # currently we log for a specified period of time
         start_time = time.time()
         logging_time = 5
@@ -204,6 +199,10 @@ if __name__ == '__main__':
             echo_sensor_id = 0
             echo_sensor_orientation = 270  # Degrees (pointing down)
             echo_sensor_covariance = 0
+    
+            echo_data = myPing.get_distance()
+            echo_sensor_distance = echo_data["distance"]  # Units: mm
+            echo_confidence = echo_data["confidence"]
 
             echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
                 echo_sensor_time,

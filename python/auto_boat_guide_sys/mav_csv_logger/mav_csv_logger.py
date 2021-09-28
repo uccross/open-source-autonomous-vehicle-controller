@@ -192,7 +192,7 @@ if __name__ == '__main__':
 
         # currently we log for a specified period of time
         start_time = time.time()
-        logging_time = 5
+        logging_time = 10
         while (time.time() - start_time) < logging_time:
 
             echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
@@ -217,7 +217,7 @@ if __name__ == '__main__':
             print("msg type to be added: {}".format(echo_msg.get_type()))
             print("msg to be added: {}".format(echo_msg))
 
-        msg_list = [echo_msg]
+            msg_list = [echo_msg]
 
         i = 0
 
@@ -236,8 +236,7 @@ if __name__ == '__main__':
     start_time = time.time()
     logging_time = 10
     while (time.time() - start_time) < logging_time:
-        status = my_logger.log(
-            msg=my_logger.mav_conn.recv_match(blocking=True))
+        status = my_logger.log(my_logger.mav_conn.recv_match(blocking=True))
 
         if echo_sensor:
             if status == 'HEARTBEAT':

@@ -208,9 +208,6 @@ if __name__ == '__main__':
         echo_sensor_distance = echo_data["distance"]  # Units: mm
         echo_confidence = echo_data["confidence"]
 
-        echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message()
-        print("echo field names")
-        print(echo_msg.ordered_fieldnames)
 
         echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
             echo_sensor_time,
@@ -222,7 +219,8 @@ if __name__ == '__main__':
             echo_sensor_orientation,
             echo_sensor_covariance)
 
-        echo_sensor_time += 1
+        print("echo field names")
+        print(echo_msg.ordered_fieldnames)
 
         msg_list = [echo_msg]
 

@@ -194,6 +194,7 @@ if __name__ == '__main__':
 
     # Ping Echo Sounder for depth measurements in water
     if echo_sensor:
+        print("Using echo distance sensor")
         from brping import Ping1D
         myPing = Ping1D()
         myPing.connect_serial(sensor_com, sensor_baudrate)
@@ -215,7 +216,12 @@ if __name__ == '__main__':
         i = 0
 
     else:
-        msg_list=[]
+        msg_list = []
+
+    print("MAVLink msg list for sensors connected directly to companion\
+         computer (Raspberry Pi):")
+    for msg in msg_list:
+        print(msg)
 
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
                                log_file=log_file, msg_list=msg_list)
@@ -233,7 +239,7 @@ if __name__ == '__main__':
             if status == 'HEARTBEAT':
                 for msg in msg_list:
                     my_logger.log(msg)
-                    
+
                 i += 100
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
@@ -245,6 +251,5 @@ if __name__ == '__main__':
                 0,  # echo_sensor_id
                 270,  # echo_sensor_orientation
                 0)]
-
 
     print('mav_csv_logger.py module test finished')

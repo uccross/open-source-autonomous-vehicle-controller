@@ -149,6 +149,7 @@ class mav_csv_logger():
 ###############################################################################
 if __name__ == '__main__':
     import argparse
+    from pymavlink import mavutil
 
     ###########################################################################
     # Parse Arguments
@@ -204,6 +205,7 @@ if __name__ == '__main__':
             print("Failed to initialize Ping!")
             exit(1)
 
+        echo_sensor_time = 1
         echo_sensor_min = 0  # Units: mm, Minimum
         echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
         echo_sensor_distance = 0  # Units: mm
@@ -213,7 +215,7 @@ if __name__ == '__main__':
         echo_sensor_covariance = 0
 
         echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
-            0,
+            echo_sensor_time,
             echo_sensor_min,
             echo_sensor_max,
             echo_sensor_distance,

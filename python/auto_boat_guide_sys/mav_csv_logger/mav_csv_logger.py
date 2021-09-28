@@ -57,6 +57,8 @@ class mav_csv_logger():
 
         # Add all additional messages for expected sensors that are directly
         # connected to the Raspberry Pi via USB
+        print("Adding MAVLink messages for sensors NOT connected to the\
+             microcontroller")
         for msg in msg_list:
             print("added: {}".format(msg.get_type()))
             print("msg: {}".format(msg))
@@ -211,11 +213,7 @@ if __name__ == '__main__':
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0, # covariance
-            0, # signal quality
-            0, # vertical_fov
-            [0, 0, 0, 0], # quaternion
-            0)] # horizontal_fov
+            0)]
 
         i = 0
 

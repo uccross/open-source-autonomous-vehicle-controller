@@ -33,19 +33,19 @@ class mav_csv_logger():
         :param msg_list: A list of MAVLink messages that may also be added to 
         the set of message types to be logged to the csv file.
         """
-        self.log_con = mavutil.mavlink_connection(port, baud)  # usb on Pi
-        self.log_con.wait_heartbeat(timeout=5)
+        self.mav_conn = mavutil.mavlink_connection(port, baud)  # usb on Pi
+        self.mav_conn.wait_heartbeat(timeout=5)
 
-        if self.log_con.target_system == 0:
+        if self.mav_conn.target_system == 0:
             print('No system detected!')
         else:
             print('target_system {}, target component {} \n'.format(
-                self.log_con.target_system, self.log_con.target_component))
+                self.mav_conn.target_system, self.mav_conn.target_component))
 
         self.log_file = log_file
 
         # initiate logging
-        self.log_con.setup_logfile(self.log_file)
+        self.mav_conn.setup_logfile(self.log_file)
 
         self.csv_file = csv_file
 
@@ -75,7 +75,7 @@ class mav_csv_logger():
         start_time = time.time()
         while (time.time() - start_time) < wait_time:
             try:
-                msg = self.log_con.recv_match(blocking=True)
+                msg = self.mav_conn.recv_match(blocking=True)
                 # add msg to the msgs_dict
                 self.msgs_dict.update(msg.to_dict())
             except:
@@ -103,43 +103,8 @@ class mav_csv_logger():
 
         return None
 
-    def log(self):
-        """
-        Opens the csv_file and appends a row to the csv file
-        :return: The MAVLink message type if not none, else return None
-        """
-        msg = None
-
-        with open(self.csv_file, 'a') as csvfile:
-            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
-            try:
-                msg = self.log_con.recv_match(blocking=True)
-
-                print("Type:")
-                print(type(msg))
-
-                print("\r\nMsg:")
-                print(msg)
-
-                # add msg to the msgs_dict
-                self.msgs_dict.update(msg.to_dict())
-                # and write it to the file
-                self.writer.writerow(self.msgs_dict)
-
-            except:
-                time.sleep(1)  # TODO:get rid of this sleep
-                print('msg error, or dict error!')
-
-        # self.log_con.close()
-
-        if msg != None:
-            return msg.get_type()
-
-        return None
-
-    def add_message_row_to_csv(
-        self,
-        msg=mavutil.mavlink.MAVLink_distance_sensor_message(
+    def log(self,
+            msg=mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
             0,  # echo_sensor_min
             300000,  # echo_sensor_max
@@ -148,9 +113,15 @@ class mav_csv_logger():
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
             0)):
+        """
+        Opens the csv_file and appends a row to the csv file
+        :param msg: A MAVlink message
+        :return: The MAVLink message type if not none, else return None
+        """
 
-        with open(self.csv_file, 'a'):
-            msg = self.log_con.recv_match(blocking=True)
+        with open(self.csv_file, 'a') as csvfile:
+            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
+            # try:
 
             print("Type:")
             print(type(msg))
@@ -163,12 +134,17 @@ class mav_csv_logger():
             # and write it to the file
             self.writer.writerow(self.msgs_dict)
 
-        return None
+            # except:
+            #     time.sleep(1)  # TODO:get rid of this sleep
+            #     print('msg error, or dict error!')
+
+        # self.mav_conn.close()
+
+        return msg.get_type()
 
 
 ###############################################################################
 if __name__ == '__main__':
-    from brping import Ping1D
     import argparse
 
     ###########################################################################
@@ -216,6 +192,7 @@ if __name__ == '__main__':
 
     # Ping Echo Sounder for depth measurements in water
     if echo_sensor:
+        from brping import Ping1D
         myPing = Ping1D()
         myPing.connect_serial(sensor_com, sensor_baudrate)
 
@@ -244,12 +221,13 @@ if __name__ == '__main__':
     start_time = time.time()
     logging_time = 10
     while (time.time() - start_time) < logging_time:
-        status = my_logger.log()
+        status = my_logger.log(
+            msg=my_logger.mav_conn.recv_match(blocking=True))
 
         if echo_sensor:
-            if status != None:
+            if status == 'HEARTBEAT':
                 for msg in msg_list:
-                    my_logger.add_message_row_to_csv(msg)
+                    my_logger.log(msg)
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
                 0,

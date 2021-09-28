@@ -57,8 +57,7 @@ class mav_csv_logger():
 
         # Add all additional messages for expected sensors that are directly
         # connected to the Raspberry Pi via USB
-        print("Adding MAVLink messages for sensors NOT connected to the\
-             microcontroller")
+        print("Adding MAVLink messages for sensors NOT connected to the microcontroller")
         for msg in msg_list:
             print("added: {}".format(msg.get_type()))
             print("msg: {}".format(msg))
@@ -215,6 +214,8 @@ if __name__ == '__main__':
             270,  # echo_sensor_orientation
             0)
 
+        print("msg type to be added: {}".format(echo_msg.get_type()))
+        print("msg to be added: {}".format(echo_msg))
         msg_list = [echo_msg]
 
         i = 0

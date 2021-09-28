@@ -81,15 +81,15 @@ class mav_csv_logger():
             except:
                 print('msg error, or dict error!')
 
-        # Add all additional messages for expected sensors that are directly
-        # connected to the Raspberry Pi via USB
-        if extra_msg_list:
-            print(
-                "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
-            for msg in extra_msg_list:
-                print("added extra msg type: {}".format(msg.get_type()))
-                print("extra msg content: {}".format(msg))
-                self.msgs_dict.update(msg.to_dict())
+            # Add all additional messages for expected sensors that are directly
+            # connected to the Raspberry Pi via USB
+            if extra_msg_list:
+                print(
+                    "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
+                for msg in extra_msg_list:
+                    print("added extra msg type: {}".format(msg.get_type()))
+                    print("extra msg content: {}".format(msg))
+                    self.msgs_dict.update(msg.to_dict())
 
         return None
 
@@ -232,9 +232,10 @@ if __name__ == '__main__':
     else:
         msg_list = []
 
-    print("MAVLink msg list for sensors connected directly to companion computer (Raspberry Pi):")
-    for msg in msg_list:
-        print(msg)
+    if echo_sensor:
+        print("MAVLink msg list for sensors connected directly to companion computer (Raspberry Pi):")
+        for msg in msg_list:
+            print(msg)
 
     my_logger = mav_csv_logger(com, baudrate, csv_file, log_file, msg_list)
 
@@ -269,6 +270,6 @@ if __name__ == '__main__':
                 echo_sensor_orientation,
                 echo_sensor_covariance)
 
-            msg_list = []
+            msg_list = [echo_msg]
 
     print('mav_csv_logger.py module test finished')

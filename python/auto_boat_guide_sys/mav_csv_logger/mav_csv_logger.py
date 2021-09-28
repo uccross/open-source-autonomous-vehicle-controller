@@ -59,9 +59,10 @@ class mav_csv_logger():
         # connected to the Raspberry Pi via USB
         print("Adding MAVLink messages for sensors NOT connected to the microcontroller")
         for msg in msg_list:
-            print("added: {}".format(msg.get_type()))
-            print("msg: {}".format(msg))
-            self.msgs_dict.update(msg.to_dict())
+            for i in range(0,3):
+                print("added: {}".format(msg.get_type()))
+                print("msg: {}".format(msg))
+                self.msgs_dict.update(msg.to_dict())
 
         time.sleep(1)
 

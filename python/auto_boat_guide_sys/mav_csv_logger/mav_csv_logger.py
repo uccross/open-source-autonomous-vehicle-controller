@@ -199,7 +199,7 @@ if __name__ == '__main__':
 
         # currently we log for a specified period of time
         start_time = time.time()
-        logging_time = 10
+        logging_time = 4
         while (time.time() - start_time) < logging_time:
 
             echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
@@ -220,6 +220,8 @@ if __name__ == '__main__':
                 echo_sensor_id,
                 echo_sensor_orientation,
                 echo_sensor_covariance)
+
+            echo_sensor_time += 1
 
             msg_list = [echo_msg]
 

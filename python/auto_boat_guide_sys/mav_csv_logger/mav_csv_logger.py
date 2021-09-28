@@ -139,11 +139,14 @@ class mav_csv_logger():
             #     time.sleep(1)  # TODO:get rid of this sleep
             #     print('msg error, or dict error!')
 
-        self.mav_conn.close()
+        # self.mav_conn.close()
 
         return msg.get_type()
 
     def close_log(self):
+        """
+        Wrapper function
+        """
         self.mav_conn.close()
 
 
@@ -290,5 +293,7 @@ if __name__ == '__main__':
                 echo_sensor_covariance)
 
             msg_list = [echo_msg]
+    
+    my_logger.close_log()
 
     print('mav_csv_logger.py module test finished')

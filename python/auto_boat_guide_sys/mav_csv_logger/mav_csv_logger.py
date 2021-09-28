@@ -63,6 +63,8 @@ class mav_csv_logger():
             print("msg: {}".format(msg))
             self.msgs_dict.update(msg.to_dict())
 
+        time.sleep(1)
+
         # Put all  keys for all the incoming messages into the headers list
         self.headers = list(self.msgs_dict)
         with open(self.csv_file, 'w', newline='') as csvfile:

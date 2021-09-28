@@ -212,8 +212,11 @@ if __name__ == '__main__':
 
         i = 0
 
+    else:
+        msg_list=[]
+
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
-                               log_file=log_file, msg_list=[])
+                               log_file=log_file, msg_list=msg_list)
 
     status = None
 

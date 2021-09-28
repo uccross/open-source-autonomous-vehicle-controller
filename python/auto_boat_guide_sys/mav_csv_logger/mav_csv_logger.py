@@ -65,9 +65,9 @@ class mav_csv_logger():
         # If the extra_headers list is not empty, add the extra headers
         if extra_headers != []:
             print("Appending extra headers")
+            print(type(self.headers))
+            print(type(extra_headers))
             self.headers.append(extra_headers)
-
-        print(type(self.headers))
 
         print("CSV Header: {}".format(self.headers))
 
@@ -249,8 +249,7 @@ if __name__ == '__main__':
         for msg in msg_list:
             print(msg)
 
-    extra_headers = ['vertical_fov', 'signal_quality',
-                     'horizontal_fov', 'quaternion']
+    extra_headers = ['vertical_fov', 'signal_quality', 'horizontal_fov', 'quaternion']
 
     my_logger = mav_csv_logger(
         com, baudrate, csv_file, log_file, msg_list, extra_headers)

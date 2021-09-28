@@ -191,7 +191,11 @@ if __name__ == '__main__':
         echo_sensor_time = 1
         echo_sensor_min = 0  # Units: mm, Minimum
         echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
-        echo_sensor_distance = 0  # Units: mm
+        
+        echo_data = myPing.get_distance()
+        echo_sensor_distance = echo_data["distance"] # Units: mm
+        echo_confidence = echo_data["confidence"]
+
         echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
         echo_sensor_id = 0
         echo_sensor_orientation = 270  # Degrees (pointing down)
@@ -206,6 +210,8 @@ if __name__ == '__main__':
             echo_sensor_id,
             echo_sensor_orientation,
             echo_sensor_covariance)
+
+        msg_list = [echo_msg]
 
         print("msg type to be added: {}".format(echo_msg.get_type()))
         print("msg to be added: {}".format(echo_msg))

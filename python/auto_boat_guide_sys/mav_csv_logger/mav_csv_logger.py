@@ -165,6 +165,7 @@ class mav_csv_logger():
 
         return None
 
+
 ###############################################################################
 if __name__ == '__main__':
     from brping import Ping1D
@@ -232,11 +233,12 @@ if __name__ == '__main__':
             270,  # echo_sensor_orientation
             0)]
 
+        i = 0
+
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
-                               log_file=log_file, msg_list=msg_list)
+                               log_file=log_file, msg_list=[])
 
     status = None
-    i = 0
 
     # currently we log for a specified period of time
     start_time = time.time()
@@ -250,14 +252,14 @@ if __name__ == '__main__':
                     my_logger.add_message_row_to_csv(msg)
 
             msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
-            0,
-            0,  # echo_sensor_min
-            300000,  # echo_sensor_max
-            i,  # echo_sensor_distance
-            mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
-            0,  # echo_sensor_id
-            270,  # echo_sensor_orientation
-            0)]
+                0,
+                0,  # echo_sensor_min
+                300000,  # echo_sensor_max
+                i,  # echo_sensor_distance
+                mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+                0,  # echo_sensor_id
+                270,  # echo_sensor_orientation
+                0)]
 
             i += 100
 

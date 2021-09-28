@@ -230,10 +230,29 @@ if __name__ == '__main__':
     my_logger = mav_csv_logger(port=com, baud=baudrate, csv_file=csv_file,
                                log_file=log_file, msg_list=msg_list)
 
+    status = None
+    i = 0
+
     # currently we log for a specified period of time
     start_time = time.time()
     logging_time = 10
     while (time.time() - start_time) < logging_time:
-        my_logger.log()
+        status = my_logger.log()
+
+        if status != None:
+            for msg in msg_list:
+                my_logger.add_message_row_to_csv(msg)
+
+        msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+        0,
+        0,  # echo_sensor_min
+        300000,  # echo_sensor_max
+        i,  # echo_sensor_distance
+        mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
+        0,  # echo_sensor_id
+        270,  # echo_sensor_orientation
+        0)]
+
+        i += 100
 
     print('mav_csv_logger.py module test finished')

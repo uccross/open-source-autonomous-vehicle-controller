@@ -181,11 +181,11 @@ if __name__ == '__main__':
                             in COM3')  # /dev/ttyUSB0
 
     parser.add_argument('--csv_file', type=str, dest='csv_file',
-                        default="./log_file",
+                        default='./log_file.csv',
                         help='log file path')
 
     parser.add_argument('--log_file', type=str, dest='log_file',
-                        default="./log_file",
+                        default='./log_file.log',
                         help='log file path')
 
     arguments = parser.parse_args()
@@ -260,7 +260,7 @@ if __name__ == '__main__':
                      'horizontal_fov', 'quaternion']
 
     my_logger = mav_csv_logger(
-        com, baudrate, csv_file, log_file, msg_list, extra_headers)
+        com, baudrate, log_file, csv_file, msg_list, extra_headers)
 
     status = None
 

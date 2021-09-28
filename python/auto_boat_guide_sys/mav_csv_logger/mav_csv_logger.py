@@ -1,7 +1,7 @@
 """
 .. module:: main_guide_sys.py
 	:platform: MacOS, Unix, Windows,
-	:synopsis: MAVLink csv logging module to be used with main autonomous 
+	:synopsis: MAVLink csv logging module to be used with main autonomous
     guidance system. The csv will be stored on a USB drive on the raspberry pi
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
@@ -25,12 +25,12 @@ class mav_csv_logger():
             270,  # echo_sensor_orientation
             0)]):  # echo_sensor_covariance
         """
-        :param port: The usb com port for serial communication between the 
+        :param port: The usb com port for serial communication between the
         raspberry pi and the Max32 (or similar microcontroller)
-        :param baud: The baudrate 
+        :param baud: The baudrate
         :param log_file: The file path for the log file
         :param csv_file: The file path for the csv file
-        :param msg_list: A list of MAVLink messages that may also be added to 
+        :param msg_list: A list of MAVLink messages that may also be added to
         the set of message types to be logged to the csv file.
         """
         self.mav_conn = mavutil.mavlink_connection(port, baud)  # usb on Pi
@@ -97,10 +97,10 @@ class mav_csv_logger():
             270,  # echo_sensor_orientation
             0)):
         """
-        :param msg: A MAVLink message to be added to the dicitonary. This 
-        message should probably come from a sensor that is NOT connected to the 
+        :param msg: A MAVLink message to be added to the dicitonary. This
+        message should probably come from a sensor that is NOT connected to the
         microcontroller but *is* connected to the raspberry pi, because the
-        function 'wait_for_msg_types_from_micro()' only listens to the serial 
+        function 'wait_for_msg_types_from_micro()' only listens to the serial
         port associated with the micrcontroller.
         """
         self.msgs_dict.update(msg.to_dict())
@@ -205,7 +205,7 @@ if __name__ == '__main__':
             print("Failed to initialize Ping!")
             exit(1)
 
-        msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+        echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
             0,
             0,  # echo_sensor_min
             300000,  # echo_sensor_max
@@ -213,7 +213,9 @@ if __name__ == '__main__':
             mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
-            0)]
+            0)
+
+        msg_list = [echo_msg]
 
         i = 0
 
@@ -244,7 +246,7 @@ if __name__ == '__main__':
 
                 i += 100
 
-            msg_list = [mavutil.mavlink.MAVLink_distance_sensor_message(
+            echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
                 0,
                 0,  # echo_sensor_min
                 300000,  # echo_sensor_max
@@ -252,6 +254,8 @@ if __name__ == '__main__':
                 mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN,  # echo_sensor_type
                 0,  # echo_sensor_id
                 270,  # echo_sensor_orientation
-                0)]
+                0)
+
+            msg_list = [echo_msg]
 
     print('mav_csv_logger.py module test finished')

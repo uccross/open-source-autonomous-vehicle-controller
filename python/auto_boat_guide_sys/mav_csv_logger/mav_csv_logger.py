@@ -214,10 +214,11 @@ if __name__ == '__main__':
                 echo_sensor_orientation,
                 echo_sensor_covariance)
 
-            print("msg type to be added: {}".format(echo_msg.get_type()))
-            print("msg to be added: {}".format(echo_msg))
-
             msg_list = [echo_msg]
+            
+            for msg in msg_list:
+                print("msg type to be added: {}".format(msg.get_type()))
+                print("msg to be added: {}".format(msg))
 
         i = 0
 

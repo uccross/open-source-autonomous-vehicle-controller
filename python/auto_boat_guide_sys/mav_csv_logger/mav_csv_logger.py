@@ -122,9 +122,7 @@ class mav_csv_logger():
 
         with open(self.csv_file, 'a') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers,
-                                         delimiter=',',
-                                         quotechar='"',
-                                         quoting=csv.QUOTE_MINIMAL)
+                                         lineterminator='\r\n')
             self.writer.writeheader()
             # try:
 

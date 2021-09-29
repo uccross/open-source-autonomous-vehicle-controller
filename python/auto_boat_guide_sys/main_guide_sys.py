@@ -4,9 +4,10 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
-import numpy as np
+# import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
+import time
 
 ###############################################################################
 # Parse Arguments
@@ -57,9 +58,17 @@ my_logger = MCL.MAVCSVLogger(
     extra_headers=extra_headers)
 
 
+# Timing
+t_old = time.time()
+t_new = 0
+dt = 
+
 ###############################################################################
 # Main Loop
 while True:
+
+    # Timing
+    t_new = time.time()
 
     # Read the state of the vehicle
     # Request MAVLINK_MSG_ID_RAW_IMU
@@ -69,21 +78,23 @@ while True:
     msg = my_logger.mav_conn.recv_match()
 
     if msg:
-        if msg.get_type() == 'RAW_IMU':
-            print("\r\nType:")
-            print(type(msg))
+        # if msg.get_type() == 'RAW_IMU':
+        #     print("\r\nType:")
+        #     print(type(msg))
 
-            print("\r\nMsg:")
-            print(msg)
+        #     print("\r\nMsg:")
+        #     print(msg)
 
-        if msg.get_type() == 'HIGHRES_IMU':
-            print("\r\nType:")
-            print(type(msg))
+        # if msg.get_type() == 'HIGHRES_IMU':
+        print("\r\nType:")
+        print(type(msg))
 
-            print("\r\nMsg:")
-            print(msg)
+        print("\r\nMsg:")
+        print(msg)
 
-        # my_logger.log(msg)
+    # DO NOT log every message, because tht will quikcly slow down everything
+    if (t_new - t_old) >= dt:
+        my_logger.log(msg)
 
     # If the microcontroller indicates that we are in autonomous mode then
     # depending on vehicle position, update the next waypoint to travel to.

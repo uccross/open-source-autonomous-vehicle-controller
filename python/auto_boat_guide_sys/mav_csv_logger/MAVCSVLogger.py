@@ -121,7 +121,9 @@ class MAVCSVLogger():
         """
 
         with open(self.csv_file, 'a') as csvfile:
-            self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
+            self.writer = csv.DictWriter(csvfile,
+                                         # extrasaction='ignore',
+                                         fieldnames=self.headers)
             # try:
 
             # add msg to the msgs_dict

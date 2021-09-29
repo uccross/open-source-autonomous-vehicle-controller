@@ -73,6 +73,12 @@ class MAVCSVLogger():
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
             self.writer.writeheader()
 
+        # Change to appending
+        with open(self.csv_file, 'a') as csvfile:
+            self.writer = csv.DictWriter(csvfile,
+                                         fieldnames=self.headers)
+                                         # extrasaction='ignore',
+
         return None
 
     def collect_msg_types(self, wait_time=5, extra_msg_list=None):
@@ -120,20 +126,20 @@ class MAVCSVLogger():
         :return: The MAVLink message type if not none, else return None
         """
 
-        with open(self.csv_file, 'a') as csvfile:
-            self.writer = csv.DictWriter(csvfile,
-                                         extrasaction='ignore',
-                                         fieldnames=self.headers)
-            # try:
+        # with open(self.csv_file, 'a') as csvfile:
+        #     self.writer = csv.DictWriter(csvfile,
+        #                                  extrasaction='ignore',
+        #                                  fieldnames=self.headers)
+        # try:
 
-            # add msg to the msgs_dict
-            self.msgs_dict.update(msg.to_dict())
-            # and write it to the file
-            self.writer.writerow(self.msgs_dict)
+        # add msg to the msgs_dict
+        self.msgs_dict.update(msg.to_dict())
+        # and write it to the file
+        self.writer.writerow(self.msgs_dict)
 
-            # except:
-            #     time.sleep(1)  # TODO:get rid of this sleep
-            #     print('msg error, or dict error!')
+        # except:
+        #     time.sleep(1)  # TODO:get rid of this sleep
+        #     print('msg error, or dict error!')
 
         # self.mav_conn.close()
 

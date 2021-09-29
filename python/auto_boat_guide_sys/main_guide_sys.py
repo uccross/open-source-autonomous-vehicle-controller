@@ -51,20 +51,6 @@ sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
 
-###############################################################################
-# Helper method, based on 
-# https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
-def handler(signal_received, frame, logger):
-    """
-    :param signal_recieved:
-    :param frame:
-    :param logger: An MAVCSVLogger object passed here to ensure csv file is 
-    closed
-    """
-    # Handle any cleanup here
-    logger.close_log()
-    print('SIGINT or CTRL-C detected. Exiting gracefully')
-    exit(0)
 
 ###############################################################################
 if __name__ == '__main__':
@@ -75,8 +61,26 @@ if __name__ == '__main__':
         com, baudrate, log_file, csv_file, msg_list=[],
         extra_headers=extra_headers)
 
+    
+    ###########################################################################
+    # Helper method, based on 
+    # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
+    def handler(signal_received, frame): #*args
+        """
+        Use the MAVCSVLogger object to close the csv file upon ctrl-c program
+        exit. The MAVCSVLogger object is in the scope of this main
+        :param signal_recieved:
+        :param frame:
+        """
+        # Handle any cleanup here
+
+        my_logger.close_log() # Close the csv file and mavlink connection
+
+        print('SIGINT or CTRL-C detected. Exiting gracefully')
+        exit(0)
+
     # Tell Python to run the handler() function when SIGINT is recieved
-    signal(SIGINT, handler, my_logger)
+    signal(SIGINT, handler)
 
     # Timing
     t_old = time.time()

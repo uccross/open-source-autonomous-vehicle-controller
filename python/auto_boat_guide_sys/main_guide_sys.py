@@ -69,12 +69,12 @@ while True:
     msg = my_logger.mav_conn.recv_match()
 
     if msg:
-        # if msg.get_type() == 'RAW_IMU':
-        #     print("\r\nType:")
-        #     print(type(msg))
+        if msg.get_type() == 'RAW_IMU':
+            print("\r\nType:")
+            print(type(msg))
 
-        #     print("\r\nMsg:")
-        #     print(msg)
+            print("\r\nMsg:")
+            print(msg)
 
         if msg.get_type() == 'HIGHRES_IMU':
             print("\r\nType:")

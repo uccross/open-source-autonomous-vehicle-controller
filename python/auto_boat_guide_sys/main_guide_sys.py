@@ -50,8 +50,12 @@ log_file = arguments.log_file
 
 ###############################################################################
 # Initialization
+extra_headers = ['data', 'reason']
+
 my_logger = MCL.MAVCSVLogger(
-    com, baudrate, log_file, csv_file, msg_list=[], extra_headers=[])
+    com, baudrate, log_file, csv_file, msg_list=[],
+    extra_headers=extra_headers)
+
 
 ###############################################################################
 # Main Loop
@@ -70,7 +74,6 @@ while True:
 
             print("\r\nMsg:")
             print(msg)
-
 
     # Log the vehicle data
 

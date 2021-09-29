@@ -61,7 +61,7 @@ my_logger = MCL.MAVCSVLogger(
 # Timing
 t_old = time.time()
 t_new = 0
-dt = 10
+dt = 0.500 # seconds
 
 ###############################################################################
 # Main Loop

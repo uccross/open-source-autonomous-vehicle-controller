@@ -65,7 +65,8 @@ while True:
     # Request MAVLINK_MSG_ID_RAW_IMU
     # Request MAVLINK_MSG_ID_ATTITUDE
     # Request LOCAL_POSITION_NED
-    msg = my_logger.mav_conn.recv_match(blocking=True)
+    # Log the vehicle data
+    msg = my_logger.mav_conn.recv_match()
 
     if msg:
         # if msg.get_type() == 'RAW_IMU':
@@ -82,9 +83,7 @@ while True:
             print("\r\nMsg:")
             print(msg)
 
-    # Log the vehicle data
-
-    my_logger.log(msg)
+        my_logger.log(msg)
 
     # If the microcontroller indicates that we are in autonomous mode then
     # depending on vehicle position, update the next waypoint to travel to.

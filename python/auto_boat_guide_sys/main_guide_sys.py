@@ -61,7 +61,7 @@ my_logger = MCL.MAVCSVLogger(
 # Timing
 t_old = time.time()
 t_new = 0
-dt = 
+dt = 10
 
 ###############################################################################
 # Main Loop
@@ -91,6 +91,8 @@ while True:
 
         print("\r\nMsg:")
         print(msg)
+
+        print("Time: {}".format(t_new))
 
     # DO NOT log every message, because tht will quikcly slow down everything
     if (t_new - t_old) >= dt:

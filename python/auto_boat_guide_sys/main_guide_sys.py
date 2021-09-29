@@ -83,7 +83,7 @@ while True:
             print("\r\nMsg:")
             print(msg)
 
-        my_logger.log(msg)
+        # my_logger.log(msg)
 
     # If the microcontroller indicates that we are in autonomous mode then
     # depending on vehicle position, update the next waypoint to travel to.

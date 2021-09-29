@@ -8,6 +8,8 @@
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
 import time
+from signal import signal, SIGINT
+from sys import exit
 
 ###############################################################################
 # Parse Arguments
@@ -50,56 +52,76 @@ csv_file = arguments.csv_file
 log_file = arguments.log_file
 
 ###############################################################################
-# Initialization
-extra_headers = ['data', 'reason']
-
-my_logger = MCL.MAVCSVLogger(
-    com, baudrate, log_file, csv_file, msg_list=[],
-    extra_headers=extra_headers)
-
-
-# Timing
-t_old = time.time()
-t_new = 0
-dt = 0.500 # seconds
+# Helper method, based on 
+# https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
+def handler(signal_received, frame, logger):
+    """
+    :param signal_recieved:
+    :param frame:
+    :param logger: An MAVCSVLogger object passed here to ensure csv file is 
+    closed
+    """
+    # Handle any cleanup here
+    logger.close_log()
+    print('SIGINT or CTRL-C detected. Exiting gracefully')
+    exit(0)
 
 ###############################################################################
-# Main Loop
-while True:
+if __name__ == '__main__':
+    # Initialization
+    extra_headers = ['data', 'reason']
+
+    my_logger = MCL.MAVCSVLogger(
+        com, baudrate, log_file, csv_file, msg_list=[],
+        extra_headers=extra_headers)
+
+    # Tell Python to run the handler() function when SIGINT is recieved
+    signal(SIGINT, handler, my_logger)
 
     # Timing
-    t_new = time.time()
+    t_old = time.time()
+    t_new = 0
+    dt = 0.500 # seconds
 
-    # Read the state of the vehicle
-    # Request MAVLINK_MSG_ID_RAW_IMU
-    # Request MAVLINK_MSG_ID_ATTITUDE
-    # Request LOCAL_POSITION_NED
-    # Log the vehicle data
-    msg = my_logger.mav_conn.recv_match()
+    ###########################################################################
+    # Main Loop
+    while True:
 
-    if msg:
-        # if msg.get_type() == 'RAW_IMU':
-        #     print("\r\nType:")
-        #     print(type(msg))
+        # Timing
+        t_new = time.time()
 
-        #     print("\r\nMsg:")
-        #     print(msg)
+        # Read the state of the vehicle
+        # Request MAVLINK_MSG_ID_RAW_IMU
+        # Request MAVLINK_MSG_ID_ATTITUDE
+        # Request LOCAL_POSITION_NED
+        # Log the vehicle data
+        msg = my_logger.mav_conn.recv_match()
 
-        # if msg.get_type() == 'HIGHRES_IMU':
-        print("\r\nType:")
-        print(type(msg))
-
-        print("\r\nMsg:")
-        print(msg)
-
-        print("Time: {}".format(t_new))
-
-    # DO NOT log every message, because tht will quikcly slow down everything
-    if (t_new - t_old) >= dt:
         if msg:
-            if msg.get_type() != 'BAD_DATA':
-                my_logger.log(msg)
+            # if msg.get_type() == 'RAW_IMU':
+            #     print("\r\nType:")
+            #     print(type(msg))
 
-    # If the microcontroller indicates that we are in autonomous mode then
-    # depending on vehicle position, update the next waypoint to travel to.
-    # Else, the we guidance system is not engaged
+            #     print("\r\nMsg:")
+            #     print(msg)
+
+            # if msg.get_type() == 'HIGHRES_IMU':
+            print("\r\nType:")
+            print(type(msg))
+
+            print("\r\nMsg:")
+            print(msg)
+
+            print("Time: {}".format(t_new))
+
+        # DO NOT log every message, because tht will quikcly slow down 
+        # everything
+        if (t_new - t_old) >= dt:
+            if msg:
+                if msg.get_type() != 'BAD_DATA':
+                    my_logger.log(msg)
+
+        # If the microcontroller indicates that we are in autonomous mode then
+        # depending on vehicle position, update the next waypoint to travel to.
+        # Else, the we guidance system is not engaged
+        

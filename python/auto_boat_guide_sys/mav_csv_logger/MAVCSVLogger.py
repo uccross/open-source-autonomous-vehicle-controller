@@ -74,10 +74,10 @@ class MAVCSVLogger():
             self.writer.writeheader()
 
         # Change to appending
-        with open(self.csv_file, 'a') as csvfile:
-            self.writer = csv.DictWriter(csvfile,
-                                         fieldnames=self.headers)
-                                         # extrasaction='ignore',
+        self.csv_file_obj = open(self.csv_file, 'a')
+        self.writer = csv.DictWriter(self.csv_file_obj,
+                                     fieldnames=self.headers)
+        # extrasaction='ignore',
 
         return None
 
@@ -149,6 +149,7 @@ class MAVCSVLogger():
         """
         Wrapper function
         """
+        self.csv_file_obj.close()
         self.mav_conn.close()
 
 

@@ -20,7 +20,8 @@ parser.add_argument('-b', '--baudrate', type=int, dest='baudrate',
 parser.add_argument('-c', '--com', type=str, dest='com', default="COM4",
                     help='Specify COM port number for serial \
                     communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
-
+parser.add_argument('-d', '--debug', dest='debug_flag',
+                    action='store_true', help='Flag to print helpful info')
 parser.add_argument('-e', '--echo', dest='echo_sensor',
                     action='store_true', help='To use Blue Robotic\'s echo\
                         sensor')
@@ -45,6 +46,7 @@ arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
 com = arguments.com
+debug_flag = arguments.debug_flag
 echo_sensor = arguments.echo_sensor
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
@@ -75,8 +77,10 @@ if __name__ == '__main__':
         # Handle any cleanup here
 
         my_logger.close_log() # Close the csv file and mavlink connection
-
-        print('SIGINT or CTRL-C detected. Exiting gracefully')
+        
+        print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
+        print('csv file closed')
+        print('mavlink connection closed')
         exit(0)
 
     # Tell Python to run the handler() function when SIGINT is recieved
@@ -110,13 +114,14 @@ if __name__ == '__main__':
             #     print(msg)
 
             # if msg.get_type() == 'HIGHRES_IMU':
-            print("\r\nType:")
-            print(type(msg))
+            # print("\r\nType:")
+            # print(type(msg))
 
-            print("\r\nMsg:")
-            print(msg)
+            if debug_flag:
+                print("\r\nMsg:")
+                print(msg)
 
-            print("Time: {}".format(t_new))
+                print("Time: {}".format(t_new))
 
         # DO NOT log every message, because tht will quikcly slow down 
         # everything

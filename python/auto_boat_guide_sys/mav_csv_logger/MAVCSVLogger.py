@@ -7,6 +7,7 @@
 """
 
 from math import log
+from numpy.core.fromnumeric import reshape
 from pymavlink import mavutil
 import csv
 import time
@@ -259,7 +260,7 @@ if __name__ == '__main__':
             print(msg)
 
     extra_headers = ['vertical_fov', 'signal_quality',
-                     'horizontal_fov', 'quaternion']
+                     'horizontal_fov', 'quaternion', 'data', 'reason']
 
     my_logger = MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list, extra_headers)

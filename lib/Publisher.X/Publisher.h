@@ -1,6 +1,6 @@
 /*
  * File:   Publisher.h
- * Author: Aaron Hunter, Modified by Pavlo Vlastos
+ * Author: Aaron Hunter (modified by Pavlo Vlastos)
  * Brief:  Publish events after checking
  * 
  * Updated from Mavlink_minimal.X/main.c on September 3, 2021 at 2:24 pm
@@ -24,12 +24,12 @@
  *****************************************************************************/
 /**
  * @function check_IMU_events(void)
- * @param none
+ * @param data_type RAW or SCALED
  * @brief detects when IMU SPI transaction completes and then publishes data 
  * over Mavlink
- * @author Aaron Hunter
+ * @author Aaron Hunter (modified by Pavlo Vlastos)
  */
-void check_IMU_events(void);
+void check_IMU_events(uint8_t data_type);
 
 /**
  * @function RC_channels_init(void)

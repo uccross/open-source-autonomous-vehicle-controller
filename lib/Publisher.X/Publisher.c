@@ -11,6 +11,7 @@
  *****************************************************************************/
 #include "Publisher.h"
 
+#include "xc.h"
 #ifdef USB_DEBUG
 #include "SerialM32.h"
 #else
@@ -65,9 +66,6 @@ RCRX_channel_buffer RC_channels[CHANNELS];
 struct IMU_output IMU_raw; //container for raw IMU data
 struct IMU_output IMU_scaled; //container for scaled IMU data
 //encoder_t encoder_data[NUM_ENCODERS];
-static uint8_t pub_GPS = TRUE;
-static uint8_t pub_RC_signals = TRUE;
-static uint8_t pub_IMU = TRUE;
 //static uint8_t pub_Encoder = TRUE;
 
 /******************************************************************************
@@ -77,13 +75,13 @@ static uint8_t pub_IMU = TRUE;
 //    
 //}
 
-void check_IMU_events(void) {
+void check_IMU_events(uint8_t data_type) {
     if (IMU_is_data_ready() == TRUE) {
-        //        IMU_get_raw_data(&IMU_raw);
-        //        publish_IMU_data(RAW);
-        IMU_get_scaled_data(&IMU_scaled);
-        if (pub_IMU == TRUE) {
-            publish_IMU_data(SCALED);
+        if (data_type == RAW) {
+            IMU_get_raw_data(&IMU_raw);
+        }
+        if (data_type == SCALED) {
+            IMU_get_scaled_data(&IMU_scaled);
         }
     }
 }
@@ -97,10 +95,8 @@ void RC_channels_init(void) {
 
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
+        LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         RCRX_get_cmd(RC_channels);
-        if (pub_RC_signals == TRUE) {
-            publish_RC_signals_raw();
-        }
     }
 }
 
@@ -300,7 +296,7 @@ void publish_GPS(void) {
 
 #ifdef SAM_M8Q_GPS
     /* Send GPS Position for QGC Visualization*/
-    mavlink_msg_gps_raw_int_pack(mavlink_system.sysid, mavlink_system.compid, 
+    mavlink_msg_gps_raw_int_pack(mavlink_system.sysid, mavlink_system.compid,
             &msg_tx,
             Sys_timer_get_usec(),
             GPS_FIX_TYPE_3D_FIX,
@@ -409,13 +405,13 @@ int main(void) {
 
     //Initialization routines
     Board_init(); //board configuration
-    
+
     TRISAbits.TRISA3 = 0; /* Set pin as output. This is also LED4 on Max32 */
     TRISCbits.TRISC1 = 0; /* LED5 */
-    
+
     LATCbits.LATC1 = 1; /* Set LED5 */
     LATAbits.LATA3 = 1; /* Set LED4 */
-    
+
 #ifdef USB_DEBUG
     Serial_init(); //start debug terminal (USB)
 #else
@@ -431,10 +427,16 @@ int main(void) {
 #endif
 
     Sys_timer_init(); //start the system timer
+    
+#ifdef USING_RC
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     RC_servo_init(); // start the servo subsystem
+#endif
+
+#ifdef USING_IMU
     IMU_state = IMU_init(IMU_SPI_MODE);
+
     if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
 #ifdef USB_DEBUG
@@ -442,6 +444,7 @@ int main(void) {
 #endif
         IMU_retry--;
     }
+#endif
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
@@ -451,7 +454,7 @@ int main(void) {
 #endif
 
     unsigned int control_loop_count = 0;
-    
+
     /**************************************************************************
      * Primary Loop                                                           *
      *************************************************************************/
@@ -461,26 +464,37 @@ int main(void) {
         /**********************************************************************
          * Check for all events                                               *
          *********************************************************************/
-        check_IMU_events(); //check for IMU data ready and publish when available
-        
+
+#ifdef USING_IMU
+        //        check_IMU_events(RAW); //check for IMU data ready and publish when available
+        check_IMU_events(SCALED);
+#endif
         check_mavlink_serial_events();
-        
+
+#ifdef USING_RC
         check_RC_events(); //check incoming RC commands
-        
+#endif
+
+#ifdef USING_GPS
         check_GPS_events(); //check and process incoming GPS messages
+#endif
 
         /**********************************************************************
          * Publish control and sensor signals                                 *
          *********************************************************************/
-        if (cur_time - control_start_time > CONTROL_PERIOD) {
+        if ((cur_time - control_start_time) > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            
+
             control_loop_count++;
-            
+
+#ifdef USING_RC
             set_control_output(); // set actuator outputs
-            
+            publish_RC_signals_raw();
+#endif
+
+#ifdef USING_IMU
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-            
+
             if (IMU_state == ERROR) {
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
@@ -491,21 +505,25 @@ int main(void) {
 
                 }
             }
+
+            publish_IMU_data(SCALED);
+#endif
+
         }
 
         // Publish GPS
+#ifdef USING_GPS
         if (cur_time - gps_start_time >= GPS_PERIOD) {
             gps_start_time = cur_time; //reset GPS timer
-            if (pub_GPS == TRUE) {
-                publish_GPS();
-            }
+            publish_GPS();
         }
-        
+#endif
+
         // Publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat();
-            
+
             LATAbits.LATA3 ^= 1; /* Set LED4 */
 
         }

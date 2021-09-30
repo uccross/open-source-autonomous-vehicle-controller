@@ -31,6 +31,14 @@
                     <name>PUBLISHER_UNIT_TESTS</name>
                     <type>2</type>
                 </confElem>
+                <confElem>
+                    <name>USING_IMU</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>USING_IMU_RC</name>
+                    <type>2</type>
+                </confElem>
             </confList>
             <formatting>
                 <project-formatting-style>false</project-formatting-style>

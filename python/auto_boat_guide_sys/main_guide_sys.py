@@ -57,17 +57,17 @@ log_file = arguments.log_file
 ###############################################################################
 if __name__ == '__main__':
     # Initialization
-    extra_headers = ['data', 'reason']
+    extra_headers = ['data', 'reason', 'base_mode', 'mavlink_version',
+                     'custom_mode', 'autopilot', 'system_status']
 
     my_logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=[],
         extra_headers=extra_headers, debug_flag=debug_flag)
 
-    
     ###########################################################################
-    # Helper method, based on 
+    # Helper method, based on
     # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
-    def handler(signal_received, frame): #*args
+    def handler(signal_received, frame):  # *args
         """
         Use the MAVCSVLogger object to close the csv file upon ctrl-c program
         exit. The MAVCSVLogger object is in the scope of this main
@@ -76,8 +76,8 @@ if __name__ == '__main__':
         """
         # Handle any cleanup here
 
-        my_logger.close_log() # Close the csv file and mavlink connection
-        
+        my_logger.close_log()  # Close the csv file and mavlink connection
+
         print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
         print('csv file closed')
         print('mavlink connection closed')
@@ -89,7 +89,7 @@ if __name__ == '__main__':
     # Timing
     t_old = time.time()
     t_new = 0
-    dt = 0.500 # seconds
+    dt = 0.500  # seconds
 
     ###########################################################################
     # Main Loop
@@ -123,7 +123,7 @@ if __name__ == '__main__':
 
                 print("Time: {}".format(t_new))
 
-        # DO NOT log every message, because tht will quikcly slow down 
+        # DO NOT log every message, because tht will quikcly slow down
         # everything
         if (t_new - t_old) >= dt:
             my_logger.log(msg)
@@ -131,4 +131,3 @@ if __name__ == '__main__':
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
         # Else, the we guidance system is not engaged
-        

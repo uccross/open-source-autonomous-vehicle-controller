@@ -142,11 +142,7 @@ class MAVCSVLogger():
         :return: The MAVLink message type if not none, else return None
         """
 
-        # with open(self.csv_file, 'a') as csvfile:
-        #     self.writer = csv.DictWriter(csvfile,
-        #                                  extrasaction='ignore',
-        #                                  fieldnames=self.headers)
-        # try:
+        ret_type = None
 
         # Don't log bad data
         if msg:
@@ -156,13 +152,9 @@ class MAVCSVLogger():
                 # and write it to the file
                 self.writer.writerow(self.msgs_dict)
 
-        # except:
-        #     time.sleep(1)  # TODO:get rid of this sleep
-        #     print('msg error, or dict error!')
+            ret_type = msg.get_type()
 
-        # self.mav_conn.close()
-
-        return msg.get_type()
+        return ret_type
 
     def close_log(self):
         """

@@ -58,7 +58,7 @@ log_file = arguments.log_file
 if __name__ == '__main__':
     # Initialization
     extra_headers = ['data', 'reason', 'base_mode', 'mavlink_version',
-                     'custom_mode', 'autopilot', 'system_status']
+                     'custom_mode', 'autopilot', 'system_status', 'type']
 
     my_logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=[],

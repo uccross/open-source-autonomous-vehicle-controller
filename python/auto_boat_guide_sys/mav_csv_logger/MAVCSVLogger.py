@@ -133,10 +133,13 @@ class MAVCSVLogger():
         #                                  fieldnames=self.headers)
         # try:
 
-        # add msg to the msgs_dict
-        self.msgs_dict.update(msg.to_dict())
-        # and write it to the file
-        self.writer.writerow(self.msgs_dict)
+        # Don't log bad data
+        if msg:
+            if msg.get_type() != 'BAD_DATA':
+                # add msg to the msgs_dict
+                self.msgs_dict.update(msg.to_dict())
+                # and write it to the file
+                self.writer.writerow(self.msgs_dict)
 
         # except:
         #     time.sleep(1)  # TODO:get rid of this sleep

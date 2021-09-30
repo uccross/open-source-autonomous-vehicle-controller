@@ -125,8 +125,8 @@ if __name__ == '__main__':
 
         # DO NOT log every message, because tht will quikcly slow down
         # everything
-        if (t_new - t_old) >= dt:
-            my_logger.log(msg)
+        # if (t_new - t_old) >= dt:
+        my_logger.log(msg)
 
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.

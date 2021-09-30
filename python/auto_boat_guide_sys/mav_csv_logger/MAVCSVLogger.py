@@ -2,7 +2,9 @@
 .. module:: MAVCSVLogger.py
 	:platform: MacOS, Unix, Windows,
 	:synopsis: MAVLink csv logging module to be used with main autonomous
-    guidance system. The csv will be stored on a USB drive on the raspberry pi
+    guidance system. The csv will be stored on a USB drive on the Raspberry Pi
+    An example call if looks like this:
+    python3 MAVCSVLogger.py -c "dev/ttyUSB0" -
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
 
@@ -25,7 +27,7 @@ class MAVCSVLogger():
             0,  # echo_sensor_id
             270,  # echo_sensor_orientation
             0)],  # echo_sensor_covariance
-            extra_headers=[]):
+            extra_headers=[], debug_flag=False):
         """
         :param port: The usb com port for serial communication between the
         raspberry pi and the Max32 (or similar microcontroller)
@@ -38,14 +40,19 @@ class MAVCSVLogger():
         get collected EVEN after specifying additional messages in msg_list.
             example: extra_headers=['signal_quality', 'horizontal_fov']
         """
+        self.debug_flag = debug_flag
+        if self.debug_flag:
+            print("Waiting for vehicle heartbeat")
         self.mav_conn = mavutil.mavlink_connection(port, baud)  # usb on Pi
         self.mav_conn.wait_heartbeat(timeout=5)
 
-        if self.mav_conn.target_system == 0:
-            print('No system detected!')
-        else:
-            print('target_system {}, target component {} \n'.format(
-                self.mav_conn.target_system, self.mav_conn.target_component))
+        if self.debug_flag:
+            if self.mav_conn.target_system == 0:
+                print('No system detected!')
+            else:
+                print('target_system {}, target component {} \n'.format(
+                    self.mav_conn.target_system,
+                    self.mav_conn.target_component))
 
         self.log_file = log_file
 
@@ -65,10 +72,12 @@ class MAVCSVLogger():
 
         # If the extra_headers list is not empty, add the extra headers
         if extra_headers != []:
-            print("Adding extra headers")
+            if self.debug_flag:
+                print("Adding extra headers")
             self.headers += extra_headers
 
-        print("CSV Header: {}".format(self.headers))
+        if self.debug_flag:
+            print("CSV Header: {}".format(self.headers))
 
         with open(self.csv_file, 'w', newline='') as csvfile:
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
@@ -91,8 +100,11 @@ class MAVCSVLogger():
             try:
                 msg = self.mav_conn.recv_match(blocking=True)
                 # add msg to the msgs_dict
-                print("added msg type: {}".format(msg.get_type()))
-                print("msg content: {}".format(msg))
+
+                if self.debug_flag:
+                    print("added msg type: {}".format(msg.get_type()))
+                    print("msg content: {}".format(msg))
+
                 self.msgs_dict.update(msg.to_dict())
 
             except:
@@ -101,12 +113,15 @@ class MAVCSVLogger():
         # Add all additional messages for expected sensors that are directly
         # connected to the Raspberry Pi via USB
         if extra_msg_list:
-            print(
-                "Adding extra MAVLink messages for sensors NOT connected to the\
- microcontroller")
+            if self.debug_flag:
+                print(
+                    "Adding extra MAVLink messages for sensors NOT connected to the microcontroller")
+
             for msg in extra_msg_list:
-                print("added extra msg type: {}".format(msg.get_type()))
-                print("extra msg content: {}".format(msg))
+                if self.debug_flag:
+                    print("added extra msg type: {}".format(msg.get_type()))
+                    print("extra msg content: {}".format(msg))
+
                 self.msgs_dict.update(msg.to_dict())
 
         return None
@@ -173,7 +188,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--com', type=str, dest='com', default="COM4",
                         help='Specify COM port number for serial \
                         communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
-
     parser.add_argument('-e', '--echo', dest='echo_sensor',
                         action='store_true', help='To use Blue Robotic\'s echo\
                             sensor')
@@ -266,7 +280,8 @@ if __name__ == '__main__':
                      'horizontal_fov', 'quaternion', 'data', 'reason']
 
     my_logger = MAVCSVLogger(
-        com, baudrate, log_file, csv_file, msg_list, extra_headers)
+        com, baudrate, log_file, csv_file, msg_list, extra_headers,
+        debug_flag=True)
 
     status = None
 

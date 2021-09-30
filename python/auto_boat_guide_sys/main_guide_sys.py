@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     my_logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=[],
-        extra_headers=extra_headers)
+        extra_headers=extra_headers, debug_flag=debug_flag)
 
     
     ###########################################################################

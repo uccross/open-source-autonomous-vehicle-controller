@@ -7,6 +7,8 @@
 # import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
+from path_planner import WaypointQueue as WQ
+from utilities import LTPconvert as LTP
 import time
 from signal import signal, SIGINT
 from sys import exit
@@ -60,9 +62,13 @@ if __name__ == '__main__':
     extra_headers = ['data', 'reason', 'base_mode', 'mavlink_version',
                      'custom_mode', 'autopilot', 'system_status', 'type']
 
-    my_logger = MCL.MAVCSVLogger(
+    # Data logger
+    logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=[],
         extra_headers=extra_headers, debug_flag=debug_flag)
+
+    # Waypoint Queue
+    waypoint_queue = WQ.WaypointQueue()
 
     ###########################################################################
     # Helper method, based on
@@ -76,7 +82,7 @@ if __name__ == '__main__':
         """
         # Handle any cleanup here
 
-        my_logger.close_log()  # Close the csv file and mavlink connection
+        logger.close_log()  # Close the csv file and mavlink connection
 
         print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
         print('csv file closed')
@@ -89,7 +95,7 @@ if __name__ == '__main__':
     # Timing
     t_old = time.time()
     t_new = 0
-    dt = 0.500  # seconds
+    dt = 0.005  # seconds
 
     ###########################################################################
     # Main Loop
@@ -103,7 +109,7 @@ if __name__ == '__main__':
         # Request MAVLINK_MSG_ID_ATTITUDE
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
-        msg = my_logger.mav_conn.recv_match()
+        msg = logger.mav_conn.recv_match()
 
         if msg:
             # if msg.get_type() == 'RAW_IMU':
@@ -125,9 +131,12 @@ if __name__ == '__main__':
 
         # DO NOT log every message, because tht will quikcly slow down
         # everything
-        # if (t_new - t_old) >= dt:
-        my_logger.log(msg)
+        if (t_new - t_old) >= dt:
+            t_old = t_new
+            logger.log(msg)
 
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
-        # Else, the we guidance system is not engaged
+        # Else, the guidance system is not engaged
+
+        

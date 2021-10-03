@@ -179,27 +179,25 @@ if __name__ == '__main__':
             status = logger.log(msg)
 
             if echo_sensor:
-                if status == 'HEARTBEAT':
+                if status == 'GPS_RAW_INT':
                     for msg in msg_list:
                         logger.log(msg)
 
-                    i += 100
+                    echo_sensor_time = msg.time_usec/100 
 
-                echo_sensor_time = i
+                    echo_data = myPing.get_distance()
+                    echo_sensor_distance = echo_data["distance"]
+                    echo_confidence = echo_data["confidence"]
 
-                echo_data = myPing.get_distance()
-                echo_sensor_distance = echo_data["distance"]
-                echo_confidence = echo_data["confidence"]
-
-                echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
-                    echo_sensor_time,
-                    echo_sensor_min,
-                    echo_sensor_max,
-                    echo_sensor_distance,
-                    echo_sensor_type,
-                    echo_sensor_id,
-                    echo_sensor_orientation,
-                    echo_sensor_covariance)
+                    echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
+                        echo_sensor_time,
+                        echo_sensor_min,
+                        echo_sensor_max,
+                        echo_sensor_distance,
+                        echo_sensor_type,
+                        echo_sensor_id,
+                        echo_sensor_orientation,
+                        echo_sensor_covariance)
 
                 msg_list = [echo_msg]
 

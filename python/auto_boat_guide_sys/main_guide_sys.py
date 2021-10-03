@@ -95,6 +95,8 @@ if __name__ == '__main__':
             echo_sensor_orientation,
             echo_sensor_covariance)
 
+    msg_list = [echo_msg]
+
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',
                      'horizontal_fov', 'quaternion',
@@ -103,7 +105,7 @@ if __name__ == '__main__':
 
     # Data logger
     logger = MCL.MAVCSVLogger(
-        com, baudrate, log_file, csv_file, msg_list=[],
+        com, baudrate, log_file, csv_file, msg_list=msg_list,
         extra_headers=extra_headers, debug_flag=debug_flag)
 
     # Waypoint Queue

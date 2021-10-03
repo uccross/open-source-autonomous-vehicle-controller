@@ -183,7 +183,7 @@ if __name__ == '__main__':
                     for msg in msg_list:
                         logger.log(msg)
 
-                    echo_sensor_time = msg.time_usec/100 
+                    echo_sensor_time = int(t_new)
 
                     echo_data = myPing.get_distance()
                     echo_sensor_distance = echo_data["distance"]

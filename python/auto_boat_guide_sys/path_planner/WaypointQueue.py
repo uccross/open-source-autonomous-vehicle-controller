@@ -26,9 +26,11 @@ class WaypointQueue():
         # Handle the case where the queue is empty, just add a point
         if len(waypoint_queue.shape) == 1:
             self.waypoint_queue = np.zeros((1,2))
+            self.next_waypoint = np.zeros((1,2))
             self.added_zeros_flag = True
         else:
             self.waypoint_queue = waypoint_queue
+            self.next_waypoint = self.waypoint_queue[[self.index], :]
 
         self.threshold = threshold
 
@@ -59,14 +61,14 @@ class WaypointQueue():
 
         return None
 
-    def withinThreshold(self, point=np.zeros((1, 2))):
+    def isNearNext(self, point=np.zeros((1, 2))):
         """
         :param point: Any point to compare with the next waypoint. Usually the
         projected closest point of the vehicle onto the path makes the most 
         sense to use.
         :return: True or False
         """
-        return (np.linalg.norm(point - self.next_waypoin) <= self.threshold)
+        return (np.linalg.norm(point - self.next_waypoint) <= self.threshold)
 
     def getAll(self):
         """
@@ -87,7 +89,7 @@ class WaypointQueue():
 if __name__ == '__main__':
     waypoints = np.array([[0.0, 2.0],
                           [0.0, 1.0],
-                          [0.0, 5.0]])
+                          [5.0, 4.0]])
     threshold = 2.1
 
     wpq = WaypointQueue(threshold=threshold)
@@ -105,3 +107,23 @@ if __name__ == '__main__':
     n = wpq.getTotal() + 1
     for i in range(0, n):
         print("getting wp: {}".format(wpq.getNext()))
+
+    print("\r\nTest Proximity for True")
+    test_point = np.array([[5.1, 4.1]])
+    print("test point: {}".format(test_point))
+    print("next waypoint: {}".format(wpq.getNext()))
+    print("result: {}".format(wpq.isNearNext(test_point)))
+    if wpq.isNearNext(test_point) == True:
+        print("Test successul!")
+    else:
+        print("Test failed!")
+
+    print("\r\nTest Proximity for False")
+    test_point = np.array([[15.1, 4.1]])
+    print("test point: {}".format(test_point))
+    print("next waypoint: {}".format(wpq.getNext()))
+    print("result: {}".format(wpq.isNearNext(test_point)))
+    if wpq.isNearNext(test_point) == False:
+        print("Test successul!")
+    else:
+        print("Test failed!")

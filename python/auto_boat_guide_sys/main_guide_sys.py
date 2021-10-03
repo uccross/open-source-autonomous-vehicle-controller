@@ -9,6 +9,7 @@ import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
 from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
+from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
 from sys import exit
@@ -58,8 +59,46 @@ log_file = arguments.log_file
 
 ###############################################################################
 if __name__ == '__main__':
+    # Ping Echo Sounder for depth measurements in water
+    if echo_sensor:
+        print("Using echo distance sensor")
+        from brping import Ping1D
+        myPing = Ping1D()
+        myPing.connect_serial(sensor_com, sensor_baudrate)
+
+        if myPing.initialize() is False:
+            print("Failed to initialize Ping!")
+            exit(1)
+
+        time.sleep(1)
+
+        echo_sensor_time = 1000
+        echo_sensor_min = 0  # Units: mm, Minimum
+        echo_sensor_max = 300000  # Units: mm, Maximum is 300 meters
+
+        # currently we log for a specified period of time
+
+        echo_sensor_type = mavutil.mavlink.MAV_DISTANCE_SENSOR_UNKNOWN
+        echo_sensor_id = 0
+        echo_sensor_orientation = 270  # Degrees (pointing down)
+        echo_sensor_covariance = 0
+
+        echo_sensor_distance = 1
+
+        echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
+            echo_sensor_time,
+            echo_sensor_min,
+            echo_sensor_max,
+            echo_sensor_distance,
+            echo_sensor_type,
+            echo_sensor_id,
+            echo_sensor_orientation,
+            echo_sensor_covariance)
+
     # Initialization
-    extra_headers = ['data', 'reason', 'base_mode', 'mavlink_version',
+    extra_headers = ['vertical_fov', 'signal_quality',
+                     'horizontal_fov', 'quaternion',
+                     'data', 'reason', 'base_mode', 'mavlink_version',
                      'custom_mode', 'autopilot', 'system_status', 'type']
 
     # Data logger
@@ -92,6 +131,8 @@ if __name__ == '__main__':
     # Tell Python to run the handler() function when SIGINT is recieved
     signal(SIGINT, handler)
 
+    status = None
+
     # Timing
     t_old = time.time()
     t_new = 0
@@ -109,7 +150,7 @@ if __name__ == '__main__':
         # Request MAVLINK_MSG_ID_ATTITUDE
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
-        msg = logger.mav_conn.recv_match()
+        msg = logger.mav_conn.recv_match() # TODO: Make a getter() for this
 
         if msg:
             # if msg.get_type() == 'RAW_IMU':
@@ -133,7 +174,32 @@ if __name__ == '__main__':
         # everything
         if (t_new - t_old) >= dt:
             t_old = t_new
-            logger.log(msg)
+            status = logger.log(msg)
+
+            if echo_sensor:
+                if status == 'HEARTBEAT':
+                    for msg in msg_list:
+                        logger.log(msg)
+
+                    i += 100
+
+                echo_sensor_time = i
+
+                echo_data = myPing.get_distance()
+                echo_sensor_distance = echo_data["distance"]
+                echo_confidence = echo_data["confidence"]
+
+                echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
+                    echo_sensor_time,
+                    echo_sensor_min,
+                    echo_sensor_max,
+                    echo_sensor_distance,
+                    echo_sensor_type,
+                    echo_sensor_id,
+                    echo_sensor_orientation,
+                    echo_sensor_covariance)
+
+                msg_list = [echo_msg]
 
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.

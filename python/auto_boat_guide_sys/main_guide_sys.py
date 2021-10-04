@@ -144,7 +144,7 @@ if __name__ == '__main__':
     dt = 0.005  # seconds
 
     # Transitions
-    last_autopilot = -1
+    last_base_mode = -1
 
     ###########################################################################
     # Main Loop
@@ -166,16 +166,16 @@ if __name__ == '__main__':
 
                 heartbeat_msg = msg.to_dict()
 
-                current_autopilot = heartbeat_msg['autopilot']
+                current_base_mode = heartbeat_msg['base_mode']
 
-                print("current_autopilot: {}".format(current_autopilot))
+                print("current_base_mode: {}".format(current_base_mode))
 
                 if mode_print_flag:
-                    if current_autopilot != last_autopilot:
-                        last_autopilot = current_autopilot
-                        
-                        print("Autopilot changed: {}".format(
-                            current_autopilot))
+                    if current_base_mode != last_base_mode:
+                        last_base_mode = current_base_mode
+
+                        print("base_mode changed: {}".format(
+                            current_base_mode))
 
             if debug_flag:
                 print("\r\nMsg:")

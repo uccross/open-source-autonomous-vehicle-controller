@@ -52,7 +52,7 @@ nmea_frame_t cur_msg;
 // MAVLink
 static uint8_t mode = MAV_MODE_MANUAL_ARMED;
 static uint8_t autopilot = MAV_TYPE_SURFACE_BOAT;
-static uint8_t state = MAV_STATE_STANDBY; 
+static uint8_t state = MAV_STATE_STANDBY;
 
 mavlink_system_t mavlink_system = {
     1, // System ID (1-255)
@@ -62,6 +62,7 @@ mavlink_system_t mavlink_system = {
 static mavlink_message_t rec_msg;
 
 // @TODO: Move RC channel specific variables to RC and use/add getters
+
 enum RC_channels {
     ACCELERATOR = 2,
     STEERING,
@@ -79,21 +80,21 @@ struct IMU_output IMU_scaled; //container for scaled IMU data
  * FUNCTION PROTOTYPES                                                        *
  *****************************************************************************/
 void publisher_init(uint8_t desired_autopilot) {
-     publisher_set_autopilot(desired_autopilot);
-     publisher_set_mode(MAV_MODE_MANUAL_DISARMED);
-     publisher_set_state(MAV_STATE_STANDBY);
+    publisher_set_autopilot(desired_autopilot);
+    publisher_set_mode(MAV_MODE_MANUAL_DISARMED);
+    publisher_set_state(MAV_STATE_STANDBY);
 }
 
 void publisher_set_autopilot(uint8_t desired_autopilot) {
-     autopilot = desired_autopilot;
+    autopilot = desired_autopilot;
 }
 
 void publisher_set_mode(uint8_t desired_mode) {
-     mode = desired_mode;
+    mode = desired_mode;
 }
 
 void publisher_set_state(uint8_t desired_state) {
-     state = desired_state;
+    state = desired_state;
 }
 
 uint8_t check_mavlink_mode(void) {
@@ -163,7 +164,7 @@ void check_GPS_events(void) {
                 rmc_long = -nmea_get_rmc_long(); //@TODO: Fix sign
                 rmc_cog = nmea_get_rmc_cog();
                 rmc_vel = nmea_get_rmc_spd();
-                
+
                 rmc_position[0] = (float) rmc_lat;
                 rmc_position[1] = (float) rmc_long;
             }
@@ -282,10 +283,6 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-void publish_mav_mode(uint8_t mode) {
-    mavlink_message_t msg_tx;
-}
-
 void check_mavlink_serial_events(void) {
     if (MavSerial_getMavMsg(&rec_msg) == TRUE) {
         switch (mavlink_msg_command_long_get_command(&rec_msg)) {
@@ -295,6 +292,15 @@ void check_mavlink_serial_events(void) {
                 break;
         }
     }
+}
+
+uint16_t check_mavlink_serial_command(void) {
+    uint16_t command = 0;
+    if (MavSerial_getMavMsg(&rec_msg) == TRUE) {
+        command = mavlink_msg_command_long_get_command(&rec_msg);
+    }
+
+    return command;
 }
 
 void publish_GPS(void) {
@@ -355,7 +361,7 @@ void publish_GPS(void) {
             0, //heading uncertainty
             0); // yaw--GPS doesn't provide
 #endif
-    
+
     MavSerial_sendMavPacket(&msg_tx);
 }
 
@@ -365,8 +371,8 @@ void publish_heartbeat(void) {
     mavlink_msg_heartbeat_pack(mavlink_system.sysid,
             mavlink_system.compid,
             &msg_tx,
-            autopilot, 
-            MAV_AUTOPILOT_GENERIC,
+            MAV_TYPE_GENERIC,
+            autopilot,
             mode,
             custom,
             state);
@@ -388,6 +394,22 @@ void publish_parameter(const char *param_id) {
             param_type,
             param_count,
             param_index);
+
+    MavSerial_sendMavPacket(&msg_tx);
+}
+
+int publish_waypoint(float wp[DIM]) {
+    mavlink_message_t msg_tx;
+    mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_usec(),
+            wp[1], /* x: Latitude [meters] EN LTP -> y_north -> wp[1]*/
+            wp[0], /* y: Longitude[meters] EN LTP -> x_east -> wp[0]*/
+            0.0, /* z: Altitude [meters] */
+            0.0, /* vx [meters/second] */
+            0.0, /* vy [meters/second] */
+            0.0); /* vz [meters/second] */
 
     MavSerial_sendMavPacket(&msg_tx);
 }
@@ -466,7 +488,7 @@ int main(void) {
 #endif
 
     Sys_timer_init(); //start the system timer
-    
+
 #ifdef USING_RC
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system

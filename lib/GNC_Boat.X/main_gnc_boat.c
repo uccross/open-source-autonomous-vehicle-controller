@@ -62,15 +62,15 @@ int main(void) {
     LATAbits.LATA3 = 1; /* Set LED4 */
 
     MavSerial_Init();
-    
+
     publisher_init(MAV_TYPE_SURFACE_BOAT);
-    
+
     nmea_serial_init();
 
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
     RC_servo_init(); // start the servo subsystem
-    
+
 
     IMU_state = IMU_init(IMU_SPI_MODE);
 
@@ -85,13 +85,6 @@ int main(void) {
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
-    
-    // MAVLink and State Machine
-    uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
-    uint8_t last_mode = current_mode;
-    
-    publisher_set_mode(MAV_MODE_MANUAL_ARMED);
-    publisher_set_state(MAV_STATE_ACTIVE);
 
     // Trajectory 
     float position_lla[DIM];
@@ -119,6 +112,28 @@ int main(void) {
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
 #endif
 
+    // MAVLink and State Machine
+    uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
+    uint8_t last_mode = current_mode;
+
+    enum waypoints_state {
+        FINDING_REF_WP, /* Find the reference point for the LTP calculation */
+        CHECKING_REF_WP, /* Check the reference point sending and comparing 
+                          * echo from Companion Computer */
+        WAITING_FOR_PREV_WP, /* Wait for the previous waypoint from the 
+                              * Companion Computer */
+        CHECKING_PREV_WP, /* Echo test the previous waypoint */
+        WAITING_FOR_NEXT_WP, /* Wait for the next waypoint from the 
+                              * Companion Computer */
+        CHECKING_NEXT_WP /* Echo test the next waypoint */
+    };
+    typedef enum waypoints_state waypoints_state_t;
+
+    waypoints_state_t current_wp_state = FINDING_REF_WP;
+
+    publisher_set_mode(MAV_MODE_MANUAL_ARMED);
+    publisher_set_state(MAV_STATE_ACTIVE);
+
     unsigned int control_loop_count = 0;
 
     /**************************************************************************
@@ -134,26 +149,46 @@ int main(void) {
         check_mavlink_serial_events();
         check_RC_events(); //check incoming RC commands
         check_GPS_events(); //check and process incoming GPS messages
-        
+
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
+        publisher_set_mode(current_mode);
+
         //        if (current_mode != last_mode) {
         //            last_mode = current_mode;
         //            publisher_get_gps_rmc_position(position_lla);
         //            //            lin_tra_init(position,);
         //        }
-        
+
         /**********************************************************************
-         * State Machine Logic                                                *
+         * Wayopint State Machine Logic                                       *
          *********************************************************************/
-        switch (current_mode) {
-            case MAV_MODE_MANUAL_ARMED: 
+        switch (current_wp_state) {
+            case FINDING_REF_WP:
+                publisher_get_gps_rmc_position(position_lla);
+                publish_waypoint(position_lla);
+                current_wp_state = CHECKING_REF_WP;
                 break;
-                
-            case MAV_MODE_AUTO_ARMED: 
+
+            case CHECKING_REF_WP:
+                publisher_get_gps_rmc_position(position_lla);
+
+                break;
+
+            case WAITING_FOR_PREV_WP:
+                break;
+
+            case CHECKING_PREV_WP:
+                break;
+
+            case WAITING_FOR_NEXT_WP:
+                break;
+
+            case CHECKING_NEXT_WP:
                 break;
         }
-        
+
+
         /**********************************************************************
          * CONTROL: Control and publish data                                  *
          *********************************************************************/
@@ -178,7 +213,7 @@ int main(void) {
             /******************************************************************
              * Control                                                        *
              *****************************************************************/
-
+            //            if (current_mode == MAV_MODE_AUTO_ARMED) {
 
             //            cross_track_error = 
             //            
@@ -196,6 +231,8 @@ int main(void) {
 
             //            RC_servo_set_pulse(u_pulse, RC_STEERING);
 
+            //            }
+
             // Information from trajectory
 
 
@@ -208,12 +245,12 @@ int main(void) {
         }
 
         // Publish GPS
-//#ifdef USING_GPS
+        //#ifdef USING_GPS
         if (cur_time - gps_start_time >= GPS_PERIOD) {
             gps_start_time = cur_time; //reset GPS timer
             publish_GPS();
         }
-//#endif
+        //#endif
         // Publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer

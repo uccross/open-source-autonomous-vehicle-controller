@@ -129,21 +129,21 @@ void publish_IMU_data(uint8_t data_type);
 void publish_RC_signals_raw(void);
 
 /**
- * @function publish_mav_mode(uint8_t mode)
- * @param mode the MAVLink mode. For example: MAV_MODE_MANUAL_ARMED, or
- * MAV_MODE_AUTO_ARMED
- * @brief publish the MAVLink mode
- * @author Pavlo Vlastos
- */
-void publish_mav_mode(uint8_t mode);
-
-/**
  * @function check_mavlink_serial_events(void)
  * @param none
  * @brief scales raw RC signals
  * @author Pavlo Vlastos
  */
 void check_mavlink_serial_events(void);
+
+/**
+ * @function check_mavlink_serial_command(void)
+ * @brief scales raw RC signals
+ * @param none
+ * @return The MAVlink command
+ * @author Pavlo Vlastos
+ */
+uint16_t check_mavlink_serial_command(void);
 
 /**
  * @Function publish_encoder_data()
@@ -179,6 +179,15 @@ void publish_heartbeat(void);
  * @author aaron hunter
  */
 void publish_parameter(const char *param_id);
+
+/**
+ * @Function publish_waypoint(float wp[DIM])
+ * @param wp[] A waypoint with East and North elements within the Local Tangent
+ * Plane (LTP) in meters
+ * @brief Send waypoint with East and North elements to the companion 
+ * @author Pavlo Vlastos
+ */
+int publish_waypoint(float wp[DIM]);
 
 /**
  * @Function calc_pw(uint16_t raw_counts)

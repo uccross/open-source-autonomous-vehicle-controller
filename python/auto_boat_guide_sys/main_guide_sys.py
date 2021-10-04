@@ -162,19 +162,15 @@ if __name__ == '__main__':
 
         if msg:
             if msg.get_type() == 'HEARTBEAT':
-                print("Msg: {}".format(msg))
-
                 heartbeat_msg = msg.to_dict()
 
                 current_base_mode = heartbeat_msg['base_mode']
-
-                print("current_base_mode: {}".format(current_base_mode))
 
                 if mode_print_flag:
                     if current_base_mode != last_base_mode:
                         last_base_mode = current_base_mode
 
-                        print("base_mode changed: {}".format(
+                        print("MAVLink base_mode changed: {}".format(
                             current_base_mode))
 
             if debug_flag:

@@ -163,7 +163,7 @@ if __name__ == '__main__':
         if msg:
             if msg.get_type() == 'HEARTBEAT':
                 if mode_print_flag:
-                    if msg['autopilot'] != last_autopilot:
+                    if msg['MAV_AUTOPILOT'] != last_autopilot:
                         last_autopilot = msg['autopilot']
                         print("Autopilot chaned: {}".format(msg['autopilot']))
 

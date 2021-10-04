@@ -45,7 +45,7 @@ parser.add_argument('--log_file', type=str, dest='log_file',
                     default='./log_file.log',
                     help='log file path')
 parser.add_argument('-m', '--mode', dest='mode_print_flag',
-                    action='store_true', help='Flag to print mode changes')        
+                    action='store_true', help='Flag to print mode changes')
 
 arguments = parser.parse_args()
 
@@ -144,7 +144,7 @@ if __name__ == '__main__':
     dt = 0.005  # seconds
 
     # Transitions
-    last_autopilot = 0
+    last_autopilot = -1
 
     ###########################################################################
     # Main Loop
@@ -158,16 +158,24 @@ if __name__ == '__main__':
         # Request MAVLINK_MSG_ID_ATTITUDE
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
-        msg = logger.mav_conn.recv_match() # TODO: Make a getter() for this
+        msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
         if msg:
             if msg.get_type() == 'HEARTBEAT':
                 print("Msg: {}".format(msg))
+
                 heartbeat_msg = msg.to_dict()
+
+                current_autopilot = heartbeat_msg['autopilot']
+
+                print("current_autopilot: {}".format(current_autopilot))
+
                 if mode_print_flag:
-                    if heartbeat_msg['autopilot'] != last_autopilot:
-                        last_autopilot = msg['autopilot']
-                        print("Autopilot chaned: {}".format(msg['autopilot']))
+                    if current_autopilot != last_autopilot:
+                        last_autopilot = current_autopilot
+                        
+                        print("Autopilot changed: {}".format(
+                            current_autopilot))
 
             if debug_flag:
                 print("\r\nMsg:")
@@ -207,5 +215,3 @@ if __name__ == '__main__':
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
         # Else, the guidance system is not engaged
-
-        

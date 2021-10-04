@@ -161,7 +161,7 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match() # TODO: Make a getter() for this
 
         if msg:
-            if msg == 'HEARTBEAT':
+            if msg.get_type() == 'HEARTBEAT':
                 if mode_print_flag:
                     if msg['autopilot'] != last_autopilot:
                         last_autopilot = msg['autopilot']

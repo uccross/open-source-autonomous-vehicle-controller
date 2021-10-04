@@ -162,6 +162,8 @@ if __name__ == '__main__':
 
         if msg:
             if msg.get_type() == 'HEARTBEAT':
+                print("Msg: {}".format(msg))
+                heartbeat_msg = heartbeat_msg.to_dict()
                 if mode_print_flag:
                     if msg['MAV_AUTOPILOT'] != last_autopilot:
                         last_autopilot = msg['autopilot']

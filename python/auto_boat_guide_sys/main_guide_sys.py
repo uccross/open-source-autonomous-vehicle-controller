@@ -44,6 +44,8 @@ parser.add_argument('--csv_file', type=str, dest='csv_file',
 parser.add_argument('--log_file', type=str, dest='log_file',
                     default='./log_file.log',
                     help='log file path')
+parser.add_argument('-m', '--mode', dest='mode_print_flag',
+                    action='store_true', help='Flag to print mode changes')        
 
 arguments = parser.parse_args()
 
@@ -55,6 +57,7 @@ sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
+mode_print_flag = arguments.mode_print_flag
 
 
 ###############################################################################
@@ -140,6 +143,9 @@ if __name__ == '__main__':
     t_new = 0
     dt = 0.005  # seconds
 
+    # Transitions
+    last_autopilot = 0
+
     ###########################################################################
     # Main Loop
     while True:
@@ -155,16 +161,10 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match() # TODO: Make a getter() for this
 
         if msg:
-            # if msg.get_type() == 'RAW_IMU':
-            #     print("\r\nType:")
-            #     print(type(msg))
-
-            #     print("\r\nMsg:")
-            #     print(msg)
-
-            # if msg.get_type() == 'HIGHRES_IMU':
-            # print("\r\nType:")
-            # print(type(msg))
+            if mode_print_flag:
+                if msg['autopilot'] != last_autopilot:
+                    last_autopilot = msg['autopilot']
+                    print("Autopilot chaned: {}".format(msg['autopilot']))
 
             if debug_flag:
                 print("\r\nMsg:")

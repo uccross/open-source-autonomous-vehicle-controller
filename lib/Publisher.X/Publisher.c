@@ -38,6 +38,7 @@ long double rmc_lat = 0.0;
 int32_t rmc_long_int = 0;
 long double rmc_long = 0.0;
 long double rmc_cog = 0.0;
+float rmc_position[DIM];
 long double unw_cog = 0.0;
 long double offset = 0.0;
 int offsetFlag = 1;
@@ -48,6 +49,11 @@ long double gsa_hdop = 0.0;
 
 nmea_frame_t cur_msg;
 
+// MAVLink
+static uint8_t mode = MAV_MODE_MANUAL_ARMED;
+static uint8_t autopilot = MAV_TYPE_SURFACE_BOAT;
+static uint8_t state = MAV_STATE_STANDBY; 
+
 mavlink_system_t mavlink_system = {
     1, // System ID (1-255)
     MAV_COMP_ID_AUTOPILOT1 // Component ID (a MAV_COMPONENT value)
@@ -55,11 +61,12 @@ mavlink_system_t mavlink_system = {
 
 static mavlink_message_t rec_msg;
 
+// @TODO: Move RC channel specific variables to RC and use/add getters
 enum RC_channels {
     ACCELERATOR = 2,
     STEERING,
     SWITCH_D,
-}; //map to the car controls from the RC receiver
+}; //map to the car or boat controls from the RC receiver
 
 RCRX_channel_buffer RC_channels[CHANNELS];
 //static struct GPS_data GPS_data;
@@ -71,9 +78,37 @@ struct IMU_output IMU_scaled; //container for scaled IMU data
 /******************************************************************************
  * FUNCTION PROTOTYPES                                                        *
  *****************************************************************************/
-//void Publisher_Init() {
-//    
-//}
+void publisher_init(uint8_t desired_autopilot) {
+     publisher_set_autopilot(desired_autopilot);
+     publisher_set_mode(MAV_MODE_MANUAL_DISARMED);
+     publisher_set_state(MAV_STATE_STANDBY);
+}
+
+void publisher_set_autopilot(uint8_t desired_autopilot) {
+     autopilot = desired_autopilot;
+}
+
+void publisher_set_mode(uint8_t desired_mode) {
+     mode = desired_mode;
+}
+
+void publisher_set_state(uint8_t desired_state) {
+     state = desired_state;
+}
+
+uint8_t check_mavlink_mode(void) {
+    if ((uint16_t) RC_channels[4] > RC_RX_MID_COUNTS) {
+        mode = MAV_MODE_AUTO_ARMED;
+    } else {
+        mode = MAV_MODE_MANUAL_ARMED;
+    }
+    return mode;
+}
+
+void publisher_get_gps_rmc_position(float position[DIM]) {
+    rmc_position[0] = position[0];
+    rmc_position[1] = position[1];
+}
 
 void check_IMU_events(uint8_t data_type) {
     if (IMU_is_data_ready() == TRUE) {
@@ -128,6 +163,9 @@ void check_GPS_events(void) {
                 rmc_long = -nmea_get_rmc_long(); //@TODO: Fix sign
                 rmc_cog = nmea_get_rmc_cog();
                 rmc_vel = nmea_get_rmc_spd();
+                
+                rmc_position[0] = (float) rmc_lat;
+                rmc_position[1] = (float) rmc_long;
             }
             // CHECK FOR XXGSA for HDOP
         } else if ((nmea_read_head_address().talk_id[0] == 'G') &&
@@ -244,6 +282,10 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
+void publish_mav_mode(uint8_t mode) {
+    mavlink_message_t msg_tx;
+}
+
 void check_mavlink_serial_events(void) {
     if (MavSerial_getMavMsg(&rec_msg) == TRUE) {
         switch (mavlink_msg_command_long_get_command(&rec_msg)) {
@@ -290,8 +332,6 @@ void publish_GPS(void) {
             0, //heading uncertainty
             0 // yaw--GPS doesn't provide
             );
-
-    MavSerial_sendMavPacket(&msg_tx);
 #endif
 
 #ifdef SAM_M8Q_GPS
@@ -314,20 +354,19 @@ void publish_GPS(void) {
             0, //velocity uncertainty
             0, //heading uncertainty
             0); // yaw--GPS doesn't provide
-
-    MavSerial_sendMavPacket(&msg_tx);
 #endif
+    
+    MavSerial_sendMavPacket(&msg_tx);
 }
 
 void publish_heartbeat(void) {
     mavlink_message_t msg_tx;
-    uint8_t mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED;
     uint32_t custom = 0;
-    uint8_t state = MAV_STATE_STANDBY;
     mavlink_msg_heartbeat_pack(mavlink_system.sysid,
             mavlink_system.compid,
             &msg_tx,
-            MAV_TYPE_GROUND_ROVER, MAV_AUTOPILOT_GENERIC,
+            autopilot, 
+            MAV_AUTOPILOT_GENERIC,
             mode,
             custom,
             state);

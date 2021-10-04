@@ -18,10 +18,65 @@
 #include "MavSerial.h"
 #include "System_timer.h"
 #include "nmea0183v4.h"
+#include "linear_trajectory.h"
 
 /******************************************************************************
  * FUNCTION PROTOTYPES                                                        *
  *****************************************************************************/
+
+/**
+ * @function publisher_init(uint8_t desired_autopilot)
+ * @param desired_autopilot Example: MAV_TYPE_GROUND_ROVER, or
+ * MAV_TYPE_SURFACE_BOAT
+ * @brief Set the autopilot, mode, and state of the vehicle
+ * @author Pavlo Vlastos
+ */
+void publisher_init(uint8_t desired_autopilot);
+
+/**
+ * @function publisher_set_autopilot(uint8_t desired_autopilot)
+ * @param desired_autopilot Example: MAV_TYPE_GROUND_ROVER, or
+ * MAV_TYPE_SURFACE_BOAT
+ * @brief Set the autopilot
+ * @author Pavlo Vlastos
+ */
+void publisher_set_autopilot(uint8_t desired_autopilot);
+
+/**
+ * @function publisher_set_mode(uint8_t desired_mode)
+ * @param desired_mode Example: MAV_MODE_MANUAL_DISARMED, 
+ * MAV_MODE_MANUAL_ARMED, MAV_MODE_AUTO_ARMED, ...
+ * @brief Set the mode
+ * @author Pavlo Vlastos
+ */
+void publisher_set_mode(uint8_t desired_mode);
+
+/**
+ * @function publisher_set_state(uint8_t desired_state)
+ * @param desired_state Example: MAV_STATE_STANDBY, MAV_STATE_ACTIVE, ...
+ * @brief Set the state
+ * @author Pavlo Vlastos
+ */
+void publisher_set_state(uint8_t desired_state);
+
+/**
+ * @function check_mavlink_mode(void)
+ * @param none
+ * @brief Reads RC_channel (Channel 4) to determine if manual or autonomous. 
+ * This function returns the MAVLink mode (uint8_t) such as 
+ * MAV_MODE_MANUAL_ARMED
+ * @author Pavlo Vlastos
+ */
+uint8_t check_mavlink_mode(void);
+
+/**
+ * @function publisher_get_gps_rmc_position(float position[DIM])
+ * @param position[] Latitude and longitude 
+ * @brief Wrapper function to get the gpc position
+ * @author Pavlo Vlastos
+ */
+void publisher_get_gps_rmc_position(float position[DIM]);
+
 /**
  * @function check_IMU_events(void)
  * @param data_type RAW or SCALED
@@ -72,6 +127,15 @@ void publish_IMU_data(uint8_t data_type);
  * @author Aaron Hunter
  */
 void publish_RC_signals_raw(void);
+
+/**
+ * @function publish_mav_mode(uint8_t mode)
+ * @param mode the MAVLink mode. For example: MAV_MODE_MANUAL_ARMED, or
+ * MAV_MODE_AUTO_ARMED
+ * @brief publish the MAVLink mode
+ * @author Pavlo Vlastos
+ */
+void publish_mav_mode(uint8_t mode);
 
 /**
  * @function check_mavlink_serial_events(void)

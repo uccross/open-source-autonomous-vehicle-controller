@@ -146,6 +146,7 @@ if __name__ == '__main__':
     # Transitions
     last_base_mode = -1
     state = 'WAITING_FOR_REF_POINT'
+    last_state = state
 
     waypoints = np.array([[36.9557439, -122.0604691],
                          [36.9556638, -122.0606960],
@@ -169,7 +170,8 @@ if __name__ == '__main__':
 
         if msg:
             # START OF STATE MACHINE
-            print("State: {}".format(state), end='')
+            if state != last_state:
+                print("State: {}".format(state), end='')
             if state == 'WAITING_FOR_REF_POINT':
 
                 # Exit this state upon receving a navigation waypoint message
@@ -233,7 +235,9 @@ if __name__ == '__main__':
                         state = 'SENDING_NEXT_ECHO'
                         print("result: {} -> {}".format(result, state))
 
+            last_state = state
             # END OF STATE MACHINE
+            ##################################################################
 
             if msg.get_type() == 'HEARTBEAT':
                 if mode_print_flag:

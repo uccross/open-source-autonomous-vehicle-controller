@@ -21,6 +21,27 @@
 #include "linear_trajectory.h"
 
 /******************************************************************************
+ * PUBLIC  #DEFINES                                                           *
+ *****************************************************************************/
+#define LLA_DIM 3 // DO NOT CHANGE THIS
+
+/******************************************************************************
+ * PUBLIC DATATYPES                                                           *
+ *****************************************************************************/
+union lat_lon_point {
+    float latitude;
+    float longitude;
+    float array[DIM];
+};
+
+union lat_lon_alt_point {
+    float latitude;
+    float longitude;
+    float altitude;
+    float array[LLA_DIM];
+};
+
+/******************************************************************************
  * FUNCTION PROTOTYPES                                                        *
  *****************************************************************************/
 
@@ -130,20 +151,13 @@ void publish_RC_signals_raw(void);
 
 /**
  * @function check_mavlink_serial_events(void)
- * @param none
- * @brief scales raw RC signals
+ * @brief Check mavlink serial events/messages and populate the waypoint 
+ * parameter as necessary
+ * @param wp A waypoint with longitude and latitude in that order
+ * @return TRUE or FALSE if an message was received
  * @author Pavlo Vlastos
  */
-void check_mavlink_serial_events(void);
-
-/**
- * @function check_mavlink_serial_command(void)
- * @brief scales raw RC signals
- * @param none
- * @return The MAVlink command
- * @author Pavlo Vlastos
- */
-uint16_t check_mavlink_serial_command(void);
+char check_mavlink_serial_events(union lat_lon_point* wp);
 
 /**
  * @Function publish_encoder_data()
@@ -182,12 +196,20 @@ void publish_parameter(const char *param_id);
 
 /**
  * @Function publish_waypoint(float wp[DIM])
+ * @brief Send waypoint with East and North elements to the companion 
  * @param wp[] A waypoint with East and North elements within the Local Tangent
  * Plane (LTP) in meters
- * @brief Send waypoint with East and North elements to the companion 
  * @author Pavlo Vlastos
  */
 int publish_waypoint(float wp[DIM]);
+
+/**
+ * @Function publish_ack(uint8_t result)
+ * @brief Send an acknowledgment to the Companion Computer
+ * @param result Information associated with the acknowledgment
+ * @author Pavlo Vlastos
+ */
+int int publish_ack(uint8_t result);
 
 /**
  * @Function calc_pw(uint16_t raw_counts)

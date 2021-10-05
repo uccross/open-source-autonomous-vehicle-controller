@@ -283,24 +283,27 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-void check_mavlink_serial_events(void) {
-    if (MavSerial_getMavMsg(&rec_msg) == TRUE) {
-        switch (mavlink_msg_command_long_get_command(&rec_msg)) {
+char check_mavlink_serial_events(union lat_lon_point* wp) {
+    char status = FALSE;
+    uint16_t command = 0;
+    
+    wp->latitude = 0.0;
+    wp->longitude = 0.0;
+    
+    status = MavSerial_getMavMsg(&rec_msg);
+    
+    if (status == TRUE) {
+        command = mavlink_msg_command_long_get_command(&rec_msg);
+        switch (command) {
             case MAV_CMD_COMPONENT_ARM_DISARM:
                 break;
             case MAV_CMD_NAV_WAYPOINT:
+                wp->latitude = mavlink_msg_command_long_get_param4(&rec_msg);
+                wp->longitude = mavlink_msg_command_long_get_param5(&rec_msg);
                 break;
         }
     }
-}
-
-uint16_t check_mavlink_serial_command(void) {
-    uint16_t command = 0;
-    if (MavSerial_getMavMsg(&rec_msg) == TRUE) {
-        command = mavlink_msg_command_long_get_command(&rec_msg);
-    }
-
-    return command;
+    return status;
 }
 
 void publish_GPS(void) {
@@ -412,6 +415,19 @@ int publish_waypoint(float wp[DIM]) {
             0.0); /* vz [meters/second] */
 
     MavSerial_sendMavPacket(&msg_tx);
+}
+
+int publish_ack(uint8_t result) {
+    mavlink_message_t msg_tx;
+    /* Send a command acknowledgment */
+    mavlink_msg_command_ack_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx, 
+            MAV_CMD_ACK_OK, 
+            result);
+
+    MavSerial_sendMavPacket(&msg_tx);
+    return SUCCESS;
 }
 
 uint16_t calc_pw(uint16_t raw_counts) {

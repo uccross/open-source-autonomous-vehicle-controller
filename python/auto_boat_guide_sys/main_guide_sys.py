@@ -4,7 +4,7 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
-# import numpy as np
+import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
 from path_planner import WaypointQueue as WQ
@@ -145,6 +145,13 @@ if __name__ == '__main__':
 
     # Transitions
     last_base_mode = -1
+    state = 'WAITING_FOR_REF_POINT'
+
+    waypoints = np.array([[36.9557439, -122.0604691],
+                         [36.9556638, -122.0606960],
+                         [36.9554362, -122.0607348],
+                         [36.9556224, -122.0604107]])
+    wpq = WQ.WaypointQueue(waypoint_queue=waypoints)
 
     ###########################################################################
     # Main Loop
@@ -161,12 +168,78 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
         if msg:
+            # START OF STATE MACHINE
+            print("State: {}".format(state), end='')
+            if state == 'WAITING_FOR_REF_POINT':
+
+                # Exit this state upon receving a navigation waypoint message
+                # Get the previous waypoint from the queue
+                if msg.get_type() == 'MAV_CMD_NAV_WAYPOINT':
+                    wp_prev = wpq.getNext()
+                    state = 'SENDING_PREV_WP'
+                    print(" -> {}".format(state))
+
+            if state == 'SENDING_PREV_WP':
+                # Send the previous waypoint (not the reference) for the
+                # linear trajectory tracking
+                logger.mav_conn.mav.command_long_send(
+                    logger.mav_conn.target_system,
+                    logger.mav_conn.target_component,
+                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    0,  # Hold
+                    0.0,  # Accept Radius
+                    0.0,  # Pass Radius
+                    0.0,  # Yaw
+                    wp_prev[0],  # Latitude
+                    wp_prev[1],  # Longitude
+                    0.0,
+                    0.0)
+
+                # Exit this state after getting an acknowledgment with a result
+                # equal to 1
+                if msg.get_type() == 'MAV_CMD_ACK':
+
+                    nav_msg = msg.to_dict()
+                    result = nav_msg['result']
+
+                    if nav_msg['result'] == 1:
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_ECHO'
+                        print("result: {} -> {}".format(result, state))
+
+            
+            elif state == 'SENDING_NEXT_ECHO':
+                # Send the next waypoint for the linear trajectory tracking
+                logger.mav_conn.mav.command_long_send(
+                    logger.mav_conn.target_system,
+                    logger.mav_conn.target_component,
+                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+                    0,  # Hold
+                    0.0,  # Accept Radius
+                    0.0,  # Pass Radius
+                    0.0,  # Yaw
+                    wp_next[0],  # Latitude
+                    wp_next[1],  # Longitude
+                    0.0,
+                    0.0)
+
+                if msg.get_type() == 'MAV_CMD_ACK':
+
+                    nav_msg = msg.to_dict()
+                    result = nav_msg['result']
+
+                    if nav_msg['result'] == 1:
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_ECHO'
+                        print("result: {} -> {}".format(result, state))
+
+            # END OF STATE MACHINE
+
             if msg.get_type() == 'HEARTBEAT':
-                heartbeat_msg = msg.to_dict()
-
-                current_base_mode = heartbeat_msg['base_mode']
-
                 if mode_print_flag:
+                    heartbeat_msg = msg.to_dict()
+                    current_base_mode = heartbeat_msg['base_mode']
+
                     if current_base_mode != last_base_mode:
                         last_base_mode = current_base_mode
 

@@ -176,7 +176,12 @@ if __name__ == '__main__':
 
                 # Exit this state upon receving a navigation waypoint message
                 # Get the previous waypoint from the queue
-                if msg.get_type() == 'MAV_CMD_NAV_WAYPOINT':
+                if msg.get_type() == 'LOCAL_POSITION_NED':
+                    nav_msg = msg.to_dict()
+                    lon = nav_msg['x'] # longitude
+                    lat = nav_msg['y'] # latitude
+                    print("lon: {}, type: {}".format(lon, type(lon)))
+                    print("lat: {}, type: {}".format(lat, type(lat)))
                     wp_prev = wpq.getNext()
                     state = 'SENDING_PREV_WP'
 

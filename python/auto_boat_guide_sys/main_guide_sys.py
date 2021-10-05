@@ -172,7 +172,8 @@ if __name__ == '__main__':
         if msg:
             # START OF STATE MACHINE
             if state != last_state:
-                print("State: {}".format(state), end='')
+                print("State: {} --> {}".format(state, last_state))
+                last_state = state
             if state == 'WAITING_FOR_REF_POINT':
 
                 # Exit this state upon receving a navigation waypoint message
@@ -180,7 +181,6 @@ if __name__ == '__main__':
                 if msg.get_type() == 'MAV_CMD_NAV_WAYPOINT':
                     wp_prev = wpq.getNext()
                     state = 'SENDING_PREV_WP'
-                    print(" -> {}".format(state))
 
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
@@ -208,7 +208,6 @@ if __name__ == '__main__':
                     if nav_msg['result'] == 1:
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_ECHO'
-                        print("result: {} -> {}".format(result, state))
 
             
             elif state == 'SENDING_NEXT_ECHO':
@@ -234,9 +233,7 @@ if __name__ == '__main__':
                     if nav_msg['result'] == 1:
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_ECHO'
-                        print("result: {} -> {}".format(result, state))
 
-            last_state = state
             # END OF STATE MACHINE
             ##################################################################
 

@@ -196,8 +196,8 @@ if __name__ == '__main__':
                     0.0,  # Accept Radius
                     0.0,  # Pass Radius
                     0.0,  # Yaw
-                    wp_prev[0],  # Latitude
-                    wp_prev[1],  # Longitude
+                    wp_prev[0, 0],  # Latitude
+                    wp_prev[0, 1],  # Longitude
                     0.0,
                     0.0)
 

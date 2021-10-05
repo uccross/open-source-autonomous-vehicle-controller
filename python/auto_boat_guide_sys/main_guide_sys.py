@@ -147,7 +147,6 @@ if __name__ == '__main__':
     last_base_mode = -1
     state = 'WAITING_FOR_REF_POINT'
     last_state = 'IDLE'
-    print("State: {}".format(state), end='')
 
     waypoints = np.array([[36.9557439, -122.0604691],
                          [36.9556638, -122.0606960],
@@ -232,7 +231,7 @@ if __name__ == '__main__':
                         state = 'SENDING_NEXT_ECHO'
 
             if state != last_state:
-                print("State: {} --> {}".format(last_state, state))
+                print("State: {} --> {}".format(state, last_state))
                 last_state = state
             # END OF STATE MACHINE
             ##################################################################

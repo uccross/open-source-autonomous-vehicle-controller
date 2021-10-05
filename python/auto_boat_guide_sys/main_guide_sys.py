@@ -231,8 +231,10 @@ if __name__ == '__main__':
                         state = 'SENDING_NEXT_ECHO'
 
             if state != last_state:
-                print("State: {} --> {}".format(state, last_state))
+                print("State: {} --> {}".format(last_state, state))
                 last_state = state
+
+            ##################################################################
             # END OF STATE MACHINE
             ##################################################################
 

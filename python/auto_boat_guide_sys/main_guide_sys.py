@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # Transitions
     last_base_mode = -1
     state = 'WAITING_FOR_REF_POINT'
-    last_state = state
+    last_state = 'IDLE'
     print("State: {}".format(state), end='')
 
     waypoints = np.array([[36.9557439, -122.0604691],
@@ -171,9 +171,6 @@ if __name__ == '__main__':
 
         if msg:
             # START OF STATE MACHINE
-            if state != last_state:
-                print("State: {} --> {}".format(state, last_state))
-                last_state = state
             if state == 'WAITING_FOR_REF_POINT':
 
                 # Exit this state upon receving a navigation waypoint message
@@ -234,6 +231,9 @@ if __name__ == '__main__':
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_ECHO'
 
+            if state != last_state:
+                print("State: {} --> {}".format(last_state, state))
+                last_state = state
             # END OF STATE MACHINE
             ##################################################################
 

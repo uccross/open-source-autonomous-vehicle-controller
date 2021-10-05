@@ -139,8 +139,9 @@ if __name__ == '__main__':
     status = None
 
     # Timing
-    t_old = time.time()
     t_new = 0
+    t_old = time.time()
+    t_sm = time.time()
     dt = 0.005  # seconds
 
     # Transitions
@@ -168,7 +169,9 @@ if __name__ == '__main__':
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
-        if msg:
+        if msg and ((t_new - t_sm) > 0.500):
+            t_sm = t_new
+
             # START OF STATE MACHINE
             if state == 'IDLE':
                 state = 'WAITING_FOR_REF_POINT'

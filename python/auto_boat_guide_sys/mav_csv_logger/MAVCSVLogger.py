@@ -156,6 +156,25 @@ class MAVCSVLogger():
 
         return ret_type
 
+    
+    def send_mav_cmd_nav_waypoint(self, wp):
+        """
+        :param wp: A waypoint with the following structure: 
+        np.array([[0.0, 0.1]])
+        """
+        self.mav_conn.mav.command_long_send(
+            self.mav_conn.target_system,
+            self.mav_conn.target_component,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0,  # Hold
+            0.0,  # Accept Radius
+            0.0,  # Pass Radius
+            0.0,  # Yaw
+            wp[0, 0],  # Latitude
+            wp[0, 1],  # Longitude
+            0.0,
+            0.0)
+
     def close_log(self):
         """
         Wrapper function

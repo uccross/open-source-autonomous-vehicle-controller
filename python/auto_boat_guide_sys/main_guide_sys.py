@@ -177,8 +177,8 @@ if __name__ == '__main__':
 
             elif state == 'WAITING_FOR_REF_POINT':
 
-                # Exit this state upon receving a navigation waypoint message
-                # Get the previous waypoint from the queue
+                # If we get the following message type, echo back the reference
+                # waypoint
                 if msg.get_type() == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
 
@@ -187,25 +187,25 @@ if __name__ == '__main__':
 
                     print("lon: {}, type: {}".format(lon, type(lon)))
                     print("lat: {}, type: {}".format(lat, type(lat)))
-                    wp_prev = wpq.getNext()
 
-                    state = 'SENDING_PREV_WP'
+                    wp_ref = np.array([[lat, lon]])
+                    logger.send_mav_cmd_nav_waypoint(wp_ref)
+
+                 # Exit this state after getting an acknowledgment with a result
+                # equal to 1
+                if msg.get_type() == 'MAV_CMD_ACK':
+
+                    nav_msg = msg.to_dict()
+                    result = nav_msg['result']
+
+                    if nav_msg['result'] == 1:
+                        wp_prev = wpq.getNext()
+                        state = 'SENDING_PREV_WP'
 
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
-                logger.mav_conn.mav.command_long_send(
-                    logger.mav_conn.target_system,
-                    logger.mav_conn.target_component,
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    0,  # Hold
-                    0.0,  # Accept Radius
-                    0.0,  # Pass Radius
-                    0.0,  # Yaw
-                    wp_prev[0, 0],  # Latitude
-                    wp_prev[0, 1],  # Longitude
-                    0.0,
-                    0.0)
+                logger.send_mav_cmd_nav_waypoint(wp_prev)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
@@ -221,18 +221,7 @@ if __name__ == '__main__':
             
             elif state == 'SENDING_NEXT_ECHO':
                 # Send the next waypoint for the linear trajectory tracking
-                logger.mav_conn.mav.command_long_send(
-                    logger.mav_conn.target_system,
-                    logger.mav_conn.target_component,
-                    mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
-                    0,  # Hold
-                    0.0,  # Accept Radius
-                    0.0,  # Pass Radius
-                    0.0,  # Yaw
-                    wp_next[0],  # Latitude
-                    wp_next[1],  # Longitude
-                    0.0,
-                    0.0)
+                logger.send_mav_cmd_nav_waypoint(wp_next)
 
                 if msg.get_type() == 'MAV_CMD_ACK':
 

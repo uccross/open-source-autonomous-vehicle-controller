@@ -17,7 +17,7 @@
 #include <xc.h>
 #include <stdio.h>
 #include <sys/attribs.h>  //for ISR definitions
-#include <proc/p32mx795f512l.h>
+#include <xc.h>
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
@@ -52,10 +52,17 @@ static volatile int8_t new_data_avail = FALSE;
 static int8_t parse_error = FALSE;
 static unsigned int parse_error_counter = 0;
 
+//typedef enum {
+//    WAIT_FOR_START,
+//    GET_DATA,
+//    GET_END,
+//} RCRX_state_t;
+
 typedef enum {
-    WAIT_FOR_START,
+    WAIT_FIRST,
+    GET_SECOND,
+    GET_START,
     GET_DATA,
-    GET_END,
 } RCRX_state_t;
 
 /*******************************************************************************
@@ -134,7 +141,6 @@ uint8_t RCRX_init(void) {
     // turn on UART
     U5MODEbits.ON = 1;
     __builtin_enable_interrupts();
-    printf("Radio control receiver initialized.\r\n");
     return SUCCESS;
 
 }
@@ -199,7 +205,7 @@ static void RCRX_init_msg_buffer(struct RCRX_msg_buffer* buf) {
 static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
     if (IFS2bits.U5RXIF) { //check for received data flag
         //run the state machine with the new character from the RX buffer
-        //        printf("%x ", U5RXREG);
+//        printf("%x ", U5RXREG);
         RCRX_run_RX_state_machine(U5RXREG);
 
         IFS2bits.U5RXIF = 0; //clear the flag
@@ -211,6 +217,63 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
     //    }
 }
 
+///**
+// * @Function void RCRX_run_RX_state_machine(uint8_t char_in);
+// * @param char_in, next character to process
+// * @return None
+// * @brief Runs the RX state machine for receiving data, it is called from 
+// * within the interrupt and reads the current character
+// * @author Aaron Hunter */
+//static void RCRX_run_RX_state_machine(uint8_t char_in) {
+//    static RCRX_state_t current_state = WAIT_FOR_START;
+//    RCRX_state_t next_state = WAIT_FOR_START;
+//
+//    static uint8_t byte_counter = 0;
+//    switch (current_state) {
+//        case WAIT_FOR_START:
+//            if (char_in == START_BYTE) {
+//                byte_counter = 0;
+//                parsing_RX = TRUE; //set parsing flag
+//                //store the start byte 
+//                RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = char_in;
+//                byte_counter++;
+//                next_state = GET_DATA;
+//            } else {
+//                next_state = WAIT_FOR_START;
+//            }
+//            break;
+//        case GET_DATA:
+//            RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = char_in;
+//            byte_counter++;
+//            if (byte_counter == (SBUS_BUFFER_LENGTH - 1)) {
+//                next_state = GET_END;
+//            } else {
+//                next_state = GET_DATA;
+//            }
+//            break;
+//        case GET_END:
+//            if (char_in == END_BYTE) {
+//                RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = END_BYTE;
+//                // set read index to most recent messsage
+//                RCRX_msgs.read_index = RCRX_msgs.write_index;
+//                //advance write index and wrap
+//                RCRX_msgs.write_index = (RCRX_msgs.write_index + 1) % RX_NUM_MSGS;
+//                new_data_avail = TRUE;
+//                parse_error = FALSE; //clear previous parsing error
+//            } else {
+//                parse_error = TRUE; //error occurred
+//                parse_error_counter++;
+//            }
+//            parsing_RX = FALSE; //clear the parsing flag to let app know write data is most current
+//            next_state = WAIT_FOR_START;
+//            break;
+//        default:
+//            next_state = WAIT_FOR_START;
+//            break;
+//    }
+//    current_state = next_state;
+//}
+
 /**
  * @Function void RCRX_run_RX_state_machine(uint8_t char_in);
  * @param char_in, next character to process
@@ -219,12 +282,26 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
  * within the interrupt and reads the current character
  * @author Aaron Hunter */
 static void RCRX_run_RX_state_machine(uint8_t char_in) {
-    static RCRX_state_t current_state = WAIT_FOR_START;
-    RCRX_state_t next_state = WAIT_FOR_START;
-
+    static RCRX_state_t current_state = WAIT_FIRST;
+    RCRX_state_t next_state;
     static uint8_t byte_counter = 0;
     switch (current_state) {
-        case WAIT_FOR_START:
+        case WAIT_FIRST:
+//            printf("%c", char_in);
+            if (char_in == END_BYTE) {
+                next_state = GET_SECOND;
+            } else {
+                next_state = WAIT_FIRST;
+            }
+            break;
+        case GET_SECOND:
+            if (char_in == END_BYTE) {
+                next_state = GET_START;
+            } else {
+                next_state = WAIT_FIRST;
+            }
+            break;
+        case GET_START:
             if (char_in == START_BYTE) {
                 byte_counter = 0;
                 parsing_RX = TRUE; //set parsing flag
@@ -233,36 +310,27 @@ static void RCRX_run_RX_state_machine(uint8_t char_in) {
                 byte_counter++;
                 next_state = GET_DATA;
             } else {
-                next_state = WAIT_FOR_START;
+                next_state = WAIT_FIRST;
             }
             break;
         case GET_DATA:
             RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = char_in;
             byte_counter++;
-            if (byte_counter == (SBUS_BUFFER_LENGTH - 1)) {
-                next_state = GET_END;
-            } else {
-                next_state = GET_DATA;
-            }
-            break;
-        case GET_END:
-            if (char_in == END_BYTE) {
-                RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = END_BYTE;
+            if (byte_counter == (SBUS_BUFFER_LENGTH)) {
                 // set read index to most recent messsage
                 RCRX_msgs.read_index = RCRX_msgs.write_index;
                 //advance write index and wrap
                 RCRX_msgs.write_index = (RCRX_msgs.write_index + 1) % RX_NUM_MSGS;
                 new_data_avail = TRUE;
-                parse_error = FALSE; //clear previous parsing error
+                parsing_RX = FALSE; //clear the parsing flag to let app know write data is most current
+                next_state = WAIT_FIRST;
+
             } else {
-                parse_error = TRUE; //error occurred
-                parse_error_counter++;
+                next_state = GET_DATA;
             }
-            parsing_RX = FALSE; //clear the parsing flag to let app know write data is most current
-            next_state = WAIT_FOR_START;
             break;
         default:
-            next_state = WAIT_FOR_START;
+            next_state = WAIT_FIRST;
             break;
     }
     current_state = next_state;
@@ -323,6 +391,7 @@ void main(void) {
     Serial_init();
     printf("\r\nRC Receiver Test Harness %s %s\r\n", __DATE__, __TIME__);
     RCRX_init();
+    printf("Radio control receiver initialized.\r\n");
     while (1) {
         if (RCRX_new_cmd_avail() == TRUE) {
             RCRX_get_cmd(servo_data);

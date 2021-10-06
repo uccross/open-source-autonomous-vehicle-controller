@@ -237,8 +237,8 @@ if __name__ == '__main__':
 
                     nav_msg = msg.to_dict()
 
-                    lon = nav_msg['longitude']  # longitude
-                    lat = nav_msg['latitude']  # latitude
+                    lon = nav_msg['lon']  # longitude
+                    lat = nav_msg['lat']  # latitude
 
                     print("    lat: {}, type: {}".format(lat, type(lat)))
                     print("    lon: {}, type: {}".format(lon, type(lon)))
@@ -258,7 +258,7 @@ if __name__ == '__main__':
                     (msg_type != 'GPS_RAW_INT') and 
                     (msg_type != 'HEARTBEAT') and 
                     (msg_type != 'BAD_DATA')):
-                print("msg.get_type() = {}".format(msg_type))
+                print("    msg.get_type() = {}".format(msg_type))
 
             ##################################################################
             # END OF STATE MACHINE

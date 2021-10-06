@@ -221,7 +221,7 @@ int main(void) {
                 }
                 
                 // State exit case
-                if (wp_ref_check_count > 2) {
+                if (wp_ref_check_count > 20) {
                     current_wp_state = WAITING_FOR_PREV_WP;
                 }
 

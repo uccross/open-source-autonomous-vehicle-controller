@@ -93,7 +93,7 @@ int main(void) {
 
     // Trajectory 
     float wp_a_lat_lon[DIM]; // [lat, lon]
-//    float wp_a_en[DIM]; // [EAST (lon), NORTH (lat)]
+    //    float wp_a_en[DIM]; // [EAST (lon), NORTH (lat)]
     float wp_b_lat_lon[DIM];
     float wp_received[DIM];
     float wp_prev[DIM];
@@ -184,7 +184,7 @@ int main(void) {
             case FINDING_REF_WP:
                 if (new_gps == TRUE) {
                     publisher_get_gps_rmc_position(wp_a_lat_lon);
-//                    wp_a_en[0] = wp_a_lat_lon[1];
+                    //                    wp_a_en[0] = wp_a_lat_lon[1];
                     //                    wp_a_en[1] = wp_a_lat_lon[0];
                     publish_waypoint(wp_a_lat_lon);
                     find_wp_ref_time = cur_time;

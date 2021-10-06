@@ -34,14 +34,11 @@
  *****************************************************************************/
 // GPS
 int32_t rmc_lat_int = 0;
-long double rmc_lat = 0.0;
+float rmc_lat = 0.0;
 int32_t rmc_long_int = 0;
-long double rmc_long = 0.0;
-long double rmc_cog = 0.0;
+float rmc_long = 0.0;
+float rmc_cog = 0.0;
 float rmc_position[DIM];
-long double unw_cog = 0.0;
-long double offset = 0.0;
-int offsetFlag = 1;
 int new_measurement = FALSE;
 long double heading_angle = 0.0; // Purposefully abusing this definition
 long double rmc_vel = 0.0;
@@ -136,7 +133,8 @@ void check_RC_events() {
     }
 }
 
-void check_GPS_events(void) {
+char check_GPS_events(void) {
+    char status = FALSE;
 #ifdef NEO_GPS
     if (GPS_is_msg_avail() == TRUE) {
         GPS_parse_stream();
@@ -147,7 +145,8 @@ void check_GPS_events(void) {
 #endif
 
 #ifdef SAM_M8Q_GPS
-    if (nmea_is_msg_available() == TRUE) {
+    status = nmea_is_msg_available();
+    if (status == TRUE) {
         // CHECK FOR XXRMC
         if ((nmea_read_head_address().talk_id[0] == 'G') &&
                 (nmea_read_head_address().talk_id[1] == 'N') &&
@@ -182,6 +181,7 @@ void check_GPS_events(void) {
         }
     }
 #endif
+    return status;
 }
 
 void publish_IMU_data(uint8_t data_type) {
@@ -283,9 +283,8 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-char check_mavlink_serial_events(float wp[DIM]) {
+char check_mavlink_serial_events(float wp[DIM], uint16_t *command) {
     char status = FALSE;
-    uint16_t command = 0;
 
     wp[0] = 0.0; // latitude
     wp[1] = 0.0; // longitude
@@ -293,8 +292,8 @@ char check_mavlink_serial_events(float wp[DIM]) {
     status = MavSerial_getMavMsg(&rec_msg);
 
     if (status == TRUE) {
-        command = mavlink_msg_command_long_get_command(&rec_msg);
-        switch (command) {
+        *command = mavlink_msg_command_long_get_command(&rec_msg);
+        switch (*command) {
             case MAV_CMD_COMPONENT_ARM_DISARM:
                 break;
             case MAV_CMD_NAV_WAYPOINT:
@@ -401,18 +400,18 @@ void publish_parameter(const char *param_id) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-int publish_waypoint(float wp[DIM]) {
+int publish_waypoint(float wp_lat_lon[DIM]) {
     mavlink_message_t msg_tx;
     mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
             mavlink_system.compid,
             &msg_tx,
             Sys_timer_get_usec(),
-            wp[0], /* x: Longitude[meters] EN LTP -> x_east -> wp[0]*/
-            wp[1], /* y: Latitude [meters] EN LTP -> y_north -> wp[1]*/
+            wp_lat_lon[1], /* x: Longitude[meters] EN LTP -> x_east -> wp[1]*/
+            wp_lat_lon[0], /* y: Latitude [meters] EN LTP -> y_north -> wp[0]*/
             0.0, /* z: Altitude [meters] */
-            0.0, /* vx [meters/second] */
-            0.0, /* vy [meters/second] */
-            0.0); /* vz [meters/second] */
+            0.2, /* vx [meters/second] */
+            3.0, /* vy [meters/second] */
+            0.4); /* vz [meters/second] */
 
     MavSerial_sendMavPacket(&msg_tx);
     return SUCCESS;

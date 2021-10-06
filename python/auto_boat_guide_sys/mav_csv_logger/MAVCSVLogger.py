@@ -157,10 +157,11 @@ class MAVCSVLogger():
         return ret_type
 
     
-    def send_mav_cmd_nav_waypoint(self, wp):
+    def send_mav_cmd_nav_waypoint(self, wp_lat_lon):
         """
-        :param wp: A waypoint with the following structure: 
-        np.array([[0.0, 0.1]])
+        :param wp_lat_lon: A waypoint with the following structure: 
+        np.array([[0.0, 0.1]]) with lattitude as the first element and 
+        longitude as the second element
         """
         self.mav_conn.mav.command_long_send(
             self.mav_conn.target_system,
@@ -170,8 +171,8 @@ class MAVCSVLogger():
             0.0,  # Accept Radius
             0.0,  # Pass Radius
             0.0,  # Yaw
-            wp[0, 0],  # Latitude
-            wp[0, 1],  # Longitude
+            wp_lat_lon[0, 0],  # Latitude
+            wp_lat_lon[0, 1],  # Longitude
             0.0,
             0.0)
 

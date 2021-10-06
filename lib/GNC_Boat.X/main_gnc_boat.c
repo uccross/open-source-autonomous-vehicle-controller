@@ -36,7 +36,7 @@
 #define ACTUATOR_SATURATION (M_PI/20.0)/SAMPLE_TIME
 
 #define FINDING_REF_WP_PRD 250 // Time to wait to check reference waypoint in milliseconds
-#define STATE_MACHINE_PRD 500 // Time to wait to check reference waypoint in milliseconds
+#define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.00001
 
 /******************************************************************************
@@ -92,10 +92,9 @@ int main(void) {
     LATAbits.LATA3 = 0; /* Set LED4 low */
 
     // Trajectory 
-
-
-    float wp_a[DIM];
-    float wp_b[DIM];
+    float wp_a_lat_lon[DIM]; // [lat, lon]
+//    float wp_a_en[DIM]; // [EAST (lon), NORTH (lat)]
+    float wp_b_lat_lon[DIM];
     float wp_received[DIM];
     float wp_prev[DIM];
     float wp_next[DIM];
@@ -126,6 +125,7 @@ int main(void) {
     // MAVLink and State Machine
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
     uint8_t last_mode = current_mode;
+    uint16_t cmd = 0;
     uint32_t find_wp_ref_time = 0;
     uint8_t waypoints_ready = FALSE;
 
@@ -143,7 +143,9 @@ int main(void) {
     typedef enum waypoints_state waypoints_state_t;
 
     waypoints_state_t current_wp_state = FINDING_REF_WP;
-    char new_msg = 0;
+    char new_msg = FALSE;
+    char new_gps = FALSE;
+
 
     publisher_set_mode(MAV_MODE_MANUAL_ARMED);
     publisher_set_state(MAV_STATE_ACTIVE);
@@ -160,9 +162,9 @@ int main(void) {
          * Check for all events                                               *
          *********************************************************************/
         check_IMU_events(SCALED);
-        new_msg = check_mavlink_serial_events(wp_received);
+        new_msg = check_mavlink_serial_events(wp_received, &cmd);
         check_RC_events(); //check incoming RC commands
-        check_GPS_events(); //check and process incoming GPS messages
+        new_gps = check_GPS_events(); //check and process incoming GPS messages
 
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
@@ -176,86 +178,95 @@ int main(void) {
         /**********************************************************************
          * Wayopint State Machine Logic                                       *
          *********************************************************************/
-        if ((cur_time - sm_start_time) > STATE_MACHINE_PRD) {
-            sm_start_time = cur_time;
-            switch (current_wp_state) {
-                case FINDING_REF_WP:
-                    publisher_get_gps_rmc_position(wp_a);
-
+        //        if ((cur_time - sm_start_time) > STATE_MACHINE_PRD) {
+        //            sm_start_time = cur_time;
+        switch (current_wp_state) {
+            case FINDING_REF_WP:
+                if (new_gps == TRUE) {
+                    publisher_get_gps_rmc_position(wp_a_lat_lon);
+//                    wp_a_en[0] = wp_a_lat_lon[1];
+                    //                    wp_a_en[1] = wp_a_lat_lon[0];
+                    publish_waypoint(wp_a_lat_lon);
                     find_wp_ref_time = cur_time;
                     current_wp_state = CHECKING_REF_WP;
-                    break;
+                }
 
-                case CHECKING_REF_WP:
-                    LATCbits.LATC1 ^= 1; // Toggle LED 5
+                break;
 
-                    if ((cur_time - find_wp_ref_time) >= FINDING_REF_WP_PRD) {
-                        find_wp_ref_time = cur_time;
+            case CHECKING_REF_WP:
 
-                        publisher_get_gps_rmc_position(wp_b);
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_b_lat_lon[0] = wp_received[0];
+                    wp_b_lat_lon[1] = wp_received[1];
 
-                        if (lin_tra_calc_dist(wp_a, wp_b) < TOL) {
-                            ref_lla[0] = wp_a[0]; // latitude
-                            ref_lla[1] = wp_a[1]; // longitude
-                            ref_lla[2] = 0.0; // Altitude
+                    if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
+                        ref_lla[0] = wp_a_lat_lon[0]; // latitude
+                        ref_lla[1] = wp_a_lat_lon[1]; // longitude
+                        ref_lla[2] = 0.0; // Altitude
 
-                            /* Send the reference waypoint to the Companion 
-                             * Computer */
-                            publish_waypoint(wp_a);
+                        publish_ack(1); // SUCCESS
 
-                            current_wp_state = WAITING_FOR_PREV_WP;
-                        } else {
-                            current_wp_state = FINDING_REF_WP;
-                        }
-                    }
-
-                    break;
-
-                case WAITING_FOR_PREV_WP:
-                    if (new_msg == TRUE) {
-                        wp_a[0] = wp_received[0];
-                        wp_a[1] = wp_received[1];
-
-                        publish_waypoint(wp_a); /* Echo back the received 
-                                                 * waypoint */
-                        current_wp_state = CHECKING_PREV_WP;
+                        current_wp_state = WAITING_FOR_PREV_WP;
                     } else {
-                        /* Continue sending the reference point until the 
-                         * Companion Computer responds*/
-                        publish_waypoint(wp_a);
+                        LATCbits.LATC1 ^= 1; // Toggle LED 5
+                        publish_ack(0); // FAILURE
+
+                        current_wp_state = FINDING_REF_WP;
                     }
-                    break;
+                } else {
+                    current_wp_state = FINDING_REF_WP;
+                }
 
-                case CHECKING_PREV_WP:
-                    if (new_msg == TRUE) {
-                        wp_b[0] = wp_received[0];
-                        wp_b[1] = wp_received[1];
+                break;
 
-                        if (lin_tra_calc_dist(wp_a, wp_b) < TOL) {
-                            wp_prev[0] = wp_a[0];
-                            wp_prev[1] = wp_a[1];
-                            wp_prev[2] = 0.0;
+            case WAITING_FOR_PREV_WP:
 
-                            publish_ack(1); // SUCCESS
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_a_lat_lon[0] = wp_received[0];
+                    wp_a_lat_lon[1] = wp_received[1];
 
-                            current_wp_state = WAITING_FOR_NEXT_WP;
-                        } else {
-                            publish_ack(0); // FAILURE
+                    publish_waypoint(wp_a_lat_lon); /* Echo back the received 
+                                                 * waypoint */
+                    current_wp_state = CHECKING_PREV_WP;
+                } else {
+                    /* Continue sending the reference point until the 
+                     * Companion Computer responds*/
+                    publish_waypoint(wp_a_lat_lon);
 
-                            current_wp_state = WAITING_FOR_PREV_WP;
-                        }
+                    current_wp_state = WAITING_FOR_PREV_WP;
+                }
+                break;
+
+            case CHECKING_PREV_WP:
+                if (new_msg == TRUE) {
+                    wp_b_lat_lon[0] = wp_received[0];
+                    wp_b_lat_lon[1] = wp_received[1];
+
+                    if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
+                        wp_prev[0] = wp_a_lat_lon[0];
+                        wp_prev[1] = wp_a_lat_lon[1];
+                        wp_prev[2] = 0.0;
+
+                        publish_ack(1); // SUCCESS
+
+                        current_wp_state = WAITING_FOR_NEXT_WP;
+                    } else {
+                        publish_ack(0); // FAILURE
+
+                        current_wp_state = WAITING_FOR_PREV_WP;
                     }
-                    break;
+                }
+                break;
 
-                case WAITING_FOR_NEXT_WP:
-                    break;
+            case WAITING_FOR_NEXT_WP:
+                break;
 
-                case CHECKING_NEXT_WP:
-                    break;
-            }
-            new_msg = FALSE; /* Set the new message as FALSE after the state 
-                              * machine has run*/
+            case CHECKING_NEXT_WP:
+                break;
         }
+        new_msg = FALSE; /* Set the new message as FALSE after the state 
+                              * machine has run*/
+        //        }
 
         /**********************************************************************
          * CONTROL: Control and publish data                                  *

@@ -114,12 +114,12 @@ void check_RC_events();
 
 /**
  * @function check_GPS_events(void)
- * @param none
  * @brief checks for GPS messages, parses, and stores data in module gps 
  * variable
- * @author aaron hunter
+ * @return TRUE or FALSE if a GPS NMEA frame was available
+ * @author aaron hunter, modified by Pavlo Vlastos
  */
-void check_GPS_events(void);
+char check_GPS_events(void);
 
 /**
  * @function publish_IMU_data()
@@ -143,14 +143,14 @@ void publish_RC_signals_raw(void);
  * @brief Check mavlink serial events/messages and populate the waypoint 
  * parameter as necessary
  * @param wp A waypoint with longitude and latitude in that order
+ * @param *command A pointer for getting the MAVLink command
  * @return TRUE or FALSE if an message was received
  * @author Pavlo Vlastos
  */
-char check_mavlink_serial_events(float wp[DIM]);
+char check_mavlink_serial_events(float wp[DIM], uint16_t *command) ;
 
 /**
  * @function publish_GPS(void)
- * @param none
  * @brief invokes mavlink helper function to generate GPS message and sends to
  * radio or USB serial port
  * @author aaron hunter
@@ -175,14 +175,15 @@ void publish_heartbeat(void);
 void publish_parameter(const char *param_id);
 
 /**
- * @Function publish_waypoint(float wp[DIM])
- * @brief Send waypoint with East and North elements to the companion 
- * @param wp[] A waypoint with East and North elements within the Local Tangent
- * Plane (LTP) in meters
+ * @Function publish_waypoint(float wp_lat_lon[DIM])
+ * @brief Send waypoint with North and East elements to the companion 
+ * @param wp_lat_lon[] A waypoint with North and East elements within the Local 
+ * Tangent Plane (LTP) in meters. 
+ * NOTE: Order matters here; [North (lat), East (lon)]
  * @return SUCCESS or FAILURE
  * @author Pavlo Vlastos
  */
-int publish_waypoint(float wp[DIM]);
+int publish_waypoint(float wp_lat_lon[DIM]);
 
 /**
  * @Function publish_ack(uint8_t result)

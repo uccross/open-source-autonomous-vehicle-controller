@@ -151,9 +151,9 @@ if __name__ == '__main__':
     last_state = state
 
     waypoints = np.array([[36.9557439, -122.0604691],
-                         [36.9556638, -122.0606960],
-                         [36.9554362, -122.0607348],
-                         [36.9556224, -122.0604107]])
+                          [36.9556638, -122.0606960],
+                          [36.9554362, -122.0607348],
+                          [36.9556224, -122.0604107]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints)
 
     ###########################################################################
@@ -183,16 +183,16 @@ if __name__ == '__main__':
                 if msg.get_type() == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
 
-                    lon = nav_msg['x'] # longitude
-                    lat = nav_msg['y'] # latitude
+                    lon = nav_msg['x']  # longitude
+                    lat = nav_msg['y']  # latitude
 
-                    print("lon: {}, type: {}".format(lon, type(lon)))
                     print("lat: {}, type: {}".format(lat, type(lat)))
+                    print("lon: {}, type: {}".format(lon, type(lon)))
 
-                    wp_ref = np.array([[lat, lon]])
-                    logger.send_mav_cmd_nav_waypoint(wp_ref)
+                    wp_ref_lat_lon = np.array([[lat, lon]])
+                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
-                 # Exit this state after getting an acknowledgment with a result
+                # Exit this state after getting an acknowledgment with a result
                 # equal to 1
                 if msg.get_type() == 'MAV_CMD_ACK':
 
@@ -219,7 +219,6 @@ if __name__ == '__main__':
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_ECHO'
 
-            
             elif state == 'SENDING_NEXT_ECHO':
                 # Send the next waypoint for the linear trajectory tracking
                 logger.send_mav_cmd_nav_waypoint(wp_next)

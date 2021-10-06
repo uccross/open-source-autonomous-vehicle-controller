@@ -172,7 +172,15 @@ if __name__ == '__main__':
 
         if msg:
             msg_type = msg.get_type()
+            
+            if ((msg_type != 'RC_CHANNELS_RAW') and
+                    (msg_type != 'HIGHRES_IMU') and 
+                    (msg_type != 'GPS_RAW_INT') and 
+                    (msg_type != 'HEARTBEAT') and 
+                    (msg_type != 'BAD_DATA')):
+                print("    msg.get_type() = {}".format(msg_type))
 
+            ##################################################################
             # START OF STATE MACHINE
             if state == 'IDLE':
                 state = 'WAITING_FOR_REF_POINT'
@@ -262,14 +270,6 @@ if __name__ == '__main__':
                 print("State: {} --> {}".format(last_state, state))
                 last_state = state
             
-            if ((msg_type != 'RC_CHANNELS_RAW') and
-                    (msg_type != 'HIGHRES_IMU') and 
-                    (msg_type != 'GPS_RAW_INT') and 
-                    (msg_type != 'HEARTBEAT') and 
-                    (msg_type != 'BAD_DATA')):
-                print("    msg.get_type() = {}".format(msg_type))
-
-            ##################################################################
             # END OF STATE MACHINE
             ##################################################################
 

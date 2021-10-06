@@ -240,6 +240,9 @@ if __name__ == '__main__':
                     lon = nav_msg['lon']  # longitude
                     lat = nav_msg['lat']  # latitude
 
+                    lon = float(lon) / 1000000.0
+                    lat = float(lat) / 1000000.0
+
                     print("    lat: {}, type: {}".format(lat, type(lat)))
                     print("    lon: {}, type: {}".format(lon, type(lon)))
 

@@ -104,7 +104,8 @@ if __name__ == '__main__':
     extra_headers = ['vertical_fov', 'signal_quality',
                      'horizontal_fov', 'quaternion',
                      'data', 'reason', 'base_mode', 'mavlink_version',
-                     'custom_mode', 'autopilot', 'system_status', 'type']
+                     'custom_mode', 'autopilot', 'system_status', 'type',
+                     'vy', 'y', 'vx', 'vz', 'z', 'x']
 
     # Data logger
     logger = MCL.MAVCSVLogger(

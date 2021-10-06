@@ -195,7 +195,7 @@ if __name__ == '__main__':
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
-                if msg_type == 'MAV_CMD_ACK':
+                if msg_type == 'COMMAND_ACK':
                     print("msg type: {}".format(msg_type))
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
@@ -203,6 +203,7 @@ if __name__ == '__main__':
                     if nav_msg['result'] == 1:
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
+
                 if ((msg_type != 'RC_CHANNELS_RAW') and
                         (msg_type != 'HIGHRES_IMU') and 
                         (msg_type != 'GPS_RAW_INT') and 

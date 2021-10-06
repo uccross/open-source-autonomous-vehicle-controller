@@ -145,6 +145,7 @@ int main(void) {
     waypoints_state_t current_wp_state = FINDING_REF_WP;
     char new_msg = FALSE;
     char new_gps = FALSE;
+    uint8_t wp_ref_check_count = 0;
 
 
     publisher_set_mode(MAV_MODE_MANUAL_ARMED);
@@ -203,7 +204,6 @@ int main(void) {
 
                 LATCbits.LATC1 ^= 1; // Toggle LED 5
 
-                // State exit case
                 if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
                     ref_lla[0] = wp_a_lat_lon[0]; // latitude
                     ref_lla[1] = wp_a_lat_lon[1]; // longitude
@@ -211,11 +211,18 @@ int main(void) {
 
                     publish_ack(1); // SUCCESS
 
-                    current_wp_state = WAITING_FOR_PREV_WP;
+                    wp_ref_check_count++;
+                    
                 } else {
+                    wp_ref_check_count = 0;
                     publish_ack(0); // FAILURE
 
                     current_wp_state = FINDING_REF_WP;
+                }
+                
+                // State exit case
+                if (wp_ref_check_count > 2) {
+                    current_wp_state = WAITING_FOR_PREV_WP;
                 }
 
                 break;

@@ -203,7 +203,7 @@ if __name__ == '__main__':
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 
-            if state == 'SENDING_PREV_WP':
+            elif state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
                 print("    lat: {}, type: {}".format(wp_prev[0, 0], type(lat)))

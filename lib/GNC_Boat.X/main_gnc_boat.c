@@ -228,7 +228,6 @@ int main(void) {
 
                     current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
-                    t_last_serial = cur_time;
                     publish_ack(0); // FAILURE
 
                     current_wp_state = FINDING_REF_WP;

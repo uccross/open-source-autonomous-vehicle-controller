@@ -204,7 +204,10 @@ if __name__ == '__main__':
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
                 if ((msg_type != 'RC_CHANNELS_RAW') and
-                        (msg_type != 'HIGHRES_IMU')):
+                        (msg_type != 'HIGHRES_IMU') and 
+                        (msg_type != 'GPS_RAW_INT') and 
+                        (msg_type != 'HEARTBEAT') and 
+                        (msg_type != 'BAD_DATA')):
                     print("msg.get_type() = {}".format(msg_type))
 
             if state == 'SENDING_PREV_WP':

@@ -203,13 +203,6 @@ if __name__ == '__main__':
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 
-                if ((msg_type != 'RC_CHANNELS_RAW') and
-                        (msg_type != 'HIGHRES_IMU') and 
-                        (msg_type != 'GPS_RAW_INT') and 
-                        (msg_type != 'HEARTBEAT') and 
-                        (msg_type != 'BAD_DATA')):
-                    print("msg.get_type() = {}".format(msg_type))
-
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
@@ -217,7 +210,7 @@ if __name__ == '__main__':
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
-                if msg.get_type() == 'MAV_CMD_ACK':
+                if msg.get_type() == 'COMMAND_ACK':
 
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
@@ -230,18 +223,40 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 logger.send_mav_cmd_nav_waypoint(wp_next)
 
-                if msg.get_type() == 'MAV_CMD_ACK':
+                if msg.get_type() == 'COMMAND_ACK':
 
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
                     if nav_msg['result'] == 1:
                         wp_next = wpq.getNext()
-                        state = 'SENDING_NEXT_ECHO'
+                        state = 'READY_TO_TRACK'
+
+            elif state == 'READY_TO_TRACK':
+                if msg_type == 'GPS_RAW_INT':
+
+                    nav_msg = msg.to_dict()
+
+                    lon = nav_msg['longitude']  # longitude
+                    lat = nav_msg['latitude']  # latitude
+
+                    print("lat: {}, type: {}".format(lat, type(lat)))
+                    print("lon: {}, type: {}".format(lon, type(lon)))
+
+                    current_position = np.array([[lat, lon]])
+
+                    if wpq.isNearNext(current_position)
 
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))
                 last_state = state
+            
+            if ((msg_type != 'RC_CHANNELS_RAW') and
+                    (msg_type != 'HIGHRES_IMU') and 
+                    (msg_type != 'GPS_RAW_INT') and 
+                    (msg_type != 'HEARTBEAT') and 
+                    (msg_type != 'BAD_DATA')):
+                print("msg.get_type() = {}".format(msg_type))
 
             ##################################################################
             # END OF STATE MACHINE

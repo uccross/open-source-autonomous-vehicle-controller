@@ -128,7 +128,7 @@ int main(void) {
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
     uint8_t last_mode = current_mode;
     uint16_t cmd = 0;
-    uint32_t find_wp_ref_time = 0;
+    uint32_t t_last_serial = 0;
     uint8_t waypoints_ready = FALSE;
 
     enum waypoints_state {
@@ -194,8 +194,8 @@ int main(void) {
 
                 // State exit case
                 if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT) &&
-                        ((cur_time - find_wp_ref_time) > FINDING_REF_WP_PRD)) {
-                    find_wp_ref_time = cur_time;
+                        ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
+                    t_last_serial = cur_time;
 
                     wp_b_lat_lon[0] = wp_received[0];
                     wp_b_lat_lon[1] = wp_received[1];
@@ -210,7 +210,10 @@ int main(void) {
                 LATCbits.LATC1 ^= 1; // Toggle LED 5
 
                 // State exit case
-                if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
+                if ((lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) && 
+                        ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
+                    t_last_serial = cur_time;
+                    
                     wp_lla[0] = wp_a_lat_lon[0]; // latitude
                     wp_lla[1] = wp_a_lat_lon[1]; // longitude
                     wp_lla[2] = 0.0; // Altitude
@@ -228,7 +231,7 @@ int main(void) {
 
                     current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
-                    find_wp_ref_time = cur_time;
+                    t_last_serial = cur_time;
                     publish_ack(0); // FAILURE
 
                     current_wp_state = FINDING_REF_WP;

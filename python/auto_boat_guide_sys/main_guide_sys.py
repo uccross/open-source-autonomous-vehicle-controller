@@ -171,6 +171,7 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
         if msg:
+            msg_type = msg.get_type()
 
             # START OF STATE MACHINE
             if state == 'IDLE':
@@ -180,7 +181,7 @@ if __name__ == '__main__':
 
                 # If we get the following message type, echo back the reference
                 # waypoint
-                if msg.get_type() == 'LOCAL_POSITION_NED':
+                if msg_type == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
 
                     lon = nav_msg['x']  # longitude
@@ -194,15 +195,17 @@ if __name__ == '__main__':
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
-                if msg.get_type() == 'MAV_CMD_ACK':
-                    print("msg type: {}".format(msg.get_type()))
+                if msg_type == 'MAV_CMD_ACK':
+                    print("msg type: {}".format(msg_type))
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
                     if nav_msg['result'] == 1:
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
-                print("msg.get_type() = {}".format(msg.get_type()))
+                if ((msg_type != 'RC_CHANNELS_RAW') and
+                        (msg_type != 'HIGHRES_IMU')):
+                    print("msg.get_type() = {}".format(msg_type))
 
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the

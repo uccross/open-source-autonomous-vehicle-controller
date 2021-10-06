@@ -227,15 +227,17 @@ int main(void) {
                     wp_a_lat_lon[1] = wp_received[1];
 
                     publish_waypoint(wp_a_lat_lon); /* Echo back the received 
-                                                 * waypoint */
+                                                     * waypoint */
+                    
                     current_wp_state = CHECKING_PREV_WP;
                 } else {
-                    publish_ack(1); // SUCCESS
+                    publish_ack(1); /*Repeat the ACK SUCCESS message in case 
+                                     * the Companion Computer missed it */
                 }
                 break;
 
             case CHECKING_PREV_WP:
-                if (new_msg == TRUE) {
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received[0];
                     wp_b_lat_lon[1] = wp_received[1];
 
@@ -256,6 +258,17 @@ int main(void) {
                 break;
 
             case WAITING_FOR_NEXT_WP:
+
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_a_lat_lon[0] = wp_received[0];
+                    wp_a_lat_lon[1] = wp_received[1];
+
+                    publish_waypoint(wp_a_lat_lon); /* Echo back the received 
+                                                 * waypoint */
+                    current_wp_state = CHECKING_NEXT_WP;
+                } else {
+                    current_wp_state = CHECKING_PREV_WP;
+                }
                 break;
 
             case CHECKING_NEXT_WP:

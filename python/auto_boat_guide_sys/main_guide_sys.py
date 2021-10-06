@@ -202,6 +202,7 @@ if __name__ == '__main__':
                     if nav_msg['result'] == 1:
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
+                print("msg.get_type() = {}".format(msg.get_type()))
 
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the

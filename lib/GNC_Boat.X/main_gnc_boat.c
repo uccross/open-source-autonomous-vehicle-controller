@@ -188,6 +188,12 @@ int main(void) {
                     //                    wp_a_en[1] = wp_a_lat_lon[0];
                     publish_waypoint(wp_a_lat_lon);
                     find_wp_ref_time = cur_time;
+                }
+
+                // State exit case
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_b_lat_lon[0] = wp_received[0];
+                    wp_b_lat_lon[1] = wp_received[1];
                     current_wp_state = CHECKING_REF_WP;
                 }
 
@@ -195,25 +201,20 @@ int main(void) {
 
             case CHECKING_REF_WP:
 
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-                    wp_b_lat_lon[0] = wp_received[0];
-                    wp_b_lat_lon[1] = wp_received[1];
+                LATCbits.LATC1 ^= 1; // Toggle LED 5
 
-                    if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
-                        ref_lla[0] = wp_a_lat_lon[0]; // latitude
-                        ref_lla[1] = wp_a_lat_lon[1]; // longitude
-                        ref_lla[2] = 0.0; // Altitude
+                // State exit case
+                if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
+                    ref_lla[0] = wp_a_lat_lon[0]; // latitude
+                    ref_lla[1] = wp_a_lat_lon[1]; // longitude
+                    ref_lla[2] = 0.0; // Altitude
 
-                        publish_ack(1); // SUCCESS
+                    publish_ack(1); // SUCCESS
 
-                        current_wp_state = WAITING_FOR_PREV_WP;
-                    } else {
-                        LATCbits.LATC1 ^= 1; // Toggle LED 5
-                        publish_ack(0); // FAILURE
-
-                        current_wp_state = FINDING_REF_WP;
-                    }
+                    current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
+                    publish_ack(0); // FAILURE
+
                     current_wp_state = FINDING_REF_WP;
                 }
 
@@ -229,11 +230,7 @@ int main(void) {
                                                  * waypoint */
                     current_wp_state = CHECKING_PREV_WP;
                 } else {
-                    /* Continue sending the reference point until the 
-                     * Companion Computer responds*/
-                    publish_waypoint(wp_a_lat_lon);
-
-                    current_wp_state = WAITING_FOR_PREV_WP;
+                    publish_ack(1); // SUCCESS
                 }
                 break;
 

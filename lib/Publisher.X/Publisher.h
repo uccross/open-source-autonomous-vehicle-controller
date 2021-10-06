@@ -28,18 +28,7 @@
 /******************************************************************************
  * PUBLIC DATATYPES                                                           *
  *****************************************************************************/
-union lat_lon_point {
-    float latitude;
-    float longitude;
-    float array[DIM];
-};
 
-union lat_lon_alt_point {
-    float latitude;
-    float longitude;
-    float altitude;
-    float array[LLA_DIM];
-};
 
 /******************************************************************************
  * FUNCTION PROTOTYPES                                                        *
@@ -157,16 +146,7 @@ void publish_RC_signals_raw(void);
  * @return TRUE or FALSE if an message was received
  * @author Pavlo Vlastos
  */
-char check_mavlink_serial_events(union lat_lon_point* wp);
-
-/**
- * @Function publish_encoder_data()
- * @param none
- * @brief looks for messages sent over the radio serial port to OSAVC, parses
- * them and provides responses, if needed
- * @author Aaron Hunter
- */
-void publish_encoder_data(void);
+char check_mavlink_serial_events(float wp[DIM]);
 
 /**
  * @function publish_GPS(void)
@@ -199,6 +179,7 @@ void publish_parameter(const char *param_id);
  * @brief Send waypoint with East and North elements to the companion 
  * @param wp[] A waypoint with East and North elements within the Local Tangent
  * Plane (LTP) in meters
+ * @return SUCCESS or FAILURE
  * @author Pavlo Vlastos
  */
 int publish_waypoint(float wp[DIM]);
@@ -209,7 +190,7 @@ int publish_waypoint(float wp[DIM]);
  * @param result Information associated with the acknowledgment
  * @author Pavlo Vlastos
  */
-int int publish_ack(uint8_t result);
+int publish_ack(uint8_t result);
 
 /**
  * @Function calc_pw(uint16_t raw_counts)

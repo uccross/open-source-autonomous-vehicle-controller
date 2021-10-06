@@ -107,8 +107,8 @@ uint8_t check_mavlink_mode(void) {
 }
 
 void publisher_get_gps_rmc_position(float position[DIM]) {
-    rmc_position[0] = position[0];
-    rmc_position[1] = position[1];
+    position[0] = rmc_position[0];
+    position[1] = rmc_position[1];
 }
 
 void check_IMU_events(uint8_t data_type) {
@@ -131,7 +131,7 @@ void RC_channels_init(void) {
 
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
-        LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
+        //        LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         RCRX_get_cmd(RC_channels);
     }
 }
@@ -283,23 +283,23 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-char check_mavlink_serial_events(union lat_lon_point* wp) {
+char check_mavlink_serial_events(float wp[DIM]) {
     char status = FALSE;
     uint16_t command = 0;
-    
-    wp->latitude = 0.0;
-    wp->longitude = 0.0;
-    
+
+    wp[0] = 0.0; // latitude
+    wp[1] = 0.0; // longitude
+
     status = MavSerial_getMavMsg(&rec_msg);
-    
+
     if (status == TRUE) {
         command = mavlink_msg_command_long_get_command(&rec_msg);
         switch (command) {
             case MAV_CMD_COMPONENT_ARM_DISARM:
                 break;
             case MAV_CMD_NAV_WAYPOINT:
-                wp->latitude = mavlink_msg_command_long_get_param4(&rec_msg);
-                wp->longitude = mavlink_msg_command_long_get_param5(&rec_msg);
+                wp[0] = mavlink_msg_command_long_get_param4(&rec_msg);
+                wp[1] = mavlink_msg_command_long_get_param5(&rec_msg);
                 break;
         }
     }
@@ -308,12 +308,12 @@ char check_mavlink_serial_events(union lat_lon_point* wp) {
 
 void publish_GPS(void) {
     mavlink_message_t msg_tx;
-    static uint8_t gps_fix = GPS_FIX_TYPE_NO_FIX;
 
 #ifdef NEO_GPS
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
+    static uint8_t gps_fix = GPS_FIX_TYPE_NO_FIX;
 
     //verify fix status
     if (GPS_has_fix() == TRUE) {
@@ -407,24 +407,36 @@ int publish_waypoint(float wp[DIM]) {
             mavlink_system.compid,
             &msg_tx,
             Sys_timer_get_usec(),
-            wp[1], /* x: Latitude [meters] EN LTP -> y_north -> wp[1]*/
-            wp[0], /* y: Longitude[meters] EN LTP -> x_east -> wp[0]*/
+            wp[0], /* x: Longitude[meters] EN LTP -> x_east -> wp[0]*/
+            wp[1], /* y: Latitude [meters] EN LTP -> y_north -> wp[1]*/
             0.0, /* z: Altitude [meters] */
             0.0, /* vx [meters/second] */
             0.0, /* vy [meters/second] */
             0.0); /* vz [meters/second] */
 
     MavSerial_sendMavPacket(&msg_tx);
+    return SUCCESS;
 }
 
 int publish_ack(uint8_t result) {
     mavlink_message_t msg_tx;
+
+    uint8_t progress = 0;
+    int32_t result_param2 = 0;
+    uint8_t target_system = 0;
+    uint8_t target_component = 0;
+
     /* Send a command acknowledgment */
     mavlink_msg_command_ack_pack(mavlink_system.sysid,
             mavlink_system.compid,
-            &msg_tx, 
-            MAV_CMD_ACK_OK, 
-            result);
+            &msg_tx,
+            MAV_CMD_ACK_OK,
+            result,
+            progress,
+            result_param2,
+            target_system,
+            target_component);
+
 
     MavSerial_sendMavPacket(&msg_tx);
     return SUCCESS;

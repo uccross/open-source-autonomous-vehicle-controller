@@ -109,7 +109,7 @@ if __name__ == '__main__':
     # Data logger
     logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=msg_list,
-        extra_headers=extra_headers, debug_flag=debug_flag)
+        extra_headers=extra_headers, debug_flag=False)
 
     # Waypoint Queue
     waypoint_queue = WQ.WaypointQueue()
@@ -141,7 +141,7 @@ if __name__ == '__main__':
     # Timing
     t_new = 0
     t_old = time.time()
-    t_sm = time.time()
+    # t_sm = time.time()
     dt = 0.005  # seconds
 
     # Transitions
@@ -169,23 +169,26 @@ if __name__ == '__main__':
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
-        if msg and ((t_new - t_sm) > 0.500):
-            t_sm = t_new
+        if msg:
 
             # START OF STATE MACHINE
             if state == 'IDLE':
                 state = 'WAITING_FOR_REF_POINT'
+
             elif state == 'WAITING_FOR_REF_POINT':
 
                 # Exit this state upon receving a navigation waypoint message
                 # Get the previous waypoint from the queue
                 if msg.get_type() == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
+
                     lon = nav_msg['x'] # longitude
                     lat = nav_msg['y'] # latitude
+
                     print("lon: {}, type: {}".format(lon, type(lon)))
                     print("lat: {}, type: {}".format(lat, type(lat)))
                     wp_prev = wpq.getNext()
+
                     state = 'SENDING_PREV_WP'
 
             if state == 'SENDING_PREV_WP':

@@ -196,7 +196,6 @@ if __name__ == '__main__':
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
                 if msg_type == 'COMMAND_ACK':
-                    print("msg type: {}".format(msg_type))
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 

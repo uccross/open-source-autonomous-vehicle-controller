@@ -206,6 +206,9 @@ if __name__ == '__main__':
             if state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
+                print("    lat: {}, type: {}".format(wp_next[0, 0], type(lat)))
+                print("    lon: {}, type: {}".format(wp_next[0, 1], type(lon)))
+                
                 logger.send_mav_cmd_nav_waypoint(wp_prev)
 
                 # Exit this state after getting an acknowledgment with a result
@@ -221,6 +224,9 @@ if __name__ == '__main__':
 
             elif state == 'SENDING_NEXT_ECHO':
                 # Send the next waypoint for the linear trajectory tracking
+                print("    lat: {}, type: {}".format(wp_next[0, 0], type(lat)))
+                print("    lon: {}, type: {}".format(wp_next[0, 1], type(lon)))
+
                 logger.send_mav_cmd_nav_waypoint(wp_next)
 
                 if msg.get_type() == 'COMMAND_ACK':

@@ -193,10 +193,7 @@ int main(void) {
                 }
 
                 // State exit case
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT) &&
-                        ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
-                    t_last_serial = cur_time;
-
+                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received[0];
                     wp_b_lat_lon[1] = wp_received[1];
 

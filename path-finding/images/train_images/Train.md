@@ -1,0 +1,1 @@
+This folder will contain the cone image used for training with their corresponding annotations file. I have uploaded train folder in [drive](https://drive.google.com/drive/folders/123beaSLz80qkRRupemzqXWopBndzszAz?usp=sharing).

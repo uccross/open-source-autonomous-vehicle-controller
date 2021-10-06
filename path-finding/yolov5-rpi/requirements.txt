@@ -1,0 +1,4 @@
+pillow
+argparse
+opencv-python
+numpy

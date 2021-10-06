@@ -1,0 +1,8 @@
+
+train: /content/drive/MyDrive/train_data/train/images  # train images (relative to 'path') 128 images
+val: /content/drive/MyDrive/train_data/test/images  # val images (relative to 'path') 128 images
+test:  # test images (optional)
+
+# Classes
+nc: 1  # number of classes
+names: [ 'cone' ]  # class names

@@ -1,0 +1,33 @@
+#Physical constants
+
+gravity: 9.7989 #m/s^2 (Santa Cruz)
+magnetic: 0.57 #0.4749 #Gauss (Santa Cruz)
+
+#IMU specifications
+freq: 100 #Hz
+
+#Mavlink
+port: 'COM3'
+baud: 57600
+
+#Recursive Least Squares
+
+lambda: 0.99
+del: 1.0
+
+use_initial_batch: True
+initial_batch_size: 200
+
+#Batch Parameters
+acc_file: 'batch_params/acc_car.txt'
+gyro_file: 'batch_params/gyro.txt'
+mag_file: 'batch_params/mag_car.txt'
+
+#Screening
+
+use_tolerance: True
+acc_tolerance: 15 #Percent
+mag_tolerance: 50 #Percent
+
+
+

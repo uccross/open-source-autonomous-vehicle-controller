@@ -13,6 +13,7 @@
       <itemPath>../RC_RX.X/RC_RX.h</itemPath>
       <itemPath>../ICM-20948.X/ICM_20948.h</itemPath>
       <itemPath>../AS5047D.X/AS5047D.h</itemPath>
+      <itemPath>../RC_servo.X/RC_servo.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -30,6 +31,7 @@
       <itemPath>../RC_RX.X/RC_RX.c</itemPath>
       <itemPath>../ICM-20948.X/ICM_20948.c</itemPath>
       <itemPath>../AS5047D.X/AS5047D.c</itemPath>
+      <itemPath>../RC_servo.X/RC_servo.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -47,6 +49,7 @@
     <Elem>../RC_RX.X</Elem>
     <Elem>../ICM-20948.X</Elem>
     <Elem>../AS5047D.X</Elem>
+    <Elem>../RC_servo.X</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -97,7 +100,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value="..\Board.X;..\Radio_serial.X;..\..\modules\c_library_v2;..\..\modules\c_library_v2\common;..\System_timer.X;..\Serial.X;..\NEO_M8N.X;..\RC_RX.X;..\ICM-20948.X;..\AS5047D.X"/>
+                  value="..\Board.X;..\Radio_serial.X;..\..\modules\c_library_v2;..\..\modules\c_library_v2\common;..\System_timer.X;..\Serial.X;..\NEO_M8N.X;..\RC_RX.X;..\ICM-20948.X;..\AS5047D.X;..\RC_servo.X"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

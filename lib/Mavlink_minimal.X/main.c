@@ -20,6 +20,7 @@
 #include "common/mavlink.h"
 #include "NEO_M8N.h"
 #include "RC_RX.h"
+#include "RC_servo.h"
 #include "ICM_20948.h"
 #include "AS5047D.h"
 
@@ -29,8 +30,12 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //50 Hz control and sensor update rate
-#define ENCODER_TWO_PI 0x4fff
+#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_FREQUENCY (1000/CONTROL_PERIOD) //frequency in Hz
+#define ENCODER_TWO_PI 0x4fff  //counts to 2 pi conversion 
+#define PI 3.141592653589793
+#define WHEEL_RADIUS 0.0325 //meters
+#define WHEEL_CIRCUMFERENCE WHEEL_RADIUS*2*PI
 #define RPS_TO_RPM (60*1000/CONTROL_PERIOD)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define BUFFER_SIZE 1024
@@ -38,7 +43,9 @@
 #define RAD2DEG 180.0/M_PI
 #define DEG2RAD M_PI/180.0
 #define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
-
+#define RAW 1
+#define SCALED 2
+#define CTS_2_USEC 1  //divide by 2 scaling of counts to usec with right shift
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -47,11 +54,22 @@ mavlink_system_t mavlink_system = {
     1, // System ID (1-255)
     MAV_COMP_ID_AUTOPILOT1 // Component ID (a MAV_COMPONENT value)
 };
-static struct GPS_data GPS_data;
-RCRX_channel_buffer RC_channels[CHANNELS];
 
-struct IMU_output IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for IMU data
+enum RC_channels {
+    ACCELERATOR = 2,
+    STEERING,
+    SWITCH_D,
+}; //map to the car controls from the RC receiver
+RCRX_channel_buffer RC_channels[CHANNELS];
+static struct GPS_data GPS_data;
+struct IMU_output IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
+struct IMU_output IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 encoder_t encoder_data[NUM_ENCODERS];
+static uint8_t pub_GPS = TRUE;
+static uint8_t pub_RC_servo = FALSE;
+static uint8_t pub_RC_signals = TRUE;
+static uint8_t pub_IMU = TRUE;
+static uint8_t pub_Encoder = TRUE;
 
 /*******************************************************************************
  * TYPEDEFS                                                                    *
@@ -101,11 +119,18 @@ void check_GPS_events(void);
 
 /**
  * @function publish_IMU_data()
- * @param none
+ * @param data_type RAW or SCALED
  * @brief reads module level IMU data and publishes over radio serial in Mavlink
  * @author Aaron Hunter
  */
-void publish_IMU_data(void);
+void publish_IMU_data(uint8_t data_type);
+/**
+ * @function publish_RC_signals_raw(void)
+ * @param none
+ * @brief scales raw RC signals
+ * @author Aaron Hunter
+ */
+void publish_RC_signals_raw(void);
 /**
  * @Function publish_encoder_data()
  * @param none
@@ -130,6 +155,34 @@ void publish_GPS(void);
  */
 void publish_heartbeat(void);
 
+/**
+ * @Function publish_parameter(uint8_t param_id[16])
+ * @param parameter ID
+ * @brief invokes mavlink helper to send out stored parameter 
+ * @author aaron hunter
+ */
+void publish_parameter(uint8_t param_id[16]);
+
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts);
+
+/**
+ * @Function set_control_output(void)
+ * @param none
+ * @return none
+ * @brief converts RC input signals to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_control_output(void);
+
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -142,8 +195,12 @@ void publish_heartbeat(void);
  */
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
-        IMU_get_data(&IMU_data);
-        publish_IMU_data();
+        //        IMU_get_raw_data(&IMU_raw);
+        //        publish_IMU_data(RAW);
+        IMU_get_scaled_data(&IMU_scaled);
+        if (pub_IMU == TRUE) {
+            publish_IMU_data(SCALED);
+        }
     }
 }
 
@@ -157,7 +214,9 @@ void check_IMU_events(void) {
 void check_encoder_events(void) {
     if (Encoder_is_data_ready() == TRUE) {
         Encoder_get_data(encoder_data);
-        publish_encoder_data();
+        if (pub_Encoder == TRUE) {
+            publish_encoder_data();
+        }
     }
 }
 
@@ -183,6 +242,9 @@ void RC_channels_init(void) {
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
         RCRX_get_cmd(RC_channels);
+        if (pub_RC_signals == TRUE) {
+            publish_RC_signals_raw();
+        }
     }
 }
 
@@ -205,6 +267,7 @@ void check_radio_events(void) {
     //MAVLink command structs
     mavlink_heartbeat_t heartbeat;
     mavlink_command_long_t command_qgc;
+    mavlink_param_request_read_t param_read;
 
     if (Radio_data_available()) {
         msg_byte = Radio_get_char();
@@ -217,13 +280,18 @@ void check_radio_events(void) {
                     break;
                 case MAVLINK_MSG_ID_COMMAND_LONG:
                     mavlink_msg_command_long_decode(&msg_rx, &command_qgc);
-                    printf("Command ID %d received from QGC\r\n", command_qgc.command);
+                    printf("Command ID %d received from Ground Control\r\n", command_qgc.command);
+                    break;
+                case MAVLINK_MSG_ID_PARAM_REQUEST_READ:
+                    mavlink_msg_param_request_read_decode(&msg_rx, &param_read);
+                    printf("Parameter request ID %s received from Ground Control\r\n", param_read.param_id);
+                    publish_parameter(param_read.param_id);
                     break;
                 default:
-                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
+                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", 
+                           msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
                     break;
             }
-        }
     }
 }
 
@@ -248,70 +316,126 @@ void check_GPS_events(void) {
  * @brief reads module level IMU data and publishes over radio serial in Mavlink
  * @author Aaron Hunter
  */
-void publish_IMU_data(void) {
+void publish_IMU_data(uint8_t data_type) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
     uint8_t IMU_id = 0;
-    mavlink_msg_raw_imu_pack(mavlink_system.sysid,
-            mavlink_system.compid,
-            &msg_tx,
-            Sys_timer_get_usec(),
-            IMU_data.acc.x,
-            IMU_data.acc.y,
-            IMU_data.acc.z,
-            IMU_data.gyro.x,
-            IMU_data.gyro.y,
-            IMU_data.gyro.z,
-            IMU_data.mag.x,
-            IMU_data.mag.y,
-            IMU_data.mag.z,
-            IMU_id,
-            IMU_data.temp
-            );
+    if (data_type == RAW) {
+        mavlink_msg_raw_imu_pack(mavlink_system.sysid,
+                mavlink_system.compid,
+                &msg_tx,
+                Sys_timer_get_usec(),
+                (int16_t) IMU_raw.acc.x,
+                (int16_t) IMU_raw.acc.y,
+                (int16_t) IMU_raw.acc.z,
+                (int16_t) IMU_raw.gyro.x,
+                (int16_t) IMU_raw.gyro.y,
+                (int16_t) IMU_raw.gyro.z,
+                (int16_t) IMU_raw.mag.x,
+                (int16_t) IMU_raw.mag.y,
+                (int16_t) IMU_raw.mag.z,
+                IMU_id,
+                (int16_t) IMU_raw.temp
+                );
+    } else if (data_type == SCALED) {
+        mavlink_msg_highres_imu_pack(mavlink_system.sysid,
+                mavlink_system.compid,
+                &msg_tx,
+                Sys_timer_get_usec(),
+                (float) IMU_scaled.acc.x,
+                (float) IMU_scaled.acc.y,
+                (float) IMU_scaled.acc.z,
+                (float) IMU_scaled.gyro.x,
+                (float) IMU_scaled.gyro.y,
+                (float) IMU_scaled.gyro.z,
+                (float) IMU_scaled.mag.x,
+                (float) IMU_scaled.mag.y,
+                (float) IMU_scaled.mag.z,
+                0.0, //no pressure
+                0.0, //no diff pressure
+                0.0, //no pressure altitude
+                (float) IMU_scaled.temp,
+                0, //bitfields updated
+                IMU_id
+                );
+    }
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);
     }
 }
 
-/**
- * @Function publish_encoder_data()
- * @param none
- * @brief publishes motor data and steering angle data over MAVLink to radio
- * @return none
- * @author Aaron Hunter
- */
+///**
+// * @Function publish_encoder_data()
+// * @param none
+// * @brief publishes motor data and steering angle data over MAVLink using 
+// * WHEEL_DISTANCE msg
+// * @return none
+// * @author Aaron Hunter
+// */
+
 void publish_encoder_data(void) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
     uint16_t index = 0;
-    int32_t rpm[4];
-    float voltage[4] = {0, 0, 0, 0};
-    float current[4] = {0, 0, 0, 0};
+    uint8_t i;
+    double distance[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    // encode the distance traveled into the first NUM_ENCODER distances
+    for (i = 0; i < NUM_ENCODERS; i++) {
+        distance[i] = ((double) encoder_data[i].omega / ENCODER_TWO_PI) * WHEEL_CIRCUMFERENCE;
+    }
+    //encode the exact angle for the steering servo--not necessary for the wheel encoders
+    distance[i + 1] = (double) encoder_data[HEADING].next_theta / ENCODER_TWO_PI;
 
-    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
-    mavlink_msg_esc_status_pack(
+
+    mavlink_msg_wheel_distance_pack(
             mavlink_system.sysid,
             mavlink_system.compid,
             &msg_tx,
-            Sys_timer_get_usec(),
-            LEFT_MOTOR,
-            rpm,
-            voltage,
-            current
+            (uint64_t) Sys_timer_get_usec(),
+            (uint8_t) (NUM_ENCODERS + 1),
+            distance
             );
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-    //    for (index = 0; index < msg_length; index++) {
-    //        Radio_put_char(msg_buffer[index]);
-    //    }
-
+    //    printf("first char %x \r\n", msg_buffer[0]);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+    //    printf("last char %x \r\n", msg_buffer[index - 1]);
 }
+// publish with ESC_STATUS
+//
+//void publish_encoder_data(void) {
+//    mavlink_message_t msg_tx;
+//    uint16_t msg_length;
+//    uint8_t msg_buffer[BUFFER_SIZE];
+//    uint16_t index = 0;
+//    int32_t rpm[4];
+//    float voltage[4] = {0, 0, 0, 0};
+//    float current[4] = {0, 0, 0, 0};
+//
+//    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
+//    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
+//    mavlink_msg_esc_status_pack(
+//            mavlink_system.sysid,
+//            mavlink_system.compid,
+//            &msg_tx,
+//            Sys_timer_get_usec(),
+//            LEFT_MOTOR,
+//            rpm,
+//            voltage,
+//            current
+//            );
+//    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+//    for (index = 0; index < msg_length; index++) {
+//        Radio_put_char(msg_buffer[index]);
+//    }
+//}
 
 /**
  * @function publish_RC_signals(void)
@@ -343,6 +467,39 @@ void publish_RC_signals(void) {
             scaled_channels[5],
             scaled_channels[6],
             scaled_channels[7],
+            rssi);
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
+ * @function publish_RC_signals_raw(void)
+ * @param none
+ * @brief scales raw RC signals
+ * @author Aaron Hunter
+ */
+void publish_RC_signals_raw(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    uint8_t RC_port = 0; //first 8 channels 
+    uint8_t rssi = 255; //unknown--may be able to extract from receiver
+    mavlink_msg_rc_channels_raw_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            RC_port,
+            RC_channels[0],
+            RC_channels[1],
+            RC_channels[2],
+            RC_channels[3],
+            RC_channels[4],
+            RC_channels[5],
+            RC_channels[6],
+            RC_channels[7],
             rssi);
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     for (index = 0; index < msg_length; index++) {
@@ -423,6 +580,74 @@ void publish_heartbeat(void) {
     }
 }
 
+/**
+ * @Function publish_parameter(uint8_t param_id[16])
+ * @param parameter ID
+ * @brief invokes mavlink helper to send out stored parameter 
+ * @author aaron hunter
+ */
+void publish_parameter(uint8_t param_id[16]) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    uint16_t index = 0;
+    float param_value = 320.0; // value of the requested parameter
+    uint8_t param_type = MAV_PARAM_TYPE_INT16; // onboard mavlink parameter type
+    uint16_t param_count = 1; // total number of onboard parameters
+    uint16_t param_index = 1; //index of this value
+    mavlink_msg_param_value_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            param_id,
+            param_value,
+            param_type,
+            param_count,
+            param_index
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    for (index = 0; index < msg_length; index++) {
+        Radio_put_char(msg_buffer[index]);
+    }
+}
+
+/**
+ * @Function calc_pw(uint16_t raw_counts)
+ * @param raw counts from the radio transmitter (11 bit unsigned int)
+ * @return pulse width in microseconds
+ * @brief converts the RC input into the equivalent pulsewidth output for servo
+ * and ESC control
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+static uint16_t calc_pw(uint16_t raw_counts) {
+    int16_t normalized_pulse; //converted to microseconds and centered at 0
+    uint16_t pulse_width; //servo output in microseconds
+    normalized_pulse = (raw_counts - RC_RX_MID_COUNTS) >> CTS_2_USEC;
+    pulse_width = normalized_pulse + RC_SERVO_CENTER_PULSE;
+    return pulse_width;
+}
+
+/**
+ * @Function set_control_output(void)
+ * @param none
+ * @return none
+ * @brief converts RC input signals to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_control_output(void) {
+    int tol = 100;
+    if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
+        // update pulsewidths for each servo output
+        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+    } else {
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
+        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+    }
+}
+
 int main(void) {
     uint32_t cur_time = 0;
     uint32_t gps_start_time = 0;
@@ -442,6 +667,7 @@ int main(void) {
     Sys_timer_init(); //start the system timer
     RCRX_init(); //initialize the radio control system
     RC_channels_init(); //set channels to midpoint of RC system
+    RC_servo_init(); // start the servo subsystem
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
@@ -468,6 +694,7 @@ int main(void) {
         //publish control and sensor signals
         if (cur_time - control_start_time > CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
+            set_control_output(); // set actuator outputs
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_state == ERROR) {
                 IMU_error++;
@@ -476,19 +703,20 @@ int main(void) {
                 }
             }
             Encoder_start_data_acq(); //initiate Encoder measurement with SPI
-            publish_RC_signals();
-            //start encoder measurements
         }
 
         //publish GPS
         if (cur_time - gps_start_time > GPS_PERIOD) {
             gps_start_time = cur_time; //reset GPS timer
-            publish_GPS();
+            if (pub_GPS == TRUE) {
+                publish_GPS();
+            }
         }
         //publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat();
+
         }
     }
     return 0;

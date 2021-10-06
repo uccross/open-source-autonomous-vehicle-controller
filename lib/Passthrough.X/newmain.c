@@ -70,9 +70,8 @@ static uint16_t calc_pw(uint16_t raw_counts) {
 int main(void) {
 
     enum RC_channels {
-        STEERING = 1,
-        ACCELERATOR,
-        NU,
+        ACCELERATOR = 2,
+        STEERING,
         SWITCH_D,
     }; //map to the car controls from the RC receiver
     RCRX_channel_buffer channels[CHANNELS];
@@ -86,12 +85,12 @@ int main(void) {
         if (RCRX_new_cmd_avail() == TRUE) {
             //update channel data
             RCRX_get_cmd(channels);
-            //            printf("T %d S %d M %d \r", channels[2], channels[3], channels[4]);
+//            printf("T %d S %d M %d \r", channels[2], channels[3], channels[4]);
             // update pulsewidths for each servo output
             RC_servo_set_pulse(calc_pw(channels[ACCELERATOR]), RC_LEFT_WHEEL);
             RC_servo_set_pulse(calc_pw(channels[ACCELERATOR]), RC_RIGHT_WHEEL);
             RC_servo_set_pulse(calc_pw(channels[STEERING]), RC_STEERING);
-            printf("F:%d, T: %d\r", RC_servo_get_pulse(RC_STEERING), RC_servo_get_pulse(RC_LEFT_WHEEL));
+//            printf("F:%d, T: %d\r", RC_servo_get_pulse(RC_STEERING), RC_servo_get_pulse(RC_LEFT_WHEEL));
         }
     }
     return 0;

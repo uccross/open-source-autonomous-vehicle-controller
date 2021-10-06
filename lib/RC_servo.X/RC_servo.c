@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/attribs.h>
-#include <proc/p32mx795f512l.h>
 
 
 
@@ -77,7 +76,7 @@ uint8_t RC_servo_init(void) {
     OC2RS = raw_ticks[RC_LEFT_WHEEL]; // OCxRS -> OCxR at timer rollover
     OC2CONbits.ON = 1; //turn on the peripheral
 
-    if (RC_NUM_SERVOS > 1) {  //second servo = RIGHT_WHEEL
+    if (RC_NUM_SERVOS > 1) { //second servo = RIGHT_WHEEL
         OC3CON = 0x0;
         OC3R = 0x0000; // Initialize primary Compare Register
         OC3RS = 0x0000; // Initialize secondary Compare Register
@@ -177,7 +176,7 @@ void RC_servo_delay(int cycles) {
 #ifdef RCSERVO_TESTING
 
 void main(void) {
-    uint16_t test_pulse = RC_SERVO_CENTER_PULSE;
+    uint16_t test_pulse = RC_SERVO_MIN_PULSE;
     int direction = 1;
     Board_init();
     Serial_init();
@@ -205,11 +204,13 @@ void main(void) {
                 direction = 1;
             }
         }
-        RC_servo_delay(160000);
         printf("LEFT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_LEFT_WHEEL), RC_servo_get_raw_ticks(RC_LEFT_WHEEL));
         printf("RIGHT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_RIGHT_WHEEL), RC_servo_get_raw_ticks(RC_RIGHT_WHEEL));
         printf("STEERING PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_STEERING), RC_servo_get_raw_ticks(RC_STEERING));
+        RC_servo_delay(160000);
+
     }
+    RC_servo_set_pulse(RC_SERVO_MIN_PULSE, RC_LEFT_WHEEL);
 }
 
 #endif //RCSERVO_TESTING

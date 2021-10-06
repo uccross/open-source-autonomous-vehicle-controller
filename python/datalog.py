@@ -9,12 +9,13 @@ import numpy as np
 def mav_log_imu(num_points, file = 'test_data.csv'):
     '''logs IMU data from a MAVLINK message stream'''
     with open(file, 'w', newline='') as csvfile:
-        fieldnames = ['mavpackettype', 'time_usec', 'xacc', 'yacc', 'zacc', 'xgyro', 'ygyro', 'zgyro', 'xmag', 'ymag', 'zmag', 'id', 'temperature']
+        # fieldnames = ['mavpackettype', 'time_usec', 'xacc', 'yacc', 'zacc', 'xgyro', 'ygyro', 'zgyro', 'xmag', 'ymag', 'zmag', 'id', 'temperature']
+        fieldnames = ['mavpackettype', 'time_usec', 'xacc', 'yacc', 'zacc', 'xgyro', 'ygyro', 'zgyro', 'xmag', 'ymag', 'zmag', 'abs_pressure', 'diff_pressure', 'pressure_alt', 'temperature', 'fields_updated', 'id' ]        
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)    
         writer.writeheader()
         for i in range(num_points):
             try:
-                msg = master.recv_match(type='RAW_IMU',blocking = True)
+                msg = master.recv_match(type='HIGHRES_IMU',blocking = True)
                 writer.writerow(msg.to_dict())
             except:
                 print("msg type exception")
@@ -23,7 +24,7 @@ def mav_print_imu():
     '''Prints IMU data from a MAVLINK message stream'''
     while True:
         try:
-            msg = master.recv_match(type='RAW_IMU',blocking = True)
+            msg = master.recv_match(type='HIGHRES_IMU',blocking = True)
             print(msg)
         except:
             print("msg type exception")                
@@ -35,9 +36,9 @@ print("Starting application\n")
 master = mavutil.mavlink_connection("COM5", baud=57600)
 master.wait_heartbeat()
 print('target_system {}, target component {} \n'.format(master.target_system,master.target_component))
-# msg = None
-# num_points = 500
-# file = 'gyro_rotation_data.csv'
+msg = None
+num_points = 1000
+file = 'high_res_imu.csv'
 
 # param_id = b'A11\0'
 # master.mav.param_request_read_send(master.target_system,master.target_component, param_id, -1)
@@ -48,10 +49,10 @@ print('target_system {}, target component {} \n'.format(master.target_system,mas
 # except:
 #     print("msg type exception") 
 
-#mav_print_imu()
+# mav_print_imu()
 
 # # log some data
-# mav_log_imu(num_points, file)
+mav_log_imu(num_points, file)
 
 # # set up data container
 # data_raw = np.zeros((num_points, 12))

@@ -17,13 +17,13 @@
 #include <string.h>
 #include <sys/types.h>
 #include <sys/attribs.h>  //for ISR definitions
-#include <proc/p32mx795f512l.h>
+#include <xc.h>
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
-#define BUFFER_LENGTH 1024
-#define RADIO_BAUD_RATE 57600
+#define BUFFER_LENGTH 2048
+#define RADIO_BAUD_RATE 230400
 
 /*******************************************************************************
  * PRIVATE TYPEDEFS                                                            *

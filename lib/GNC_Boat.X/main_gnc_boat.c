@@ -244,6 +244,8 @@ int main(void) {
                 break;
 
             case CHECKING_PREV_WP:
+                /* Wait for a second previous waypoint and compare them to make
+                 * sure that they match */
                 if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received[0];
                     wp_b_lat_lon[1] = wp_received[1];
@@ -265,7 +267,8 @@ int main(void) {
                 break;
 
             case WAITING_FOR_NEXT_WP:
-
+                /* Wait for a second next waypoint and compare them to make
+                 * sure that they match */
                 if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received[0];
                     wp_a_lat_lon[1] = wp_received[1];

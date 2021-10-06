@@ -187,8 +187,8 @@ if __name__ == '__main__':
                     lon = nav_msg['x']  # longitude
                     lat = nav_msg['y']  # latitude
 
-                    print("lat: {}, type: {}".format(lat, type(lat)))
-                    print("lon: {}, type: {}".format(lon, type(lon)))
+                    print("    lat: {}, type: {}".format(lat, type(lat)))
+                    print("    lon: {}, type: {}".format(lon, type(lon)))
 
                     wp_ref_lat_lon = np.array([[lat, lon]])
                     logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
@@ -240,13 +240,15 @@ if __name__ == '__main__':
                     lon = nav_msg['longitude']  # longitude
                     lat = nav_msg['latitude']  # latitude
 
-                    print("lat: {}, type: {}".format(lat, type(lat)))
-                    print("lon: {}, type: {}".format(lon, type(lon)))
+                    print("    lat: {}, type: {}".format(lat, type(lat)))
+                    print("    lon: {}, type: {}".format(lon, type(lon)))
 
                     current_position = np.array([[lat, lon]])
 
-                    if wpq.isNearNext(current_position)
-
+                    if wpq.isNearNext(current_position):
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_ECHO'
+                        
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))
                 last_state = state

@@ -246,7 +246,8 @@ if __name__ == '__main__':
 
                         wp_next = wpq.getNext()
                         wp_next_lla = np.array([[wp_next[0, 0],
-                                                 wp_next[0, 1]]])
+                                                 wp_next[0, 1],
+                                                 0.0]])
                         state = 'SENDING_NEXT_WP'
 
             elif state == 'SENDING_NEXT_WP':

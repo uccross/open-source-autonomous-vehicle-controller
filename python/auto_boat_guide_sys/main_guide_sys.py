@@ -262,9 +262,9 @@ if __name__ == '__main__':
 
                     current_position = np.array([[lat, lon]])
 
-                    if wpq.isNearNext(current_position):
-                        wp_next = wpq.getNext()
-                        state = 'SENDING_NEXT_ECHO'
+                    # if wpq.isNearNext(current_position):
+                    #     wp_next = wpq.getNext()
+                    #     state = 'SENDING_NEXT_ECHO'
                         
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))

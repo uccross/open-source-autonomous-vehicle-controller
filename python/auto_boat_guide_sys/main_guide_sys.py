@@ -245,6 +245,7 @@ if __name__ == '__main__':
                                                  0.0]])          # alt
                         print("    wp_prev_lla = {}".format(wp_prev_lla))
 
+                        wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
             elif state == 'SENDING_NEXT_WP':
@@ -291,8 +292,12 @@ if __name__ == '__main__':
                     print("    vehi_pt_lla = {}".format(vehi_pt_lla))
                     print("    wp_next_lla = {}".format(wp_next_lla))
 
-                    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
-                    wp_next_ned = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
+                    vehi_pt_ned = LTP.lla2ned2(copy.deepcopy(vehi_pt_lla),
+                                               wp_ref_lla)
+                    wp_next_ned = LTP.lla2ned2(copy.deepcopy(wp_next_lla),
+                                               wp_ref_lla)
+                    print("    vehi_pt_lla = {}".format(vehi_pt_lla))
+                    print("    wp_next_lla = {}".format(wp_next_lla))
 
                     vehi_pt_en = np.array([[vehi_pt_ned[0, 0],
                                             vehi_pt_ned[0, 1]]])

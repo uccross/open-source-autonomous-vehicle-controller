@@ -206,6 +206,8 @@ if __name__ == '__main__':
                     lat = nav_msg['y']  # latitude
 
                     wp_ref_lat_lon = np.array([[lat, lon]])
+                    wp_ref_lla = np.array([[lat, lon, 0.0]])
+
                     logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
                 # Exit this state after getting an acknowledgment with a result
@@ -243,6 +245,8 @@ if __name__ == '__main__':
                                                              type(lon)))
 
                         wp_next = wpq.getNext()
+                        wp_next_lla = np.array([[wp_next[0, 0],
+                                                 wp_next[0, 1]]])
                         state = 'SENDING_NEXT_WP'
 
             elif state == 'SENDING_NEXT_WP':
@@ -286,11 +290,20 @@ if __name__ == '__main__':
                     print("    lat: {}, type: {}".format(lat, type(lat)))
                     print("    lon: {}, type: {}".format(lon, type(lon)))
 
-                    current_position = np.array([[lat, lon]])
+                    vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
-                    if wpq.isNearNext(current_position):
+                    vehi_pt_enu = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
+                    wp_next_enu = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
+
+                    vehi_pt_en = np.array([[vehi_pt_enu[0, 0],
+                                            vehi_pt_enu[0, 1]]])
+                    wp_next_en = np.array([[wp_next_enu[0, 0],
+                                            wp_next_enu[0, 1]]])
+
+                    if wpq.isNearNext(vehi_pt_en):
+                        print("vehi_pt_enu = {}".format(vehi_pt_en))
                         print("norm = {}".format(
-                            np.linalg.norm(current_position - wp_next)))
+                            np.linalg.norm(vehi_pt_lla - wp_next_en)))
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 

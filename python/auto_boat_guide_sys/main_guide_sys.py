@@ -4,7 +4,6 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
-from matplotlib.pyplot import thetagrids
 import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL

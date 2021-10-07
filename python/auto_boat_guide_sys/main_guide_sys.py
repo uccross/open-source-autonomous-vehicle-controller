@@ -4,6 +4,7 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
+from matplotlib.pyplot import thetagrids
 import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
@@ -163,7 +164,7 @@ if __name__ == '__main__':
                           [36.9556638, -122.0606960],
                           [36.9554362, -122.0607348],
                           [36.9556224, -122.0604107]])
-    wpq = WQ.WaypointQueue(waypoint_queue=waypoints)
+    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=5000)
 
     ###########################################################################
     # Main Loop

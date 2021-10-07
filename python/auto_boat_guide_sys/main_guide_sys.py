@@ -245,9 +245,6 @@ if __name__ == '__main__':
                                                              type(lon)))
 
                         wp_next = wpq.getNext()
-                        wp_next_lla = np.array([[wp_next[0, 0],
-                                                 wp_next[0, 1],
-                                                 0.0]])
                         state = 'SENDING_NEXT_WP'
 
             elif state == 'SENDING_NEXT_WP':
@@ -267,6 +264,9 @@ if __name__ == '__main__':
                                                              type(lon)))
 
                         wp_next = wpq.getNext()
+                        wp_next_lla = np.array([[wp_next[0, 0], # lat
+                                                 wp_next[0, 1], # lon
+                                                 0.0]])         # alt
                         state = 'WAITING_TO_UPDATE_WPS'
 
             elif state == 'WAITING_TO_UPDATE_WPS':

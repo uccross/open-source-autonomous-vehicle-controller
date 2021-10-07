@@ -132,6 +132,7 @@ int main(void) {
     uint8_t waypoints_ready = FALSE;
 
     enum waypoints_state {
+        ERROR_WP = 0,
         FINDING_REF_WP, /* Find the reference point for the LTP calculation */
         CHECKING_REF_WP, /* Check the reference point sending and comparing 
                           * echo from Companion Computer */
@@ -207,28 +208,29 @@ int main(void) {
                 LATCbits.LATC1 ^= 1; // Toggle LED 5
 
                 // State exit case
-                if ((lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) && 
+                if ((lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) &&
                         ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
                     t_last_serial = cur_time;
-                    
+
                     wp_lla[0] = wp_a_lat_lon[0]; // latitude
                     wp_lla[1] = wp_a_lat_lon[1]; // longitude
                     wp_lla[2] = 0.0; // Altitude
-                    
+
                     ref_lla[0] = wp_a_lat_lon[0]; // latitude
                     ref_lla[1] = wp_a_lat_lon[1]; // longitude
                     ref_lla[2] = 0.0; // Altitude
-                    
+
                     lin_tra_lla_to_enu(wp_lla, ref_lla, wp_enu);
-                    
+
                     wp_en[0] = wp_enu[0];
                     wp_en[1] = wp_enu[1];
-                    
-                    publish_ack(1); // SUCCESS
+
+                    /* The ack result is the current state */
+                    publish_ack(CHECKING_REF_WP);
 
                     current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
-                    publish_ack(0); // FAILURE
+                    publish_ack(ERROR_WP);
 
                     current_wp_state = FINDING_REF_WP;
                 }
@@ -245,8 +247,9 @@ int main(void) {
 
                     current_wp_state = CHECKING_PREV_WP;
                 } else {
-                    publish_ack(1); /*Repeat the ACK SUCCESS message in case 
-                                     * the Companion Computer missed it */
+                    /* Repeat the ACK SUCCESS message in case the Companion 
+                     * Computer missed it */
+                    publish_ack(CHECKING_REF_WP);
                 }
                 break;
 
@@ -262,12 +265,11 @@ int main(void) {
                         wp_prev[1] = wp_a_lat_lon[1];
                         wp_prev[2] = 0.0;
 
-                        publish_ack(1); // SUCCESS
+                        publish_ack(CHECKING_PREV_WP);
 
                         current_wp_state = WAITING_FOR_NEXT_WP;
                     } else {
-                        publish_ack(0); // FAILURE
-
+                        publish_ack(ERROR_WP);
                         current_wp_state = WAITING_FOR_PREV_WP;
                     }
                 }
@@ -283,8 +285,9 @@ int main(void) {
 
                     current_wp_state = CHECKING_NEXT_WP;
                 } else {
-                    publish_ack(1); /*Repeat the ACK SUCCESS message in case 
-                                     * the Companion Computer missed it */
+                    /* Repeat the ACK CHECKING_PREV_WP message in case the Companion 
+                     * Computer missed it */
+                    publish_ack(CHECKING_PREV_WP);
                 }
                 break;
 
@@ -300,11 +303,11 @@ int main(void) {
                         wp_next[1] = wp_a_lat_lon[1];
                         wp_next[2] = 0.0;
 
-                        publish_ack(1); // SUCCESS
+                        publish_ack(CHECKING_NEXT_WP); // SUCCESS
 
                         current_wp_state = WAITING_FOR_NEXT_WP;
                     } else {
-                        publish_ack(0); // FAILURE
+                        publish_ack(ERROR_WP); // FAILURE
 
                         current_wp_state = WAITING_FOR_PREV_WP;
                     }

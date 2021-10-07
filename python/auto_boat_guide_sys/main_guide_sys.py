@@ -145,10 +145,17 @@ if __name__ == '__main__':
     # t_sm = time.time()
     dt = 0.005  # seconds
 
-    # Transitions
+    # State Machine Transitions
     last_base_mode = -1
     state = 'IDLE'
     last_state = state
+    ack_result = {'ERROR_WP': 0,
+                 'FINDING_REF_WP': 1,
+                 'CHECKING_REF_WP': 2,
+                 'WAITING_FOR_PREV_WP': 3,
+                 'CHECKING_PREV_WP': 4,
+                 'WAITING_FOR_NEXT_WP': 5,
+                 'CHECKING_NEXT_WP': 6}
 
     waypoints = np.array([[36.9557439, -122.0604691],
                           [36.9556638, -122.0606960],
@@ -172,11 +179,11 @@ if __name__ == '__main__':
 
         if msg:
             msg_type = msg.get_type()
-            
+
             if ((msg_type != 'RC_CHANNELS_RAW') and
-                    (msg_type != 'HIGHRES_IMU') and 
-                    (msg_type != 'GPS_RAW_INT') and 
-                    (msg_type != 'HEARTBEAT') and 
+                    (msg_type != 'HIGHRES_IMU') and
+                    (msg_type != 'GPS_RAW_INT') and
+                    (msg_type != 'HEARTBEAT') and
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 
@@ -207,7 +214,7 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
-                    if nav_msg['result'] == 1:
+                    if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 
@@ -226,7 +233,7 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
-                    if nav_msg['result'] == 1:
+                    if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_ECHO'
 
@@ -242,7 +249,7 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
-                    if nav_msg['result'] == 1:
+                    if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
                         wp_next = wpq.getNext()
                         state = 'READY_TO_TRACK'
 
@@ -265,11 +272,11 @@ if __name__ == '__main__':
                     # if wpq.isNearNext(current_position):
                     #     wp_next = wpq.getNext()
                     #     state = 'SENDING_NEXT_ECHO'
-                        
+
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))
                 last_state = state
-            
+
             # END OF STATE MACHINE
             ##################################################################
 

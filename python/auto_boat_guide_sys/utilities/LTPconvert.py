@@ -24,9 +24,9 @@ def lla2ned2(lla, ref):
     EarthRad = 6378137.0
     d2r = np.pi/180.0
 
-    lla[:, [0]] = lla[:, [0]]*d2r     # convert to radians
-    lla[:, [1]] = lla[:, [1]]*d2r     # convert to radians
-    lla[:, [2]] = lla[:, [2]]         # convert to meters
+    lla[:, 0] = lla[:, 0]*d2r     # convert to radians
+    lla[:, 1] = lla[:, 1]*d2r     # convert to radians
+    lla[:, 2] = lla[:, 2]         # convert to meters
 
     lat = d2r*ref[0, 0]
     lon = d2r*ref[0, 1]
@@ -71,8 +71,8 @@ def lla2ecef2(lla):
 
     #ecc2 = ecc*ecc
 
-    sinlat = np.sin(lla[:, [0]])
-    coslat = np.cos(lla[:, [0]])
+    sinlat = np.sin(lla[:, 0])
+    coslat = np.cos(lla[:, 0])
     #Rn = EarthRad / sqrt(abs(1.0 - (ecc2 * sinlat * sinlat)))
     Rn = EarthRad
 

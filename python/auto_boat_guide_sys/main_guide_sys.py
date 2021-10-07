@@ -185,6 +185,8 @@ if __name__ == '__main__':
                     (msg_type != 'HIGHRES_IMU') and
                     (msg_type != 'GPS_RAW_INT') and
                     (msg_type != 'HEARTBEAT') and
+                    (msg_type != 'ATTITUDE') and
+                    (msg_type != 'COMMAND_ACK') and
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 

@@ -54,6 +54,7 @@ float q_gyro[QSZ] = {0.0};
 float q_est[QSZ] = {0.0};
 float q_est_dot[QSZ] = {0.0};
 float q_magnitude = 0.0;
+float q_norm = 1.0;
 
 /******************************************************************************
  * PUBLIC FUNCTIONS                                                          *
@@ -62,8 +63,33 @@ void cf_ahrs_init(float desired_dt, const float exp_gyro_bias[MSZ]) {
     /* Do calibration here? */
 
     cf_ahrs_set_dt(desired_dt);
-    
+
     cf_ahrs_set_gyro_biases(exp_gyro_bias);
+
+    /* Explicitly set all matrices to avoid nans */
+    lin_alg_set_m(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
+            r_acc);
+    
+    lin_alg_set_m(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
+            r_mag);
+    
+    lin_alg_set_m(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
+            r_hat);
+    
+    lin_alg_set_m(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0,
+            r_hat_t);
 }
 
 void cf_ahrs_set_dt(float desired_dt) {
@@ -155,7 +181,10 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
     q_est[2] = q_est[2] + q_est_dot[2] * dt;
     q_est[3] = q_est[3] + q_est_dot[3] * dt;
 
-    q_magnitude = 1.0 / lin_alg_q_norm(q_est);
+    q_norm = lin_alg_q_norm(q_est);
+    if (q_norm != 0.0) {
+        q_magnitude = 1.0 / q_norm;
+    }
     lin_alg_scale_q(q_magnitude, q_est);
 
     lin_alg_q2euler_abs(q_est, yaw, pitch, roll);

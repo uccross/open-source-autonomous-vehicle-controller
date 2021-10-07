@@ -347,8 +347,8 @@ int main(void) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
-                    publish_waypoint(wp_a_lat_lon); /* Echo back the received 
-                                                     * waypoint */
+                    //                    publish_waypoint(wp_a_lat_lon); /* Echo back the received 
+                    //                                                     * waypoint */
 
                     current_wp_state = CHECKING_NEXT_WP;
                 }

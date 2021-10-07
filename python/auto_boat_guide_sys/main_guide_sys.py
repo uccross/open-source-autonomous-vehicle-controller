@@ -112,9 +112,6 @@ if __name__ == '__main__':
         com, baudrate, log_file, csv_file, msg_list=msg_list,
         extra_headers=extra_headers, debug_flag=False)
 
-    # Waypoint Queue
-    waypoint_queue = WQ.WaypointQueue()
-
     ###########################################################################
     # Helper method, based on
     # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
@@ -158,6 +155,7 @@ if __name__ == '__main__':
                   'CHECKING_NEXT_WP': 6,
                   'TRACKING_WP': 7}
 
+    # Waypoint Queue
     waypoints = np.array([[36.9557439, -122.0604691],
                           [36.9556638, -122.0606960],
                           [36.9554362, -122.0607348],

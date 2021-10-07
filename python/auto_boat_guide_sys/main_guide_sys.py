@@ -248,9 +248,6 @@ if __name__ == '__main__':
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
-                    elif nav_msg['result'] == ack_result['CHECKING_REF_WP']:
-                        state = 'WAITING_FOR_REF_POINT'
-
             elif state == 'SENDING_NEXT_WP':
                 # Send the next waypoint for the linear trajectory tracking
 

@@ -258,12 +258,12 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
+                        wp_next = wpq.getNext()
                         print("    lat: {}, type: {}".format(wp_next[0, 0],
                                                              type(lat)))
                         print("    lon: {}, type: {}".format(wp_next[0, 1],
                                                              type(lon)))
 
-                        wp_next = wpq.getNext()
                         wp_next_lla = np.array([[wp_next[0, 0], # lat
                                                  wp_next[0, 1], # lon
                                                  0.0]])         # alt
@@ -307,7 +307,6 @@ if __name__ == '__main__':
                         np.linalg.norm(vehi_pt_en - wp_next_en)))
 
                     if wpq.isNearNext(vehi_pt_en):
-                        wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
             # Print the state transition

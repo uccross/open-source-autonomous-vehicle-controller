@@ -163,7 +163,7 @@ if __name__ == '__main__':
                           [36.9556638, -122.0606960],
                           [36.9554362, -122.0607348],
                           [36.9556224, -122.0604107]])
-    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=5000)
+    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     ###########################################################################
     # Main Loop

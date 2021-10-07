@@ -157,7 +157,7 @@ if __name__ == '__main__':
                   'CHECKING_NEXT_WP': 6,
                   'TRACKING_WP': 7}
 
-    # Waypoint Queue
+    # Waypoint Queue       N/S Lat   , E/W Long
     waypoints = np.array([[36.9557439, -122.0604691],
                           [36.9556638, -122.0606960],
                           [36.9554362, -122.0607348],
@@ -293,16 +293,16 @@ if __name__ == '__main__':
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
-                    vehi_pt_enu = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
-                    wp_next_enu = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
+                    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
+                    wp_next_ned = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
 
-                    vehi_pt_en = np.array([[vehi_pt_enu[0, 0],
-                                            vehi_pt_enu[0, 1]]])
-                    wp_next_en = np.array([[wp_next_enu[0, 0],
-                                            wp_next_enu[0, 1]]])
+                    vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
+                                            vehi_pt_ned[0, 0]]])
+                    wp_next_en = np.array([[wp_next_ned[0, 1],
+                                            wp_next_ned[0, 0]]])
 
-                    print("vehi_pt_enu = {}".format(vehi_pt_en))
-                    print("vehi_pt_enu = {}".format(wp_next_en))
+                    print("vehi_pt_en = {}".format(vehi_pt_en))
+                    print("wp_next_en = {}".format(wp_next_en))
                     print("norm = {}".format(
                         np.linalg.norm(vehi_pt_en - wp_next_en)))
 

@@ -264,6 +264,12 @@ if __name__ == '__main__':
 
             elif state == 'WAITING_TO_UPDATE_WPS':
                 if msg_type == 'ATTITUDE':
+                    nav_msg = msg.to_dict()
+
+                    heading_angle = nav_msg['yaw']
+
+                    print("    heading: {}, type: {}".format(heading_angle,
+                                                             type(heading_angle)))
 
                 if msg_type == 'GPS_RAW_INT':
 

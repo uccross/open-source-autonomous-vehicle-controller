@@ -13,6 +13,7 @@ from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
 from sys import exit
+import copy
 
 ###############################################################################
 # Parse Arguments
@@ -239,12 +240,11 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
-                        print("    lat: {}, type: {}".format(wp_prev[0, 0],
-                                                             type(lat)))
-                        print("    lon: {}, type: {}".format(wp_prev[0, 1],
-                                                             type(lon)))
+                        wp_prev_lla = np.array([[wp_prev[0, 0],  # lat
+                                                 wp_prev[0, 1],  # lon
+                                                 0.0]])          # alt
+                        print("    wp_prev_lla = {}".format(wp_prev_lla))
 
-                        wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
             elif state == 'SENDING_NEXT_WP':
@@ -259,14 +259,11 @@ if __name__ == '__main__':
 
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
                         wp_next = wpq.getNext()
-                        print("    lat: {}, type: {}".format(wp_next[0, 0],
-                                                             type(lat)))
-                        print("    lon: {}, type: {}".format(wp_next[0, 1],
-                                                             type(lon)))
+                        wp_next_lla = np.array([[wp_next[0, 0],  # lat
+                                                 wp_next[0, 1],  # lon
+                                                 0.0]])          # alt
+                        print("    wp_next_lla = {}".format(wp_next_lla))
 
-                        wp_next_lla = np.array([[wp_next[0, 0], # lat
-                                                 wp_next[0, 1], # lon
-                                                 0.0]])         # alt
                         state = 'WAITING_TO_UPDATE_WPS'
 
             elif state == 'WAITING_TO_UPDATE_WPS':
@@ -291,7 +288,6 @@ if __name__ == '__main__':
                         type(heading_angle)))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
-                    
                     print("    vehi_pt_lla = {}".format(vehi_pt_lla))
                     print("    wp_next_lla = {}".format(wp_next_lla))
 

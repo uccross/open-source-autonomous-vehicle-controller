@@ -304,7 +304,7 @@ if __name__ == '__main__':
                     print("vehi_pt_enu = {}".format(vehi_pt_en))
                     print("vehi_pt_enu = {}".format(wp_next_en))
                     print("norm = {}".format(
-                        np.linalg.norm(vehi_pt_lla - wp_next_en)))
+                        np.linalg.norm(vehi_pt_en - wp_next_en)))
 
                     if wpq.isNearNext(vehi_pt_en):
                         wp_next = wpq.getNext()

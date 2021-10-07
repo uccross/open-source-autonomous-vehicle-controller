@@ -142,6 +142,8 @@ if __name__ == '__main__':
     # t_sm = time.time()
     dt = 0.005  # seconds
 
+    heading_angle = 0.0
+
     # State Machine Transitions
     last_base_mode = -1
     state = 'IDLE'
@@ -268,9 +270,6 @@ if __name__ == '__main__':
 
                     heading_angle = nav_msg['yaw']
 
-                    print("    heading: {}, type: {}".format(heading_angle,
-                                                             type(heading_angle)))
-
                 if msg_type == 'GPS_RAW_INT':
 
                     nav_msg = msg.to_dict()
@@ -281,6 +280,9 @@ if __name__ == '__main__':
                     lon = float(lon) / 10000000.0
                     lat = float(lat) / 10000000.0
 
+                    print("    heading: {}, type: {}".format(
+                        heading_angle,
+                        type(heading_angle)))
                     print("    lat: {}, type: {}".format(lat, type(lat)))
                     print("    lon: {}, type: {}".format(lon, type(lon)))
 

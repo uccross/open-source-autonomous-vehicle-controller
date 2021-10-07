@@ -223,9 +223,6 @@ int main(void) {
                 break;
 
             case CHECKING_REF_WP:
-
-                LATCbits.LATC1 ^= 1; // Toggle LED 5
-
                 // State exit case
                 if ((lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) &&
                         ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
@@ -342,6 +339,9 @@ int main(void) {
                 break;
 
             case TRACKING_WP:
+
+                LATCbits.LATC1 ^= 1; // Toggle LED 5
+
                 /* Check for new next waypoint */
                 if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];

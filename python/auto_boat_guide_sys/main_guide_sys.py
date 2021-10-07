@@ -296,8 +296,8 @@ if __name__ == '__main__':
                     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
                     wp_next_ned = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
 
-                    vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
-                                            vehi_pt_ned[0, 0]]])
+                    vehi_pt_en = np.array([[vehi_pt_ned[0, 0],
+                                            vehi_pt_ned[0, 1]]])
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])
 

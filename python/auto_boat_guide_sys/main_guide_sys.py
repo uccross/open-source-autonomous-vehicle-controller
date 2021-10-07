@@ -289,6 +289,8 @@ if __name__ == '__main__':
                     current_position = np.array([[lat, lon]])
 
                     if wpq.isNearNext(current_position):
+                        print("norm = {}".format(
+                            np.linalg.norm(current_position - wp_next)))
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 

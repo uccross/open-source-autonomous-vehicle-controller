@@ -301,10 +301,12 @@ if __name__ == '__main__':
                     wp_next_en = np.array([[wp_next_enu[0, 0],
                                             wp_next_enu[0, 1]]])
 
+                    print("vehi_pt_enu = {}".format(vehi_pt_en))
+                    print("vehi_pt_enu = {}".format(wp_next_en))
+                    print("norm = {}".format(
+                        np.linalg.norm(vehi_pt_lla - wp_next_en)))
+
                     if wpq.isNearNext(vehi_pt_en):
-                        print("vehi_pt_enu = {}".format(vehi_pt_en))
-                        print("norm = {}".format(
-                            np.linalg.norm(vehi_pt_lla - wp_next_en)))
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 

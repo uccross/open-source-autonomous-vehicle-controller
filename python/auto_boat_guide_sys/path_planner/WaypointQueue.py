@@ -44,6 +44,8 @@ class WaypointQueue():
         if self.index+1 < self.waypoint_queue.shape[0]:
             self.index += 1
 
+        print("    self.waypoint_queue = {}".format(self.waypoint_queue))
+
         return self.next_waypoint
 
     def add(self, new_waypoint=np.zeros((1, 2))):

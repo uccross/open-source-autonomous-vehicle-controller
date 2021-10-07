@@ -285,12 +285,10 @@ if __name__ == '__main__':
                     lon = float(lon) / 10000000.0
                     lat = float(lat) / 10000000.0
 
-                    print("********************************")
+                    print("**************************************************")
                     print("    heading: {}, type: {}".format(
                         heading_angle,
                         type(heading_angle)))
-                    print("    lat: {}, type: {}".format(lat, type(lat)))
-                    print("    lon: {}, type: {}".format(lon, type(lon)))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
                     

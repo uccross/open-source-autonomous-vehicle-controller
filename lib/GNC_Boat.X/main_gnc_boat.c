@@ -212,6 +212,10 @@ int main(void) {
 
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
+        
+#ifdef AUTONOMOUS_MODE_TEST
+        current_mode = MAV_MODE_AUTO_ARMED;
+#endif
 
         if (current_mode != last_mode) {
             last_mode = current_mode;
@@ -237,7 +241,6 @@ int main(void) {
 
                     current_wp_state = CHECKING_REF_WP;
                 }
-
                 break;
 
             case CHECKING_REF_WP:

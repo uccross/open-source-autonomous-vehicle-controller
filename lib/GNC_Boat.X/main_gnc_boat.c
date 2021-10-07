@@ -19,6 +19,9 @@
 #include "RC_RX.h"
 #include "RC_servo.h"
 #include "Publisher.h"
+#include "cf_ahrs.h"
+#include "Lin_alg_float.h"
+
 
 /******************************************************************************
  * #DEFINES                                                                   *
@@ -35,7 +38,7 @@
 #define SERVO_PAD 30
 #define ACTUATOR_SATURATION (M_PI/20.0)/SAMPLE_TIME
 
-#define FINDING_REF_WP_PRD 1000 // Time to wait to check reference waypoint in milliseconds
+#define FINDING_REF_WP_PRD 2000 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.00001
 
@@ -112,11 +115,25 @@ int main(void) {
 
     float cross_track_error = 0.0;
     float path_angle = 0.0;
-    float heading = 0.0; /* Heading angle between North unit vector and heading
-                          * vector within the local tangent plane (LTP) */
+    float heading_angle = 0.0; /* Heading angle between North unit vector and 
+                                * heading vector within the local tangent plane
+                                * (LTP) */
     float heading_angle_diff = 0.0;
     float u = 0.0; // Resulting control effort
     uint16_t u_pulse = 0; // Pulse from converted control effort
+
+    // Attitude
+    struct IMU_output data;
+    float acc[MSZ] = {0.0};
+    float mag[MSZ] = {0.0};
+    float gyro_bias[MSZ] = {0.0};
+    float gyro[MSZ] = {0.0};
+    float roll = 0.0;
+    float pitch = 0.0;
+    float yaw = 0.0;
+    float roll_rate = 0.0;
+    float pitch_rate = 0.0;
+    float yaw_rate = 0.0;
 
     // Controller
     pid_controller_t trajectory_tracker;
@@ -173,7 +190,7 @@ int main(void) {
         /**********************************************************************
          * Check for all events                                               *
          *********************************************************************/
-        check_IMU_events(SCALED);
+        check_IMU_events(SCALED, &data);
         new_msg = check_mavlink_serial_events(wp_received_ll, &cmd);
         check_RC_events(); //check incoming RC commands
         new_gps = check_GPS_events(); //check and process incoming GPS messages
@@ -196,16 +213,17 @@ int main(void) {
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
 
-        //        if (current_mode != last_mode) {
-        //            last_mode = current_mode;
-        //            publisher_get_gps_rmc_position(point);
-        //            //            lin_tra_init(position,);
-        //        }
+        if (current_mode != last_mode) {
+            last_mode = current_mode;
+        }
 
         /**********************************************************************
          * Wayopint State Machine Logic                                       *
          *********************************************************************/
         switch (current_wp_state) {
+            case ERROR_WP:
+                break;
+
             case FINDING_REF_WP:
                 if (new_gps == TRUE) {
                     publisher_get_gps_rmc_position(wp_a_lat_lon);
@@ -236,6 +254,17 @@ int main(void) {
 
                     /* The ack result is the current state */
                     publish_ack(CHECKING_REF_WP);
+
+                    /* Complementary Filter Attitude and Heading Reference 
+                     * System (AHRS) Initialization. For now use the starting 
+                     * rates assuming the vehicle is stationary */
+                    lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z,
+                            gyro_bias);
+                    cf_ahrs_init(SAMPLE_TIME, gyro_bias);
+
+                    cf_ahrs_set_kp_acc(1.0);
+                    cf_ahrs_set_kp_mag(1.0);
+
 
                     current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
@@ -384,9 +413,19 @@ int main(void) {
             if ((current_mode == MAV_MODE_AUTO_ARMED) &&
                     (lin_tra_is_initialized() == TRUE)) {
 
+                /* Complementary filter attitude and heading reference system 
+                 * update */
+                lin_alg_set_v(data.acc.x, data.acc.y, data.acc.z, acc);
+                lin_alg_set_v(data.mag.x, data.mag.y, data.mag.z, mag);
+                lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro);
+
+                cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
+
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
                     path_angle = lin_tra_get_path_angle();
+                    heading_angle = yaw;
+                    heading_angle_diff = heading_angle - path_angle;
                 }
 
                 u = pid_controller_update(
@@ -413,7 +452,7 @@ int main(void) {
              *****************************************************************/
             publish_RC_signals_raw();
             publish_IMU_data(SCALED);
-            publish_attitude(0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+            publish_attitude(roll, pitch, yaw, 0.0, 0.0, 0.0); /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
 
             control_loop_count++;

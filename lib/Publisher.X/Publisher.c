@@ -108,7 +108,7 @@ void publisher_get_gps_rmc_position(float position[DIM]) {
     position[1] = rmc_position[1];
 }
 
-void check_IMU_events(uint8_t data_type) {
+void check_IMU_events(uint8_t data_type, struct IMU_output *data) {
     if (IMU_is_data_ready() == TRUE) {
         if (data_type == RAW) {
             IMU_get_raw_data(&IMU_raw);
@@ -116,6 +116,18 @@ void check_IMU_events(uint8_t data_type) {
         if (data_type == SCALED) {
             IMU_get_scaled_data(&IMU_scaled);
         }
+        
+        data->acc.x = IMU_scaled.acc.x;
+        data->acc.y = IMU_scaled.acc.y;
+        data->acc.z = IMU_scaled.acc.z;
+
+        data->mag.x = IMU_scaled.mag.x;
+        data->mag.y = IMU_scaled.mag.y;
+        data->mag.z = IMU_scaled.mag.z;
+
+        data->gyro.x = IMU_scaled.gyro.x;
+        data->gyro.y = IMU_scaled.gyro.y;
+        data->gyro.z = IMU_scaled.gyro.z;
     }
 }
 

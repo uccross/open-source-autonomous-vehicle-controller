@@ -89,12 +89,13 @@ void publisher_get_gps_rmc_position(float position[DIM]);
 
 /**
  * @function check_IMU_events(void)
- * @param data_type RAW or SCALED
  * @brief detects when IMU SPI transaction completes and then publishes data 
  * over Mavlink
+ * @param data_type RAW or SCALED
+ * @param data An IMU_output struct pointer
  * @author Aaron Hunter (modified by Pavlo Vlastos)
  */
-void check_IMU_events(uint8_t data_type);
+void check_IMU_events(uint8_t data_type, struct IMU_output *data);
 
 /**
  * @function RC_channels_init(void)

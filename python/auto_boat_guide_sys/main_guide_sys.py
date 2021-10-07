@@ -285,6 +285,7 @@ if __name__ == '__main__':
                     lon = float(lon) / 10000000.0
                     lat = float(lat) / 10000000.0
 
+                    print("********************************")
                     print("    heading: {}, type: {}".format(
                         heading_angle,
                         type(heading_angle)))
@@ -292,6 +293,9 @@ if __name__ == '__main__':
                     print("    lon: {}, type: {}".format(lon, type(lon)))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
+                    
+                    print("    vehi_pt_lla = {}".format(vehi_pt_lla))
+                    print("    wp_next_lla = {}".format(wp_next_lla))
 
                     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
                     wp_next_ned = LTP.lla2ned2(wp_next_lla, wp_ref_lla)
@@ -301,9 +305,9 @@ if __name__ == '__main__':
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])
 
-                    print("vehi_pt_en = {}".format(vehi_pt_en))
-                    print("wp_next_en = {}".format(wp_next_en))
-                    print("norm = {}".format(
+                    print("    vehi_pt_en = {}".format(vehi_pt_en))
+                    print("    wp_next_en = {}".format(wp_next_en))
+                    print("    norm = {}".format(
                         np.linalg.norm(vehi_pt_en - wp_next_en)))
 
                     if wpq.isNearNext(vehi_pt_en):

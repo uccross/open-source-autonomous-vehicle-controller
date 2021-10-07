@@ -298,8 +298,8 @@ if __name__ == '__main__':
 
                     vehi_pt_en = np.array([[vehi_pt_ned[0, 0],
                                             vehi_pt_ned[0, 1]]])
-                    wp_next_en = np.array([[wp_next_ned[0, 0],
-                                            wp_next_ned[0, 1]]])
+                    wp_next_en = np.array([[wp_next_ned[0, 1],
+                                            wp_next_ned[0, 0]]])
 
                     print("vehi_pt_en = {}".format(vehi_pt_en))
                     print("wp_next_en = {}".format(wp_next_en))

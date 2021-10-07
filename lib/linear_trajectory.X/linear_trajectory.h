@@ -47,6 +47,12 @@
 int lin_tra_init(float prev_wp[DIM], float next_wp[DIM], float vehi_pt[DIM]);
 
 /**
+ * @function lin_tra_is_initialized(void)
+ * @return TRUE or FALSE depending on if the module was initialized
+ */
+uint8_t lin_tra_is_initialized(void);
+
+/**
  * @function lin_tra_update(float new_position[DIM])
  * @brief update the linear trajectory, including closest point to the vector 
  * connecting the previous and next waypoints, as well as the cross-track error
@@ -65,7 +71,6 @@ int lin_tra_update(float new_position[DIM]);
  * @return SUCCESS or ERROR
  */
 float lin_tra_project(float point[DIM]);
-
 
 /**
  * @function lin_tra_calc_cte(void)

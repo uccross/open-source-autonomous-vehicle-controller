@@ -31,6 +31,7 @@ typedef struct trajectory {
     float clos_pt[DIM];
     float path_angle;
     float cte;
+    uint8_t is_initialized;
 } trajectory_t;
 
 /*******************************************************************************
@@ -50,8 +51,13 @@ int lin_tra_init(float prev_wp[DIM], float next_wp[DIM], float vehi_pt[DIM]) {
         lin_tra.vehi_pt[i] = vehi_pt[i];
         lin_tra.clos_pt[i] = 0.0;
     }
+    lin_tra.is_initialized = TRUE;
 
     return SUCCESS;
+}
+
+uint8_t lin_tra_is_initialized(void) {
+    return lin_tra.is_initialized;
 }
 
 int lin_tra_update(float new_position[DIM]) {
@@ -84,7 +90,7 @@ float lin_tra_project(float point[DIM]) {
 
     b_mag = lin_tra_calc_dist(lin_tra.next_wp, lin_tra.prev_wp);
 
-    if (b_mag == 0) {
+    if (b_mag == 0.0) {
         return ERROR;
     }
 

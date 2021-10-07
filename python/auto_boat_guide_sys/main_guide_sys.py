@@ -150,12 +150,13 @@ if __name__ == '__main__':
     state = 'IDLE'
     last_state = state
     ack_result = {'ERROR_WP': 0,
-                 'FINDING_REF_WP': 1,
-                 'CHECKING_REF_WP': 2,
-                 'WAITING_FOR_PREV_WP': 3,
-                 'CHECKING_PREV_WP': 4,
-                 'WAITING_FOR_NEXT_WP': 5,
-                 'CHECKING_NEXT_WP': 6}
+                  'FINDING_REF_WP': 1,
+                  'CHECKING_REF_WP': 2,
+                  'WAITING_FOR_PREV_WP': 3,
+                  'CHECKING_PREV_WP': 4,
+                  'WAITING_FOR_NEXT_WP': 5,
+                  'CHECKING_NEXT_WP': 6,
+                  'TRACKING_WP': 7}
 
     waypoints = np.array([[36.9557439, -122.0604691],
                           [36.9556638, -122.0606960],
@@ -202,9 +203,6 @@ if __name__ == '__main__':
                     lon = nav_msg['x']  # longitude
                     lat = nav_msg['y']  # latitude
 
-                    print("    lat: {}, type: {}".format(lat, type(lat)))
-                    print("    lon: {}, type: {}".format(lon, type(lon)))
-
                     wp_ref_lat_lon = np.array([[lat, lon]])
                     logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
@@ -215,14 +213,17 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
+                        print("    lat: {}, type: {}".format(lat,
+                                                             type(lat)))
+                        print("    lon: {}, type: {}".format(lon,
+                                                             type(lon)))
+
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 
             elif state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
-                print("    lat: {}, type: {}".format(wp_prev[0, 0], type(lat)))
-                print("    lon: {}, type: {}".format(wp_prev[0, 1], type(lon)))
 
                 logger.send_mav_cmd_nav_waypoint(wp_prev)
 
@@ -234,13 +235,16 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
-                        wp_next = wpq.getNext()
-                        state = 'SENDING_NEXT_ECHO'
+                        print("    lat: {}, type: {}".format(wp_prev[0, 0],
+                                                             type(lat)))
+                        print("    lon: {}, type: {}".format(wp_prev[0, 1],
+                                                             type(lon)))
 
-            elif state == 'SENDING_NEXT_ECHO':
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_WP'
+
+            elif state == 'SENDING_NEXT_WP':
                 # Send the next waypoint for the linear trajectory tracking
-                print("    lat: {}, type: {}".format(wp_next[0, 0], type(lat)))
-                print("    lon: {}, type: {}".format(wp_next[0, 1], type(lon)))
 
                 logger.send_mav_cmd_nav_waypoint(wp_next)
 
@@ -250,10 +254,17 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
-                        wp_next = wpq.getNext()
-                        state = 'READY_TO_TRACK'
+                        print("    lat: {}, type: {}".format(wp_next[0, 0],
+                                                             type(lat)))
+                        print("    lon: {}, type: {}".format(wp_next[0, 1],
+                                                             type(lon)))
 
-            elif state == 'READY_TO_TRACK':
+                        wp_next = wpq.getNext()
+                        state = 'WAITING_TO_UPDATE_WPS'
+
+            elif state == 'WAITING_TO_UPDATE_WPS':
+                if msg_type == 'ATTITUDE':
+
                 if msg_type == 'GPS_RAW_INT':
 
                     nav_msg = msg.to_dict()
@@ -269,10 +280,11 @@ if __name__ == '__main__':
 
                     current_position = np.array([[lat, lon]])
 
-                    # if wpq.isNearNext(current_position):
-                    #     wp_next = wpq.getNext()
-                    #     state = 'SENDING_NEXT_ECHO'
+                    if wpq.isNearNext(current_position):
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_WP'
 
+            # Print the state transition
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))
                 last_state = state

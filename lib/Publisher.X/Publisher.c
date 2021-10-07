@@ -231,6 +231,24 @@ void publish_IMU_data(uint8_t data_type) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
+void publish_attitude(float roll, float pitch, float yaw, float roll_rate,
+        float pitch_rate, float yaw_rate) {
+    mavlink_message_t msg_tx;
+
+    mavlink_msg_attitude_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_usec(),
+            roll,
+            pitch,
+            yaw,
+            roll_rate,
+            pitch_rate,
+            yaw_rate);
+
+    MavSerial_sendMavPacket(&msg_tx);
+}
+
 void publish_RC_signals(void) {
     mavlink_message_t msg_tx;
     uint16_t index = 0;

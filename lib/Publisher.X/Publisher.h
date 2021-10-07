@@ -131,6 +131,21 @@ char check_GPS_events(void);
 void publish_IMU_data(uint8_t data_type);
 
 /**
+ * @function publish_attitude(float roll, float pitch, float yaw, 
+ *      float roll_rate, float pitch_rate, float yaw_rate)
+ * @breif send an ATTITUDE MAVLink message to the companion computer
+ * @param roll Angle in radians
+ * @param pitch Angle in radians
+ * @param yaw Angle in radians
+ * @param roll_rate Angular velocity in radians per second
+ * @param pitch_rate Angular velocity in radians per second
+ * @param yaw_rate Angular velocity in radians per second
+ * @author Pavlo Vlastos
+ */
+void publish_attitude(float roll, float pitch, float yaw, float roll_rate,
+        float pitch_rate, float yaw_rate);
+
+/**
  * @function publish_RC_signals_raw(void)
  * @param none
  * @brief scales raw RC signals
@@ -147,7 +162,7 @@ void publish_RC_signals_raw(void);
  * @return TRUE or FALSE if an message was received
  * @author Pavlo Vlastos
  */
-char check_mavlink_serial_events(float wp[DIM], uint16_t *command) ;
+char check_mavlink_serial_events(float wp[DIM], uint16_t *command);
 
 /**
  * @function publish_GPS(void)

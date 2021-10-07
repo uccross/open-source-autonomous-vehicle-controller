@@ -28,9 +28,9 @@ def lla2ned2(lla, ref):
     lla[:, [1]] = lla[:, [1]]*d2r     # convert to radians
     lla[:, [2]] = lla[:, [2]]         # convert to meters
 
-    lat = d2r*ref[0]
-    lon = d2r*ref[1]
-    alt = ref[2]
+    lat = d2r*ref[0, 0]
+    lon = d2r*ref[0, 1]
+    alt = ref[0, 2]
 
     # Form rotation matrix
 

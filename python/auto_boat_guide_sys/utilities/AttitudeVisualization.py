@@ -262,9 +262,10 @@ class AttitudeVizualizer():
                 self.gyro_z = nav_msg['zgyro']
 
             if msg.get_type() == 'ATTITUDE':
-                self.yaw = msg['yaw']
-                self.pitch = msg['pitch']
-                self.roll = msg['roll']
+                nav_msg = msg.to_dict()
+                self.yaw = nav_msg['yaw']
+                self.pitch = nav_msg['pitch']
+                self.roll = nav_msg['roll']
 
             # For a horizontally moving graph without expensive appending
             wi = np.mod(self.i, self.wn)

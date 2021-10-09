@@ -87,7 +87,7 @@ class AttitudeVizualizer():
 
         #######################################################################
         # Setup Dynamic Graphing
-        self.fig = plt.figure(figsize=(18, 8))
+        self.fig = plt.figure(figsize=(16, 8))
 
         gs = gridspec.GridSpec(nrows=4, ncols=6)
 

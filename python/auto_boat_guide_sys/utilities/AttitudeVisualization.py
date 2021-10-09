@@ -9,6 +9,7 @@ import pymavlink
 from pymavlink import mavutil
 import numpy as np
 from utilities import Quaternions as Qu
+import matplotlib.pyplot as plt
 
 
 class AttitudeVizualizer():

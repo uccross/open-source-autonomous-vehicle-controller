@@ -66,6 +66,25 @@ vizualize_attitude_flag = arguments.vizualize_attitude_flag
 
 ###############################################################################
 if __name__ == '__main__':
+    ###########################################################################
+    # Helper method, based on
+    # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
+    def handler(signal_received, frame):  # *args
+        """
+        Use the MAVCSVLogger object to close the csv file upon ctrl-c program
+        exit. The MAVCSVLogger object is in the scope of this main
+        :param signal_recieved:
+        :param frame:
+        """
+        # Handle any cleanup here
+
+        logger.close_log()  # Close the csv file and mavlink connection
+
+        print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
+        print('csv file closed')
+        print('mavlink connection closed')
+        exit(0)
+
     # Ping Echo Sounder for depth measurements in water
     if echo_sensor:
         print("Using echo distance sensor")
@@ -118,27 +137,9 @@ if __name__ == '__main__':
 
     # Attitude Vizualizor
     if vizualize_attitude_flag:
-        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=500)
+        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=50)
 
-    ###########################################################################
-    # Helper method, based on
-    # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
-    def handler(signal_received, frame):  # *args
-        """
-        Use the MAVCSVLogger object to close the csv file upon ctrl-c program
-        exit. The MAVCSVLogger object is in the scope of this main
-        :param signal_recieved:
-        :param frame:
-        """
-        # Handle any cleanup here
-
-        logger.close_log()  # Close the csv file and mavlink connection
-
-        print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
-        print('csv file closed')
-        print('mavlink connection closed')
-        exit(0)
-
+    
     # Tell Python to run the handler() function when SIGINT is recieved
     signal(SIGINT, handler)
 

@@ -271,7 +271,9 @@ if __name__ == '__main__':
                 if msg_type == 'ATTITUDE':
                     nav_msg = msg.to_dict()
 
-                    heading_angle = nav_msg['yaw']
+                    yaw = nav_msg['yaw']
+                    pitch = nav_msg['pitch']
+                    roll = nav_msg['roll']
 
                 if msg_type == 'GPS_RAW_INT':
 
@@ -284,9 +286,10 @@ if __name__ == '__main__':
                     lat = float(lat) / 10000000.0
 
                     print("**************************************************")
-                    print("    heading: {}, type: {}".format(
-                        heading_angle,
-                        type(heading_angle)))
+                    print("    yaw (heading): {}, type: {}".format(yaw,
+                                                                   type(yaw)))
+                    print("    pitch: {}, type: {}".format(pitch, type(pitch)))
+                    print("    roll: {}, type: {}".format(roll, type(roll)))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 

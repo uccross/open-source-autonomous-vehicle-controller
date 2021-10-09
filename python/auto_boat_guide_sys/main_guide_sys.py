@@ -285,7 +285,10 @@ if __name__ == '__main__':
                     lon = float(lon) / 10000000.0
                     lat = float(lat) / 10000000.0
 
+                    cog = nav_msg['cog']
+
                     print("**************************************************")
+                    print("    cog: {}".format(cog))
                     print("    yaw (heading): {}, type: {}".format(yaw,
                                                                    type(yaw)))
                     print("    pitch: {}, type: {}".format(pitch, type(pitch)))

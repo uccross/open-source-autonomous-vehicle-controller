@@ -9,6 +9,7 @@ import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
 from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
+from utilities import AttitudeVisualization as AV
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
@@ -47,6 +48,8 @@ parser.add_argument('--log_file', type=str, dest='log_file',
                     help='log file path')
 parser.add_argument('-m', '--mode', dest='mode_print_flag',
                     action='store_true', help='Flag to print mode changes')
+parser.add_argument('-v', '--vizualize', dest='vizualize_attitude_flag',
+                    action='store_true', help='Flag to print mode changes')
 
 arguments = parser.parse_args()
 
@@ -59,7 +62,7 @@ sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
-
+vizualize_attitude_flag = arguments.vizualize_attitude_flag
 
 ###############################################################################
 if __name__ == '__main__':
@@ -112,6 +115,10 @@ if __name__ == '__main__':
     logger = MCL.MAVCSVLogger(
         com, baudrate, log_file, csv_file, msg_list=msg_list,
         extra_headers=extra_headers, debug_flag=False)
+
+    # Attitude Vizualizor
+    if vizualize_attitude_flag:
+        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=100)
 
     ###########################################################################
     # Helper method, based on
@@ -179,6 +186,7 @@ if __name__ == '__main__':
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
+        # Check messages to update the state machine
         if msg:
             msg_type = msg.get_type()
 
@@ -344,6 +352,11 @@ if __name__ == '__main__':
                 print(msg)
 
                 print("Time: {}".format(t_new))
+
+            # Graphing
+            if vizualize_attitude_flag:
+                if msg_type == 'ATTITUDE':
+                    av.update(msg)
 
         # DO NOT log every message, because tht will quikcly slow down
         # everything

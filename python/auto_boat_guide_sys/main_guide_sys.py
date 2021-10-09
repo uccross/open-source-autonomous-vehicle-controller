@@ -288,6 +288,12 @@ if __name__ == '__main__':
                     xacc = nav_msg['xacc']
                     yacc = nav_msg['yacc']
                     zacc = nav_msg['zacc']
+                    xmag = nav_msg['xmag']
+                    ymag = nav_msg['ymag']
+                    zmag = nav_msg['zmag']
+                    xgyro = nav_msg['xgyro']
+                    ygyro = nav_msg['ygyro']
+                    zgyro = nav_msg['zgyro']
 
                 if msg_type == 'ATTITUDE':
                     nav_msg = msg.to_dict()
@@ -317,6 +323,12 @@ if __name__ == '__main__':
                     print("    xacc: {}".format(xacc))
                     print("    yacc: {}".format(yacc))
                     print("    zacc: {}".format(zacc))
+                    print("    xmag: {}".format(xmag))
+                    print("    ymag: {}".format(ymag))
+                    print("    zmag: {}".format(zmag))
+                    print("    xgyro: {}".format(xgyro))
+                    print("    ygyro: {}".format(ygyro))
+                    print("    zgyro: {}".format(zgyro))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 

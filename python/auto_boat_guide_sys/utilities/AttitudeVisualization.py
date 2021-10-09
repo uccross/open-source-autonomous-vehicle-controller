@@ -161,7 +161,7 @@ class AttitudeVizualizer():
         # Accelerometers Raw
         self.ax1.set_title('Accelerometers')
         self.ax1.set_xlim(self.wt0, self.wtf)
-        self.ax1.set_ylim(-100, 100)
+        self.ax1.set_ylim(-10, 10)
         self.ax1.set_xlabel("Time (seconds)")
         self.ax1.set_ylabel("Acceleration (m/s^2)")
         self.ax1.grid()
@@ -181,7 +181,7 @@ class AttitudeVizualizer():
         # Magnetometers
         self.ax2.set_title('Magnetometers')
         self.ax2.set_xlim(self.wt0, self.wtf)
-        self.ax2.set_ylim(-100, 100)
+        self.ax2.set_ylim(-10, 10)
         self.ax2.set_xlabel("Time (seconds)")
         self.ax2.set_ylabel("Magnetic Field (uT)")
         self.ax2.grid()
@@ -201,7 +201,7 @@ class AttitudeVizualizer():
         # Gyroscopes
         self.ax3.set_title('Gyroscopes')
         self.ax3.set_xlim(self.wt0, self.wtf)
-        self.ax3.set_ylim(-100, 100)
+        self.ax3.set_ylim(-10, 10)
         self.ax3.set_xlabel("Time (seconds)")
         self.ax3.set_ylabel("Degrees/second")
         self.ax3.grid()

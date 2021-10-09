@@ -12,8 +12,8 @@ from utilities import Quaternions as Qu
 
 
 class AttitudeVizualizer():
-    def __init__(self, debugFlag=False, graphInterval=100, wt0=0.0, wtf=200.0, 
-    wdt=0.1):
+    def __init__(self, debugFlag=False, graphInterval=100, wt0=0.0, wtf=200.0,
+                 wdt=0.1):
         """
         :param debugFlag: Activates a majority of the print statements
         diagnostics mode, Hardware-in-the-loop (HIL) mode, or experimental mode,
@@ -35,9 +35,21 @@ class AttitudeVizualizer():
         self.wt = np.arange(wt0, wtf, wdt)
         self.wn = len(self.wt)
 
-        self.sensor = Sensors.ASVSensors()
+        self.accel_x= 0.0
+        self.accel_y = 0.0
+        self.accel_z = 0.0
 
-        self.accState = States.ASVstate()
+        self.mag_x = 0.0
+        self.mag_y = 0.0
+        self.mag_z = 0.0
+
+        self.gyro_x = 0.0
+        self.gyro_y = 0.0
+        self.gyro_z = 0.0
+
+        self.yaw = 0.0
+        self.pitch = 0.0
+        self.roll = 0.0
 
         self.accelX = np.zeros((self.wn))
         self.accelY = np.zeros((self.wn))
@@ -228,49 +240,49 @@ class AttitudeVizualizer():
                 msg))
             return
 
-        # Update graphs only at specified intervals to help with speed of 
+        # Update graphs only at specified intervals to help with speed of
         # graphing
         if np.mod(self.i, self.graphInterval) != 0:
-            return 
+            return
 
-        self.accState.yaw = msg.yaw
-        self.accState.pitch = msg.pitch
-        self.accState.roll = msg.roll
+        self.yaw = msg.yaw
+        self.pitch = msg.pitch
+        self.roll = msg.roll
 
         # For a horizontally moving graph without expensive appending
         wi = np.mod(self.i, self.wn)
 
-        self.accelX[wi] = self.sensor.accel_x
-        self.accelY[wi] = self.sensor.accel_y
-        self.accelZ[wi] = self.sensor.accel_z
+        self.accelX[wi] = self.accel_x
+        self.accelY[wi] = self.accel_y
+        self.accelZ[wi] = self.accel_z
 
-        self.magX[wi] = self.sensor.mag_x
-        self.magY[wi] = self.sensor.mag_y
-        self.magZ[wi] = self.sensor.mag_z
+        self.magX[wi] = self.mag_x
+        self.magY[wi] = self.mag_y
+        self.magZ[wi] = self.mag_z
 
-        self.gyroX[wi] = self.sensor.gyro_x
-        self.gyroY[wi] = self.sensor.gyro_y
-        self.gyroZ[wi] = self.sensor.gyro_z
+        self.gyroX[wi] = self.gyro_x
+        self.gyroY[wi] = self.gyro_y
+        self.gyroZ[wi] = self.gyro_z
 
         #######################################################################
         # Accelerometers 3D Axes
         attQuatX = Qu.rotateVectorWithQuaternion(
             self.attVecX,
-            self.accState.yaw,
-            self.accState.pitch,
-            self.accState.roll)
+            self.yaw,
+            self.pitch,
+            self.roll)
 
         attQuatY = Qu.rotateVectorWithQuaternion(
             self.attVecY,
-            self.accState.yaw,
-            self.accState.pitch,
-            self.accState.roll)
+            self.yaw,
+            self.pitch,
+            self.roll)
 
         attQuatZ = Qu.rotateVectorWithQuaternion(
             self.attVecZ,
-            self.accState.yaw,
-            self.accState.pitch,
-            self.accState.roll)
+            self.yaw,
+            self.pitch,
+            self.roll)
 
         # Projecting the x-vector onto the three different planes
         self.projxz.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),

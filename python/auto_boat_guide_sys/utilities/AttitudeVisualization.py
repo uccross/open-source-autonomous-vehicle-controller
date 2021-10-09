@@ -228,7 +228,8 @@ class AttitudeVizualizer():
         self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
         self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
 
-        self.i = 0  # Index for graphing
+        self.i = 0  # Index for graphing udpate
+        self.j = 0  # Index for graphing
 
         return
 
@@ -268,7 +269,7 @@ class AttitudeVizualizer():
                 self.roll = nav_msg['roll']
 
             # For a horizontally moving graph without expensive appending
-            wi = np.mod(self.i, self.wn)
+            wi = np.mod(self.j, self.wn)
 
             self.accelX[wi] = self.accel_x
             self.accelY[wi] = self.accel_y
@@ -448,6 +449,8 @@ class AttitudeVizualizer():
             # plt.pause(0.01)
 
             self.fig.canvas.flush_events()
+
+            self.j += 1
 
         self.i += 1
 

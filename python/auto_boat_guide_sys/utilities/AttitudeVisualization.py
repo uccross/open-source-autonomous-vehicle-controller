@@ -37,7 +37,7 @@ class AttitudeVizualizer():
         self.wt = np.arange(wt0, wtf, wdt)
         self.wn = len(self.wt)
 
-        self.accel_x= 0.0
+        self.accel_x = 0.0
         self.accel_y = 0.0
         self.accel_z = 0.0
 
@@ -237,7 +237,8 @@ class AttitudeVizualizer():
         :param msg: A MAVLink 'ATTITUDE' message
         :return: None
         """
-        if msg.get_type() != 'ATTITUDE':
+        if ((msg.get_type() != 'ATTITUDE') and
+                (msg.get_type() != 'HIGHRES_IMU')):
             print("ERROR: Attitude visualization: Wrong message: {}".format(
                 msg))
             return
@@ -247,9 +248,23 @@ class AttitudeVizualizer():
         if np.mod(self.i, self.graphInterval) != 0:
             return
 
-        self.yaw = msg.yaw
-        self.pitch = msg.pitch
-        self.roll = msg.roll
+        if msg.get_type() == 'HIGHRES_IMU':
+            self.accel_x = msg.xacc
+            self.accel_y = msg.yacc
+            self.accel_z = msg.zacc
+
+            self.mag_x = msg.xmag
+            self.mag_y = msg.ymag
+            self.mag_z = msg.zmag
+
+            self.gyro_x = msg.xgyro
+            self.gyro_y = msg.ygyro
+            self.gyro_z = msg.zgyro
+
+        if msg.get_type() == 'ATTITUDE':
+            self.yaw = msg.yaw
+            self.pitch = msg.pitch
+            self.roll = msg.roll
 
         # For a horizontally moving graph without expensive appending
         wi = np.mod(self.i, self.wn)

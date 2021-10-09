@@ -355,8 +355,9 @@ if __name__ == '__main__':
 
             # Graphing
             if vizualize_attitude_flag:
-                if msg_type == 'ATTITUDE':
+                if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     av.update(msg)
+                
 
         # DO NOT log every message, because tht will quikcly slow down
         # everything

@@ -149,6 +149,13 @@ if __name__ == '__main__':
     t_old = time.time()
     # t_sm = time.time()
     dt = 0.005  # seconds
+    xacc = 0.0
+    yacc = 0.0
+    zacc = 0.0
+
+    yaw = 0.0
+    pitch = 0.0
+    roll = 0.0
 
     heading_angle = 0.0
 
@@ -276,6 +283,12 @@ if __name__ == '__main__':
                         state = 'WAITING_TO_UPDATE_WPS'
 
             elif state == 'WAITING_TO_UPDATE_WPS':
+                if msg_type == 'HIGHRES_IMU':
+                    nav_msg = msg.to_dict()
+                    xacc = nav_msg['xacc']
+                    yacc = nav_msg['yacc']
+                    zacc = nav_msg['zacc']
+
                 if msg_type == 'ATTITUDE':
                     nav_msg = msg.to_dict()
 
@@ -301,6 +314,9 @@ if __name__ == '__main__':
                                                                    type(yaw)))
                     print("    pitch: {}, type: {}".format(pitch, type(pitch)))
                     print("    roll: {}, type: {}".format(roll, type(roll)))
+                    print("    xacc: {}".format(xacc))
+                    print("    yacc: {}".format(yacc))
+                    print("    zacc: {}".format(zacc))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
@@ -357,7 +373,7 @@ if __name__ == '__main__':
             if vizualize_attitude_flag:
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     av.update(msg)
-                
+
         ##################################################################
         # Log messages (at intervals)
         if (t_new - t_old) >= dt:

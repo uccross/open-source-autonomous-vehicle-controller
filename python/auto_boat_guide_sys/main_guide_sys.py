@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     # Attitude Vizualizor
     if vizualize_attitude_flag:
-        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=1)
+        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=100)
 
     ###########################################################################
     # Helper method, based on

@@ -87,7 +87,7 @@ class AttitudeVizualizer():
 
         #######################################################################
         # Setup Dynamic Graphing
-        self.fig = plt.figure(figsize=(14, 8))
+        self.fig = plt.figure(figsize=(16, 8))
 
         gs = gridspec.GridSpec(nrows=4, ncols=6)
 
@@ -248,22 +248,23 @@ class AttitudeVizualizer():
         if np.mod(self.i, self.graphInterval) == 0:
 
             if msg.get_type() == 'HIGHRES_IMU':
-                self.accel_x = msg.xacc
-                self.accel_y = msg.yacc
-                self.accel_z = msg.zacc
+                nav_msg = msg.to_dict()
+                self.accel_x = nav_msg['xacc']
+                self.accel_y = nav_msg['yacc']
+                self.accel_z = nav_msg['zacc']
 
-                self.mag_x = msg.xmag
-                self.mag_y = msg.ymag
-                self.mag_z = msg.zmag
+                self.mag_x = nav_msg['xmag']
+                self.mag_y = nav_msg['ymag']
+                self.mag_z = nav_msg['zmag']
 
-                self.gyro_x = msg.xgyro
-                self.gyro_y = msg.ygyro
-                self.gyro_z = msg.zgyro
+                self.gyro_x = nav_msg['xgyro']
+                self.gyro_y = nav_msg['ygyro']
+                self.gyro_z = nav_msg['zgyro']
 
             if msg.get_type() == 'ATTITUDE':
-                self.yaw = msg.yaw
-                self.pitch = msg.pitch
-                self.roll = msg.roll
+                self.yaw = msg['yaw']
+                self.pitch = msg['pitch']
+                self.roll = msg['roll']
 
             # For a horizontally moving graph without expensive appending
             wi = np.mod(self.i, self.wn)

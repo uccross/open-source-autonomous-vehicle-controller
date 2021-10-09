@@ -358,9 +358,8 @@ if __name__ == '__main__':
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     av.update(msg)
                 
-
-        # DO NOT log every message, because tht will quikcly slow down
-        # everything
+        ##################################################################
+        # Log messages (at intervals)
         if (t_new - t_old) >= dt:
             t_old = t_new
             status = logger.log(msg)

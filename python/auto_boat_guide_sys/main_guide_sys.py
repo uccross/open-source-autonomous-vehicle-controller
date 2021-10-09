@@ -148,7 +148,7 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     # t_sm = time.time()
-    dt = 0.005  # seconds
+    dt = 0.0025  # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0

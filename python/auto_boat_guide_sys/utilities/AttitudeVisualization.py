@@ -237,7 +237,7 @@ class AttitudeVizualizer():
         :param msg: A MAVLink 'ATTITUDE' message
         :return: None
         """
-        if msg.get_type() == 'ATTITUDE':
+        if msg.get_type() != 'ATTITUDE':
             print("ERROR: Attitude visualization: Wrong message: {}".format(
                 msg))
             return

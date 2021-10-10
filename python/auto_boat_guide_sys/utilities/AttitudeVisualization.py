@@ -113,7 +113,7 @@ class AttitudeVizualizer():
         self.ax0.set_xlim(-1.0, 1.0)
         self.ax0.set_ylim(-1.0, 1.0)
         self.ax0.set_zlim(-1.0, 1.0)
-        self.ax0.view_init(180, 30)
+        self.ax0.view_init(210, 30)
         self.ax0.set_xlabel("X")
         self.ax0.set_ylabel("Y")
         self.ax0.set_zlabel("Z")

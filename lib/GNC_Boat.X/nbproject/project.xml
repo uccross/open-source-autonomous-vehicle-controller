@@ -23,10 +23,16 @@
                 <sourceRootElem>../linear_trajectory.X</sourceRootElem>
                 <sourceRootElem>../pid_controller.X</sourceRootElem>
                 <sourceRootElem>../Publisher.X</sourceRootElem>
+                <sourceRootElem>../Lin_alg.X</sourceRootElem>
+                <sourceRootElem>../cf_ahrs.X</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>
                     <name>default</name>
+                    <type>2</type>
+                </confElem>
+                <confElem>
+                    <name>AUTONOMOUS_MODE_TEST</name>
                     <type>2</type>
                 </confElem>
             </confList>

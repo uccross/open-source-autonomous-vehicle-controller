@@ -93,9 +93,10 @@ void publisher_get_gps_rmc_position(float position[DIM]);
  * over Mavlink
  * @param data_type RAW or SCALED
  * @param data An IMU_output struct pointer
+ * @return TRUE or FALSE if a new IMU event was detected
  * @author Aaron Hunter (modified by Pavlo Vlastos)
  */
-void check_IMU_events(uint8_t data_type, struct IMU_output *data);
+char check_IMU_events(uint8_t data_type, struct IMU_output *data);
 
 /**
  * @function RC_channels_init(void)

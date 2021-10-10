@@ -592,7 +592,7 @@ void lin_alg_set_q(float psi, float theta, float phi, float q_out[QSZ]) {
  * @param q_in A quaternion
  * @param q_out The complex conjugate, or inverse of q_in
  */
-void lin_alg_q_inv(float q_in[QSZ], float q_out[QSZ]) {
+void lin_alg_q_inv(const float q_in[QSZ], float q_out[QSZ]) {
     q_out[0] = q_in[0];
     q_out[1] = -q_in[1];
     q_out[2] = -q_in[2];
@@ -628,7 +628,7 @@ float lin_alg_q_norm(float q[QSZ]) {
  * @param q A quaternion
  * @param r The resulting quaternion
  */
-void lin_alg_q_mult(float q[QSZ], float p[QSZ], float r[QSZ]) {
+void lin_alg_q_mult(float p[QSZ], float q[QSZ], float r[QSZ]) {
     r[0] = p[0] * q[0] - p[1] * q[1] - p[2] * q[2] - p[3] * q[3];
     r[1] = p[1] * q[0] + p[0] * q[1] + p[3] * q[2] - p[2] * q[3];
     r[2] = p[2] * q[0] - p[3] * q[1] + p[0] * q[2] + p[1] * q[3];
@@ -701,7 +701,7 @@ void lin_alg_q2euler_abs(float q[QSZ], float *psi, float *theta, float *phi) {
  * @param phi
  * @param v_new
  */
-void lin_alg_rot_v_q(float v[MSZ], float psi, float theta, float phi,
+void lin_alg_rot_v_q(const float v[MSZ], float psi, float theta, float phi,
         float v_new[MSZ]) {
     float v_pure[QSZ];
     float v_temp[MSZ];

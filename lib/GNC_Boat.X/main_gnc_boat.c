@@ -42,7 +42,9 @@
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.00001
 
-#define GYRO_SCALE (M_PI / 180.0) * SAMPLE_TIME
+#define GYRO_SCALE ((M_PI / 180.0) / 2.0) /* Found partially experimentally */
+#define GYRO_BUF_LEN 1000
+#define GYRO_N ((float) GYRO_BUF_LEN)
 
 /******************************************************************************
  * MAIN                                                                       *
@@ -59,6 +61,12 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+    
+    uint32_t i = 0;
+    uint32_t i_gyro = 0;
+    uint32_t j = 0;
+    
+    
 
     /**************************************************************************
      * Initialization routines                                                *
@@ -142,6 +150,9 @@ int main(void) {
     float mag[MSZ] = {0.0};
     float gyro_bias[MSZ] = {0.0};
     float gyro[MSZ] = {0.0};
+    float gyro_x_buf[GYRO_BUF_LEN] = {0.0};
+    float gyro_y_buf[GYRO_BUF_LEN] = {0.0};
+    float gyro_z_buf[GYRO_BUF_LEN] = {0.0};
     float roll = 0.0;
     float pitch = 0.0;
     float yaw = 0.0;
@@ -185,6 +196,7 @@ int main(void) {
     typedef enum waypoints_state waypoints_state_t;
 
     waypoints_state_t current_wp_state = FINDING_REF_WP;
+    char new_imu = FALSE;
     char new_msg = FALSE;
     char new_gps = FALSE;
     char found_ref_point = FALSE;
@@ -204,11 +216,20 @@ int main(void) {
         /**********************************************************************
          * Check for all events                                               *
          *********************************************************************/
-        check_IMU_events(SCALED, &data);
+        new_imu = check_IMU_events(SCALED, &data);
         new_msg = check_mavlink_serial_events(wp_received_ll, &cmd);
         check_RC_events(); //check incoming RC commands
         new_gps = check_GPS_events(); //check and process incoming GPS messages
 
+        /* Update aiding vectors and gyro angular rates */
+        if (new_imu == TRUE) {
+            lin_alg_set_v(data.acc.x, data.acc.y, data.acc.z, acc);
+            lin_alg_set_v(data.mag.x, data.mag.y, data.mag.z, mag);
+            lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro);
+//            lin_alg_v_scale(GYRO_SCALE, gyro);
+            lin_alg_v_scale(0.0, gyro);
+        }
+        
         /* Convert the gps position to the Local Tangent Plane (LTP) if a 
          * reference point has been established*/
         if ((new_gps == TRUE) && (found_ref_point == TRUE)) {
@@ -283,11 +304,10 @@ int main(void) {
                     /* Complementary Filter Attitude and Heading Reference 
                      * System (AHRS) Initialization. For now use the starting 
                      * rates assuming the vehicle is stationary */
-                    lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro_bias);
-                    lin_alg_v_scale(GYRO_SCALE, gyro_bias);
+                    lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias);
 
-                    cf_ahrs_set_kp_acc(1.5);
-                    cf_ahrs_set_kp_mag(0.5);
+                    cf_ahrs_set_kp_acc(5.0);
+                    cf_ahrs_set_kp_mag(1.0);
 
                     cf_ahrs_init(SAMPLE_TIME, gyro_bias);
 
@@ -430,6 +450,30 @@ int main(void) {
 
                 }
             }
+            /******************************************************************
+             * Estimate the gyro drift with a moving average                  *
+             *****************************************************************/
+            gyro_x_buf[i_gyro] = gyro[0];
+            gyro_y_buf[i_gyro] = gyro[1];
+            gyro_z_buf[i_gyro] = gyro[2];
+
+            i_gyro = i % GYRO_BUF_LEN;
+            
+            /* Update the average gyro bias */
+            if (i_gyro == 0) {
+                for (j = 0; j < GYRO_BUF_LEN; j++) {
+                    gyro_bias[0] += gyro_x_buf[j];
+                    gyro_bias[1] += gyro_y_buf[j];
+                    gyro_bias[2] += gyro_z_buf[j];
+                }
+                gyro_bias[0] /= GYRO_N;
+                gyro_bias[1] /= GYRO_N;
+                gyro_bias[2] /= GYRO_N;
+                
+                cf_ahrs_set_gyro_biases(gyro_bias);
+            }
+            
+            i++;
 
             /******************************************************************
              * Control                                                        *
@@ -439,11 +483,6 @@ int main(void) {
 
                 /* Complementary filter attitude and heading reference system 
                  * update */
-                lin_alg_set_v(data.acc.x, data.acc.y, data.acc.z, acc);
-                lin_alg_set_v(data.mag.x, data.mag.y, data.mag.z, mag);
-                lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro);
-                lin_alg_v_scale(GYRO_SCALE, gyro);
-
                 cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
@@ -453,11 +492,11 @@ int main(void) {
                     heading_angle_diff = heading_angle - path_angle;
                 }
 
-                u = pid_controller_update(
-                        &trajectory_tracker,
-                        0.0, // Commanded reference
-                        cross_track_error,
-                        heading_angle_diff); // Change in heading angle over time
+                //                u = pid_controller_update(
+                //                        &trajectory_tracker,
+                //                        0.0, // Commanded reference
+                //                        cross_track_error,
+                //                        heading_angle_diff); // Change in heading angle over time
                 //
                 //            // Scale resulting control input
                 //            u_pulse = (float) (RC_RX_MID_COUNTS);

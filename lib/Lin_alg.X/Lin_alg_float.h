@@ -322,7 +322,7 @@ void lin_alg_set_q(float psi, float theta, float phi, float q_out[QSZ]);
  * @param q_in A quaternion
  * @param q_out The complex conjugate, or inverse of q_in
  */
-void lin_alg_q_inv(float q_in[QSZ], float q_out[QSZ]);
+void lin_alg_q_inv(const float q_in[QSZ], float q_out[QSZ]);
 
 /**
  * @function lin_alg_scale_q()
@@ -377,6 +377,18 @@ void lin_alg_q2euler(float q[QSZ], float *psi, float *theta, float *phi);
  * @param q A quaternion
  */
 void lin_alg_q2euler_abs(float q[QSZ], float *psi, float *theta, float *phi);
+
+/**
+ * @function lin_alg_rot_v_q()
+ * Rotate a vector with quaternions
+ * @param v
+ * @param psi
+ * @param theta
+ * @param phi
+ * @param v_new
+ */
+void lin_alg_rot_v_q(const float v[MSZ], float psi, float theta, float phi,
+        float v_new[MSZ]);
 
 /**
  * @function lin_alg_m_print()

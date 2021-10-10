@@ -51,9 +51,18 @@ float r_hat_t[MSZ][MSZ];
 float vi_hat[MSZ] = {0.0};
 float dt = 0.01;
 
+/* Euler Angles */
+float cf_yaw = 0.0;
+float cf_pitch = 0.0;
+float cf_roll = 0.0;
+float cf_yaw_conj = 0.0;
+float cf_pitch_conj = 0.0;
+float cf_roll_conj = 0.0;
+
 /* Quaternion variables */
 float q_gyro[QSZ] = {0.0};
 float q_est[QSZ] = {0.0};
+float q_est_conj[QSZ] = {0.0};
 float q_est_dot[QSZ] = {0.0};
 float q_magnitude = 0.0;
 float q_norm = 1.0;
@@ -69,33 +78,46 @@ void cf_ahrs_init(float desired_dt, const float exp_gyro_bias[MSZ]) {
     cf_ahrs_set_gyro_biases(exp_gyro_bias);
 
     /* Set all inertial-frame aiding vectors */
-    lin_alg_set_v(0.0, 0.0, -1.0, g_vi);
-    lin_alg_set_v(0.0, -1.0, 0.0, mag_vi);
-    
+    lin_alg_set_v(0.0, 0.0, 1.0, g_vi);
+
+    /* See https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm 
+     * for values (changes by 0.08 degrees each year) 
+     *              East,   North,    Down            */
+    lin_alg_set_v(5249.8, 22722.9, 41327.4, mag_vi);
+    float mag_vi_norm = lin_alg_v_norm(mag_vi);
+
+    /* Kept here more to highlight the fact that it is important to check if 
+     * the norm of a vector is zero for other use cases. Not really practical 
+     * here, since we know the magnetic field should be non-zero in magnitude 
+     */
+    if (mag_vi_norm != 0.0) {
+        lin_alg_v_scale((1.0 / mag_vi_norm), mag_vi);
+    }
+
     /* Set quaternions */
     lin_alg_set_q(0.0, 0.0, 0.0, q_est);
     lin_alg_set_q(0.0, 0.0, 0.0, q_est_dot);
-    
-    
+
+
     /* Explicitly set all matrices to avoid nans */
     lin_alg_set_m(
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
             r_acc);
-    
+
     lin_alg_set_m(
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
             r_mag);
-    
+
     lin_alg_set_m(
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0,
             r_hat);
-    
+
     lin_alg_set_m(
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
@@ -131,10 +153,10 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
     if (acc_magnitude != 0.0) {
         lin_alg_v_scale(1.0 / acc_magnitude, acc_vb);
     }
-    axis_angle = lin_alg_angle_from_2vecs(acc_vb, g_vi);
-
-    lin_alg_cross(acc_vb, g_vi, axis_v);
-    lin_alg_gen_dcm(axis_angle, axis_v, r_acc);
+    //    axis_angle = lin_alg_angle_from_2vecs(acc_vb, g_vi);
+    //
+    //    lin_alg_cross(acc_vb, g_vi, axis_v);
+    //    lin_alg_gen_dcm(axis_angle, axis_v, r_acc);
 
     /*************************************************************************/
     /* Magnetometers */
@@ -144,10 +166,10 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
     if (mag_magnitude != 0.0) {
         lin_alg_v_scale(1.0 / mag_magnitude, mag_vb);
     }
-    axis_angle = lin_alg_angle_from_2vecs(mag_vb, mag_vi);
-
-    lin_alg_cross(mag_vb, mag_vi, axis_v);
-    lin_alg_gen_dcm(axis_angle, axis_v, r_mag);
+    //    axis_angle = lin_alg_angle_from_2vecs(mag_vb, mag_vi);
+    //
+    //    lin_alg_cross(mag_vb, mag_vi, axis_v);
+    //    lin_alg_gen_dcm(axis_angle, axis_v, r_mag);
 
     /*************************************************************************/
     lin_alg_set_v(0.0, 0.0, 0.0, w_meas_sum); /* Clear the correction vector */
@@ -155,6 +177,7 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
 
     /* Feedback with accelerometers */
     lin_alg_m_v_mult(r_hat_t, g_vi, vi_hat);
+    //    lin_alg_rot_v_q(g_vi, cf_yaw, cf_pitch, cf_roll, vi_hat);
     lin_alg_cross(acc_vb, vi_hat, w_meas_i);
     lin_alg_v_scale(kp_acc, w_meas_i); /* Weight the acc contribution */
 
@@ -164,6 +187,7 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
 
     /* Feedback with magnetometers */
     lin_alg_m_v_mult(r_hat_t, mag_vi, vi_hat);
+    //    lin_alg_rot_v_q(mag_vi, cf_yaw, cf_pitch, cf_roll, vi_hat);
     lin_alg_cross(mag_vb, vi_hat, w_meas_i);
     lin_alg_v_scale(kp_mag, w_meas_i); /* Weight the mag contribution */
 
@@ -176,11 +200,11 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
      * the sign of rotation with the reference vectors */
 
     q_gyro[0] = 0.0;
-    q_gyro[1] = -gyro_vb[0] + w_meas_sum[0] - gyro_bias[0];
+    q_gyro[1] = gyro_vb[0] + w_meas_sum[0] + gyro_bias[0];
 
-    q_gyro[2] = -gyro_vb[1] + w_meas_sum[1] - gyro_bias[1];
+    q_gyro[2] = gyro_vb[1] + w_meas_sum[1] + gyro_bias[1];
 
-    q_gyro[3] = -gyro_vb[2] + w_meas_sum[2] - gyro_bias[2];
+    q_gyro[3] = gyro_vb[2] + w_meas_sum[2] + gyro_bias[2];
 
     lin_alg_q_mult(q_est, q_gyro, q_est_dot);
 
@@ -198,7 +222,16 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
     }
     lin_alg_scale_q(q_magnitude, q_est);
 
-    lin_alg_q2euler_abs(q_est, yaw, pitch, roll);
+    lin_alg_q2euler_abs(q_est, &cf_yaw, &cf_pitch, &cf_roll);
+    *yaw = cf_yaw;
+    *pitch = cf_pitch;
+    *roll = cf_roll;
+
+    lin_alg_q_inv(q_est, q_est_conj);
+    lin_alg_q2euler_abs(q_est_conj,
+            &cf_yaw_conj,
+            &cf_pitch_conj,
+            &cf_roll_conj);
 
     lin_alg_q2dcm(q_est, r_hat);
 }

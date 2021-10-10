@@ -280,7 +280,6 @@ if __name__ == '__main__':
                     result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
-                        wp_next = wpq.getNext()
                         wp_next_lla = np.array([[wp_next[0, 0],  # lat
                                                  wp_next[0, 1],  # lon
                                                  0.0]])          # alt

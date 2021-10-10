@@ -445,7 +445,7 @@ class AttitudeVizualizer():
             # Necessary to force gui event processing, because matplotlib is
             # not as great as you think Apparently the smallest sleep time one
             # can request from Windows OS is about 10ms
-            # plt.pause(0.01)
+            plt.pause(0.01)
 
             self.fig.canvas.flush_events()
 

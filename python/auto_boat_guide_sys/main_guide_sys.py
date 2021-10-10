@@ -147,8 +147,10 @@ if __name__ == '__main__':
     # Timing
     t_new = 0
     t_old = time.time()
-    # t_sm = time.time()
+    t_transmit = time.time()
+    
     dt = 0.0025  # seconds
+    dt_transmit = 0.25 # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -225,7 +227,8 @@ if __name__ == '__main__':
                     wp_ref_lat_lon = np.array([[lat, lon]])
                     wp_ref_lla = np.array([[lat, lon, 0.0]])
 
-                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
+                    if (t_new - t_transmit) >= dt_transmit:
+                        logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
@@ -246,7 +249,8 @@ if __name__ == '__main__':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
 
-                logger.send_mav_cmd_nav_waypoint(wp_prev)
+                if (t_new - t_transmit) >= dt_transmit:
+                    logger.send_mav_cmd_nav_waypoint(wp_prev)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
@@ -267,7 +271,8 @@ if __name__ == '__main__':
             elif state == 'SENDING_NEXT_WP':
                 # Send the next waypoint for the linear trajectory tracking
 
-                logger.send_mav_cmd_nav_waypoint(wp_next)
+                if (t_new - t_transmit) >= dt_transmit:
+                    logger.send_mav_cmd_nav_waypoint(wp_next)
 
                 if msg.get_type() == 'COMMAND_ACK':
 

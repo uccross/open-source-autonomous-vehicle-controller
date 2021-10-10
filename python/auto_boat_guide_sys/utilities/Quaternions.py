@@ -60,7 +60,7 @@ def getQuaternionComplexConjugate(q):
     return qConj
 
 
-def multiplyQuaternions(q, p):
+def multiplyQuaternions(p, q):
     """
     :param q: A quaternion
     :param p: A quaternion

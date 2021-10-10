@@ -201,7 +201,7 @@ class AttitudeVizualizer():
         # Gyroscopes
         self.ax3.set_title('Gyroscopes')
         self.ax3.set_xlim(self.wt0, self.wtf)
-        self.ax3.set_ylim(-15.0, 15.0)
+        self.ax3.set_ylim(-30.0, 30.0)
         self.ax3.set_xlabel("Time (seconds)")
         self.ax3.set_ylabel("Degrees/second")
         self.ax3.grid()

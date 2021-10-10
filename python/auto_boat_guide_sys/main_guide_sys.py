@@ -150,7 +150,7 @@ if __name__ == '__main__':
     t_old = time.time()
     t_transmit = time.time()
 
-    dt = 0.0025  # seconds
+    dt = 0.01  # seconds
     dt_transmit = 0.25  # seconds
     xacc = 0.0
     yacc = 0.0

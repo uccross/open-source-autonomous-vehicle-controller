@@ -327,7 +327,7 @@ if __name__ == '__main__':
 
                     print("**************************************************")
                     print("    cog: {}".format(cog))
-                    print("    CF heading: {}".format(cog*180.0/np.pi))
+                    print("    CF heading: {}".format(yaw*180.0/np.pi))
                     print("    yaw: {}, type: {}".format(yaw,
                                                                    type(yaw)))
                     print("    pitch: {}, type: {}".format(pitch, type(pitch)))

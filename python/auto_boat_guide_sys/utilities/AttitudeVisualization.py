@@ -161,7 +161,7 @@ class AttitudeVizualizer():
         # Accelerometers Raw
         self.ax1.set_title('Accelerometers')
         self.ax1.set_xlim(self.wt0, self.wtf)
-        self.ax1.set_ylim(-10.0, 10.0)
+        self.ax1.set_ylim(-12.0, 12.0)
         self.ax1.set_xlabel("Time (seconds)")
         self.ax1.set_ylabel("Acceleration (m/s^2)")
         self.ax1.grid()
@@ -201,7 +201,7 @@ class AttitudeVizualizer():
         # Gyroscopes
         self.ax3.set_title('Gyroscopes')
         self.ax3.set_xlim(self.wt0, self.wtf)
-        self.ax3.set_ylim(-10.0, 10.0)
+        self.ax3.set_ylim(-15.0, 15.0)
         self.ax3.set_xlabel("Time (seconds)")
         self.ax3.set_ylabel("Degrees/second")
         self.ax3.grid()
@@ -335,16 +335,6 @@ class AttitudeVizualizer():
             self.lineAttZ.set_3d_properties(np.array([self.og[2, 0],
                                                     attQuatZ[2, 0]]))
 
-            self.fig.canvas.restore_region(self.background0)
-
-            self.ax0.draw_artist(self.projxz)
-            self.ax0.draw_artist(self.projyz)
-            self.ax0.draw_artist(self.projzx)
-            self.ax0.draw_artist(self.lineAttX)
-            self.ax0.draw_artist(self.lineAttY)
-            self.ax0.draw_artist(self.lineAttZ)
-
-            self.fig.canvas.blit(self.ax0.bbox)
 
             ###################################################################
             # Accelerometers Raw
@@ -369,13 +359,6 @@ class AttitudeVizualizer():
             # self.ax1.set_xlim(self.wt0, self.wtf)
             #                 ^^^^^^^^^^^^^^^^^^^^^^
 
-            self.fig.canvas.restore_region(self.background1)
-
-            self.ax1.draw_artist(self.points4accelX)
-            self.ax1.draw_artist(self.points4accelY)
-            self.ax1.draw_artist(self.points4accelZ)
-
-            self.fig.canvas.blit(self.ax1.bbox)
 
             ###################################################################
             # Magnetometers Raw
@@ -400,14 +383,6 @@ class AttitudeVizualizer():
             # self.ax2.set_xlim(self.wt0, self.wtf)
             #                 ^^^^^^^^^^^^^^^^^^^^^^
 
-            self.fig.canvas.restore_region(self.background2)
-
-            self.ax2.draw_artist(self.points5magX)
-            self.ax2.draw_artist(self.points5magY)
-            self.ax2.draw_artist(self.points5magZ)
-
-            self.fig.canvas.blit(self.ax2.bbox)
-
             ###################################################################
             # Gyroscopes Raw
             self.gyroXtoGraph[0:(self.wn - wi-1)] = \
@@ -431,16 +406,40 @@ class AttitudeVizualizer():
             # self.ax3.set_xlim(self.wt0, self.wtf)
             #                 ^^^^^^^^^^^^^^^^^^^^^^
 
+            ###################################################################
+            # Gyroscopes Integrated
+
+
+            ###################################################################            
+            self.fig.canvas.restore_region(self.background0)
+            self.fig.canvas.restore_region(self.background1)
+            self.fig.canvas.restore_region(self.background2)
+
             self.fig.canvas.restore_region(self.background3)
+
+            self.ax0.draw_artist(self.projxz)
+            self.ax0.draw_artist(self.projyz)
+            self.ax0.draw_artist(self.projzx)
+            self.ax0.draw_artist(self.lineAttX)
+            self.ax0.draw_artist(self.lineAttY)
+            self.ax0.draw_artist(self.lineAttZ)
+
+            self.ax1.draw_artist(self.points4accelX)
+            self.ax1.draw_artist(self.points4accelY)
+            self.ax1.draw_artist(self.points4accelZ)
+
+            self.ax2.draw_artist(self.points5magX)
+            self.ax2.draw_artist(self.points5magY)
+            self.ax2.draw_artist(self.points5magZ)
 
             self.ax3.draw_artist(self.points6gyroX)
             self.ax3.draw_artist(self.points6gyroY)
             self.ax3.draw_artist(self.points6gyroZ)
 
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.blit(self.ax1.bbox)
+            self.fig.canvas.blit(self.ax2.bbox)
             self.fig.canvas.blit(self.ax3.bbox)
-
-            ###################################################################
-            # Gyroscopes Integrated
 
             ###################################################################
             # Necessary to force gui event processing, because matplotlib is

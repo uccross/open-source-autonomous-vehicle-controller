@@ -102,7 +102,9 @@ if __name__ == '__main__':
             echo_sensor_orientation,
             echo_sensor_covariance)
 
-    msg_list = [echo_msg]
+        msg_list = [echo_msg]
+    else:
+        msg_list = []
 
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',

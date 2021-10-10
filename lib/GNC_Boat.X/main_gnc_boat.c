@@ -38,15 +38,18 @@
 #define SERVO_PAD 30
 #define ACTUATOR_SATURATION (M_PI/20.0)/SAMPLE_TIME
 
-#define FINDING_REF_WP_PRD 2000 // Time to wait to check reference waypoint in milliseconds
+#define TRANSMIT_PRD 250 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.00001
+
+#define GYRO_SCALE (M_PI / 180.0) * SAMPLE_TIME
 
 /******************************************************************************
  * MAIN                                                                       *
  *****************************************************************************/
 int main(void) {
     uint32_t cur_time = 0;
+    uint32_t transmit_time = 0;
     uint32_t gps_start_time = 0;
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
@@ -124,6 +127,17 @@ int main(void) {
 
     // Attitude
     struct IMU_output data;
+    data.acc.x = 0.0;
+    data.acc.y = 0.0;
+    data.acc.z = 0.0;
+
+    data.mag.x = 0.0;
+    data.mag.y = 0.0;
+    data.mag.z = 0.0;
+
+    data.gyro.x = 0.0;
+    data.gyro.y = 0.0;
+    data.gyro.z = 0.0;
     float acc[MSZ] = {0.0};
     float mag[MSZ] = {0.0};
     float gyro_bias[MSZ] = {0.0};
@@ -140,7 +154,7 @@ int main(void) {
     pid_controller_init(&trajectory_tracker,
             SAMPLE_TIME, // dt The sample time
             1.0, // kp The initial proportional gain
-            0.00, // ki The initial integral gain
+            0.0, // ki The initial integral gain
             1.0, // kd The initial derivative gain
             UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
             LOWER_ACT_BOUND); // The minimum rudder actuator limit in radians
@@ -153,11 +167,11 @@ int main(void) {
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
     uint8_t last_mode = current_mode;
     uint16_t cmd = 0;
-    uint32_t t_last_serial = 0;
 
     enum waypoints_state {
         ERROR_WP = 0,
         FINDING_REF_WP, /* Find the reference point for the LTP calculation */
+        SENDING_REF_WP, /* Send the reference point for the LTP calculation */
         CHECKING_REF_WP, /* Check the reference point sending and comparing 
                           * echo from Companion Computer */
         WAITING_FOR_PREV_WP, /* Wait for the previous waypoint from the 
@@ -207,12 +221,11 @@ int main(void) {
 
             vehi_pt_en[0] = vehi_pt_enu[0]; // EAST
             vehi_pt_en[1] = vehi_pt_enu[1]; // NORTH
-
         }
 
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
-        
+
 #ifdef AUTONOMOUS_MODE_TEST
         current_mode = MAV_MODE_AUTO_ARMED;
 #endif
@@ -229,8 +242,19 @@ int main(void) {
                 break;
 
             case FINDING_REF_WP:
+                // State exit case
                 if (new_gps == TRUE) {
                     publisher_get_gps_rmc_position(wp_a_lat_lon);
+                    current_wp_state = SENDING_REF_WP;
+                }
+                break;
+
+            case SENDING_REF_WP:
+
+                LATCbits.LATC1 ^= 1; // Toggle LED 5
+                // Transmit periodically, until the exit condition is met
+                if ((cur_time - transmit_time) >= TRANSMIT_PRD) {
+                    transmit_time = cur_time;
                     publish_waypoint(wp_a_lat_lon);
                 }
 
@@ -245,9 +269,7 @@ int main(void) {
 
             case CHECKING_REF_WP:
                 // State exit case
-                if ((lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) &&
-                        ((cur_time - t_last_serial) > FINDING_REF_WP_PRD)) {
-                    t_last_serial = cur_time;
+                if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
 
                     ref_lla[0] = wp_a_lat_lon[0]; // latitude
                     ref_lla[1] = wp_a_lat_lon[1]; // longitude
@@ -261,12 +283,13 @@ int main(void) {
                     /* Complementary Filter Attitude and Heading Reference 
                      * System (AHRS) Initialization. For now use the starting 
                      * rates assuming the vehicle is stationary */
-                    lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z,
-                            gyro_bias);
-                    cf_ahrs_init(SAMPLE_TIME, gyro_bias);
+                    lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro_bias);
+                    lin_alg_v_scale(GYRO_SCALE, gyro_bias);
 
-                    cf_ahrs_set_kp_acc(1.0);
-                    cf_ahrs_set_kp_mag(1.0);
+                    cf_ahrs_set_kp_acc(1.5);
+                    cf_ahrs_set_kp_mag(0.5);
+
+                    cf_ahrs_init(SAMPLE_TIME, gyro_bias);
 
 
                     current_wp_state = WAITING_FOR_PREV_WP;
@@ -372,8 +395,6 @@ int main(void) {
 
             case TRACKING_WP:
 
-                LATCbits.LATC1 ^= 1; // Toggle LED 5
-
                 /* Check for new next waypoint */
                 if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
@@ -392,7 +413,7 @@ int main(void) {
         /**********************************************************************
          * CONTROL: Control and publish data                                  *
          *********************************************************************/
-        if ((cur_time - control_start_time) > CONTROL_PERIOD) {
+        if ((cur_time - control_start_time) >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
 
             set_control_output(); // set actuator outputs
@@ -421,6 +442,7 @@ int main(void) {
                 lin_alg_set_v(data.acc.x, data.acc.y, data.acc.z, acc);
                 lin_alg_set_v(data.mag.x, data.mag.y, data.mag.z, mag);
                 lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro);
+                lin_alg_v_scale(GYRO_SCALE, gyro);
 
                 cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 

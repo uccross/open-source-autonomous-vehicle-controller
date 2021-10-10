@@ -15,7 +15,6 @@
  * PRIVATE #DEFINES
  *****************************************************************************/
 
-
 /******************************************************************************
  * PRIVATE DATATYPES 
  *****************************************************************************/
@@ -23,6 +22,9 @@
 /******************************************************************************
  * PRIVATE VARIABLES 
  *****************************************************************************/
+/* NOTE: that these are declared here, but are not necessarily set to correct 
+ * inertial values until the initialization. */
+
 /* Accelerometer-related variables */
 float g_vi[MSZ] = {0.0}; /* Gravitational inertial reference vector */
 float acc_magnitude = 1.0;
@@ -66,6 +68,15 @@ void cf_ahrs_init(float desired_dt, const float exp_gyro_bias[MSZ]) {
 
     cf_ahrs_set_gyro_biases(exp_gyro_bias);
 
+    /* Set all inertial-frame aiding vectors */
+    lin_alg_set_v(0.0, 0.0, -1.0, g_vi);
+    lin_alg_set_v(0.0, -1.0, 0.0, mag_vi);
+    
+    /* Set quaternions */
+    lin_alg_set_q(0.0, 0.0, 0.0, q_est);
+    lin_alg_set_q(0.0, 0.0, 0.0, q_est_dot);
+    
+    
     /* Explicitly set all matrices to avoid nans */
     lin_alg_set_m(
             1.0, 0.0, 0.0,

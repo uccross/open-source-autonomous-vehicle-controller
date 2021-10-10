@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
     # Attitude Vizualizor
     if vizualize_attitude_flag:
-        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=20, wt0=0, 
+        av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=20, wt0=0,
         wtf=30, wdt=1.0)
 
     ###########################################################################
@@ -149,9 +149,9 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     t_transmit = time.time()
-    
+
     dt = 0.0025  # seconds
-    dt_transmit = 0.25 # seconds
+    dt_transmit = 0.25  # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     last_state = state
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
-                  'SENDING_REF_WP':2,
+                  'SENDING_REF_WP': 2,
                   'CHECKING_REF_WP': 3,
                   'WAITING_FOR_PREV_WP': 4,
                   'CHECKING_PREV_WP': 5,
@@ -229,6 +229,7 @@ if __name__ == '__main__':
                     wp_ref_lla = np.array([[lat, lon, 0.0]])
 
                     if (t_new - t_transmit) >= dt_transmit:
+                        t_transmit = t_new
                         logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
                 # Exit this state after getting an acknowledgment with a result
@@ -251,6 +252,7 @@ if __name__ == '__main__':
                 # linear trajectory tracking
 
                 if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
                     logger.send_mav_cmd_nav_waypoint(wp_prev)
 
                 # Exit this state after getting an acknowledgment with a result
@@ -273,6 +275,7 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
 
                 if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
                     logger.send_mav_cmd_nav_waypoint(wp_next)
 
                 if msg.get_type() == 'COMMAND_ACK':

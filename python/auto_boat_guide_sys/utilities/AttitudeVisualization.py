@@ -421,32 +421,30 @@ class AttitudeVizualizer():
 
             ###################################################################            
             self.fig.canvas.restore_region(self.background0)
-            self.fig.canvas.restore_region(self.background1)
-            self.fig.canvas.restore_region(self.background2)
-            self.fig.canvas.restore_region(self.background3)
-
             self.ax0.draw_artist(self.projxz)
             self.ax0.draw_artist(self.projyz)
             self.ax0.draw_artist(self.projzx)
             self.ax0.draw_artist(self.lineAttX)
             self.ax0.draw_artist(self.lineAttY)
             self.ax0.draw_artist(self.lineAttZ)
+            self.fig.canvas.blit(self.ax0.bbox)
 
+            self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelX)
             self.ax1.draw_artist(self.points4accelY)
             self.ax1.draw_artist(self.points4accelZ)
+            self.fig.canvas.blit(self.ax1.bbox)
 
+            self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magX)
             self.ax2.draw_artist(self.points5magY)
             self.ax2.draw_artist(self.points5magZ)
+            self.fig.canvas.blit(self.ax2.bbox)
 
+            self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroX)
             self.ax3.draw_artist(self.points6gyroY)
             self.ax3.draw_artist(self.points6gyroZ)
-
-            self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.blit(self.ax1.bbox)
-            self.fig.canvas.blit(self.ax2.bbox)
             self.fig.canvas.blit(self.ax3.bbox)
 
             ###################################################################

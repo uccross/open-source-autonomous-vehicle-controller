@@ -119,7 +119,7 @@ if __name__ == '__main__':
     # Attitude Vizualizor
     if vizualize_attitude_flag:
         av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=10, wt0=0,
-        wtf=30, wdt=0.5)
+                                   wtf=30, wdt=0.5)
 
     ###########################################################################
     # Helper method, based on
@@ -391,7 +391,8 @@ if __name__ == '__main__':
                 print("Time: {}".format(t_new))
 
             # Graphing
-            if vizualize_attitude_flag:
+            if (vizualize_attitude_flag and ((state == 'WAITING_TO_UPDATE_WPS')
+                                             or state == 'SENDING_NEXT_WP')):
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     av.update(msg)
 

@@ -165,12 +165,13 @@ if __name__ == '__main__':
     last_state = state
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
-                  'CHECKING_REF_WP': 2,
-                  'WAITING_FOR_PREV_WP': 3,
-                  'CHECKING_PREV_WP': 4,
-                  'WAITING_FOR_NEXT_WP': 5,
-                  'CHECKING_NEXT_WP': 6,
-                  'TRACKING_WP': 7}
+                  'SENDING_REF_WP':2,
+                  'CHECKING_REF_WP': 3,
+                  'WAITING_FOR_PREV_WP': 4,
+                  'CHECKING_PREV_WP': 5,
+                  'WAITING_FOR_NEXT_WP': 6,
+                  'CHECKING_NEXT_WP': 7,
+                  'TRACKING_WP': 8}
 
     # Waypoint Queue       N/S Lat   , E/W Long
     waypoints = np.array([[36.9557439, -122.0604691],

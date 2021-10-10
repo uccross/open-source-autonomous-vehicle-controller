@@ -245,7 +245,12 @@ class AttitudeVizualizer():
             return
 
         # Update graphs only at specified intervals to help with speed of
-        # graphing
+        # graphing           
+        self.fig.canvas.restore_region(self.background0)
+        self.fig.canvas.restore_region(self.background1)
+        self.fig.canvas.restore_region(self.background2)
+        self.fig.canvas.restore_region(self.background3)
+        
         if np.mod(self.i, self.graphInterval) == 0:
 
             if msg.get_type() == 'HIGHRES_IMU':
@@ -410,11 +415,7 @@ class AttitudeVizualizer():
             # Gyroscopes Integrated
 
 
-            ###################################################################            
-            # self.fig.canvas.restore_region(self.background0)
-            # self.fig.canvas.restore_region(self.background1)
-            # self.fig.canvas.restore_region(self.background2)
-            # self.fig.canvas.restore_region(self.background3)
+            ################################################################### 
 
             self.ax0.draw_artist(self.projxz)
             self.ax0.draw_artist(self.projyz)

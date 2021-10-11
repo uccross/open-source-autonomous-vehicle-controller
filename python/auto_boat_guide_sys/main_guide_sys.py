@@ -317,12 +317,8 @@ if __name__ == '__main__':
                     pitchspeed = nav_msg['pitchspeed'] # Using as cross track error
 
                     cf_heading_angle = yaw*180.0/np.pi
-                    if cf_heading_angle < 0.0:
-                        cf_heading_angle = 360.0 + cf_heading_angle
                     
                     path_angle = rollspeed*180.0/np.pi
-                    if path_angle < 0.0:
-                        path_angle = 360.0 + path_angle
 
                 if msg_type == 'GPS_RAW_INT':
 

@@ -151,9 +151,11 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     t_transmit = time.time()
+    t_graph = time.time()
 
     dt = 0.01  # seconds
     dt_transmit = 0.25  # seconds
+    dt_graph = 0.005 # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -408,17 +410,21 @@ if __name__ == '__main__':
 
                 print("Time: {}".format(t_new))
 
-        ##################################################################
-        # Log messages (at intervals)
-        if (t_new - t_old) >= dt:
-            t_old = t_new
-            
-            # Graphing
+
+        #######################################################################
+        # Graphing
+        if (t_new - t_graph) >= dt_graph:
+            t_graph = t_new
             if (vizualize_attitude_flag and ((state == 'WAITING_TO_UPDATE_WPS')
-                                             or state == 'SENDING_NEXT_WP')):
+                                                or state == 'SENDING_NEXT_WP')):
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     if msg:
                         av.update(msg)
+
+        #######################################################################
+        # Log messages (at intervals)
+        if (t_new - t_old) >= dt:
+            t_old = t_new
 
             status = logger.log(msg)
 

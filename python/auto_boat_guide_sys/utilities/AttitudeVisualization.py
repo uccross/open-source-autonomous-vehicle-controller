@@ -429,23 +429,23 @@ class AttitudeVizualizer():
             self.ax0.draw_artist(self.lineAttZ)
             self.fig.canvas.blit(self.ax0.bbox)
 
-            self.fig.canvas.restore_region(self.background1)
-            self.ax1.draw_artist(self.points4accelX)
-            self.ax1.draw_artist(self.points4accelY)
-            self.ax1.draw_artist(self.points4accelZ)
-            self.fig.canvas.blit(self.ax1.bbox)
+            # self.fig.canvas.restore_region(self.background1)
+            # self.ax1.draw_artist(self.points4accelX)
+            # self.ax1.draw_artist(self.points4accelY)
+            # self.ax1.draw_artist(self.points4accelZ)
+            # self.fig.canvas.blit(self.ax1.bbox)
 
-            self.fig.canvas.restore_region(self.background2)
-            self.ax2.draw_artist(self.points5magX)
-            self.ax2.draw_artist(self.points5magY)
-            self.ax2.draw_artist(self.points5magZ)
-            self.fig.canvas.blit(self.ax2.bbox)
+            # self.fig.canvas.restore_region(self.background2)
+            # self.ax2.draw_artist(self.points5magX)
+            # self.ax2.draw_artist(self.points5magY)
+            # self.ax2.draw_artist(self.points5magZ)
+            # self.fig.canvas.blit(self.ax2.bbox)
 
-            self.fig.canvas.restore_region(self.background3)
-            self.ax3.draw_artist(self.points6gyroX)
-            self.ax3.draw_artist(self.points6gyroY)
-            self.ax3.draw_artist(self.points6gyroZ)
-            self.fig.canvas.blit(self.ax3.bbox)
+            # self.fig.canvas.restore_region(self.background3)
+            # self.ax3.draw_artist(self.points6gyroX)
+            # self.ax3.draw_artist(self.points6gyroY)
+            # self.ax3.draw_artist(self.points6gyroZ)
+            # self.fig.canvas.blit(self.ax3.bbox)
 
             ###################################################################
             # Necessary to force gui event processing, because matplotlib is

@@ -185,6 +185,8 @@ if __name__ == '__main__':
                           [36.9556224, -122.0604107]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
+    msg_type = None
+
     ###########################################################################
     # Main Loop
     while True:

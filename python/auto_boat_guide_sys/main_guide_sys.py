@@ -313,6 +313,8 @@ if __name__ == '__main__':
                     pitch = nav_msg['pitch']
                     roll = nav_msg['roll']
 
+                    rollspeed = nav_msg['rollspeed'] # Using as path angle
+
                 if msg_type == 'GPS_RAW_INT':
 
                     nav_msg = msg.to_dict()
@@ -328,6 +330,7 @@ if __name__ == '__main__':
                     print("**************************************************")
                     print("    cog: {}".format(cog))
                     print("    CF heading: {}".format(yaw*180.0/np.pi))
+                    print("    path angle: {}".format(rollspeed))
                     print("    yaw: {}, type: {}".format(yaw,
                                                                    type(yaw)))
                     print("    pitch: {}, type: {}".format(pitch, type(pitch)))

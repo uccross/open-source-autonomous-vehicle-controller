@@ -406,16 +406,17 @@ if __name__ == '__main__':
 
                 print("Time: {}".format(t_new))
 
+        ##################################################################
+        # Log messages (at intervals)
+        if (t_new - t_old) >= dt:
+            t_old = t_new
+            
             # Graphing
             if (vizualize_attitude_flag and ((state == 'WAITING_TO_UPDATE_WPS')
                                              or state == 'SENDING_NEXT_WP')):
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     av.update(msg)
 
-        ##################################################################
-        # Log messages (at intervals)
-        if (t_new - t_old) >= dt:
-            t_old = t_new
             status = logger.log(msg)
 
             if echo_sensor:

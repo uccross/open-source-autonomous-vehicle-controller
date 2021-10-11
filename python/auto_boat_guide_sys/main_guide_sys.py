@@ -314,6 +314,7 @@ if __name__ == '__main__':
                     roll = nav_msg['roll']
 
                     rollspeed = nav_msg['rollspeed'] # Using as path angle
+                    pitchspeed = nav_msg['pitchspeed'] # Using as cross track error
 
                 if msg_type == 'GPS_RAW_INT':
 
@@ -331,19 +332,20 @@ if __name__ == '__main__':
                     print("    cog: {}".format(cog))
                     print("    CF heading: {}".format(yaw*180.0/np.pi))
                     print("    path angle: {}".format(rollspeed))
-                    print("    yaw: {}, type: {}".format(yaw,
+                    print("    cte:        {}".format(rollspeed))
+                    print("    yaw:        {}, type: {}".format(yaw,
                                                                    type(yaw)))
-                    print("    pitch: {}, type: {}".format(pitch, type(pitch)))
-                    print("    roll: {}, type: {}".format(roll, type(roll)))
-                    print("    xacc: {}".format(xacc))
-                    print("    yacc: {}".format(yacc))
-                    print("    zacc: {}".format(zacc))
-                    print("    xmag: {}".format(xmag))
-                    print("    ymag: {}".format(ymag))
-                    print("    zmag: {}".format(zmag))
-                    print("    xgyro: {}".format(xgyro))
-                    print("    ygyro: {}".format(ygyro))
-                    print("    zgyro: {}".format(zgyro))
+                    print("    pitch:      {}, type: {}".format(pitch, type(pitch)))
+                    print("    roll:       {}, type: {}".format(roll, type(roll)))
+                    print("    xacc:       {}".format(xacc))
+                    print("    yacc:       {}".format(yacc))
+                    print("    zacc:       {}".format(zacc))
+                    print("    xmag:       {}".format(xmag))
+                    print("    ymag:       {}".format(ymag))
+                    print("    zmag:       {}".format(zmag))
+                    print("    xgyro:      {}".format(xgyro))
+                    print("    ygyro:      {}".format(ygyro))
+                    print("    zgyro:      {}".format(zgyro))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 

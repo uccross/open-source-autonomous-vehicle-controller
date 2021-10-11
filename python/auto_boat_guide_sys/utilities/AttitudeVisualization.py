@@ -338,78 +338,78 @@ class AttitudeVizualizer():
 
             ###################################################################
             # Accelerometers Raw
-            self.accelXtoGraph[0:(self.wn - wi-1)] = \
-                self.accelX[(wi+1):self.wn]
-            self.accelXtoGraph[(self.wn - wi):self.wn] = \
-                self.accelX[0:wi]
+            # self.accelXtoGraph[0:(self.wn - wi-1)] = \
+            #     self.accelX[(wi+1):self.wn]
+            # self.accelXtoGraph[(self.wn - wi):self.wn] = \
+            #     self.accelX[0:wi]
 
-            self.accelYtoGraph[0:(self.wn - wi-1)] = \
-                self.accelY[(wi+1):self.wn]
-            self.accelYtoGraph[(self.wn - wi):self.wn] = self.accelY[0:wi]
+            # self.accelYtoGraph[0:(self.wn - wi-1)] = \
+            #     self.accelY[(wi+1):self.wn]
+            # self.accelYtoGraph[(self.wn - wi):self.wn] = self.accelY[0:wi]
 
-            self.accelZtoGraph[0:(self.wn - wi-1)] = \
-                self.accelZ[(wi+1):self.wn]
-            self.accelZtoGraph[(self.wn - wi):self.wn] = self.accelZ[0:wi]
+            # self.accelZtoGraph[0:(self.wn - wi-1)] = \
+            #     self.accelZ[(wi+1):self.wn]
+            # self.accelZtoGraph[(self.wn - wi):self.wn] = self.accelZ[0:wi]
 
-            self.ax1.set_xlim(self.wt0, self.wtf)
-            self.ax1.set_ylim(-12.0, 12.0)
-
-            self.points4accelX.set_data(self.wt, self.accelXtoGraph)
-            self.points4accelY.set_data(self.wt, self.accelYtoGraph)
-            self.points4accelZ.set_data(self.wt, self.accelZtoGraph)
-
-            # TODO: Make this vvvvvvvvvvvvvvvvvvvvvv change
             # self.ax1.set_xlim(self.wt0, self.wtf)
-            #                 ^^^^^^^^^^^^^^^^^^^^^^
+            # self.ax1.set_ylim(-12.0, 12.0)
+
+            # self.points4accelX.set_data(self.wt, self.accelXtoGraph)
+            # self.points4accelY.set_data(self.wt, self.accelYtoGraph)
+            # self.points4accelZ.set_data(self.wt, self.accelZtoGraph)
+
+            # # TODO: Make this vvvvvvvvvvvvvvvvvvvvvv change
+            # # self.ax1.set_xlim(self.wt0, self.wtf)
+            # #                 ^^^^^^^^^^^^^^^^^^^^^^
 
 
-            ###################################################################
-            # Magnetometers Raw
-            self.magXtoGraph[0:(self.wn - wi-1)] = \
-                self.magX[(wi+1):self.wn]
-            self.magXtoGraph[(self.wn - wi):self.wn] = \
-                self.magX[0:wi]
+            # ###################################################################
+            # # Magnetometers Raw
+            # self.magXtoGraph[0:(self.wn - wi-1)] = \
+            #     self.magX[(wi+1):self.wn]
+            # self.magXtoGraph[(self.wn - wi):self.wn] = \
+            #     self.magX[0:wi]
 
-            self.magYtoGraph[0:(self.wn - wi-1)] = \
-                self.magY[(wi+1):self.wn]
-            self.magYtoGraph[(self.wn - wi):self.wn] = self.magY[0:wi]
+            # self.magYtoGraph[0:(self.wn - wi-1)] = \
+            #     self.magY[(wi+1):self.wn]
+            # self.magYtoGraph[(self.wn - wi):self.wn] = self.magY[0:wi]
 
-            self.magZtoGraph[0:(self.wn - wi-1)] = \
-                self.magZ[(wi+1):self.wn]
-            self.magZtoGraph[(self.wn - wi):self.wn] = self.magZ[0:wi]
+            # self.magZtoGraph[0:(self.wn - wi-1)] = \
+            #     self.magZ[(wi+1):self.wn]
+            # self.magZtoGraph[(self.wn - wi):self.wn] = self.magZ[0:wi]
                 
-            self.ax2.set_xlim(self.wt0, self.wtf)
-            self.ax2.set_ylim(-1.0, 1.0)
-
-            self.points5magX.set_data(self.wt, self.magXtoGraph)
-            self.points5magY.set_data(self.wt, self.magYtoGraph)
-            self.points5magZ.set_data(self.wt, self.magZtoGraph)
-
-            # TODO: Make this vvvvvvvvvvvvvvvvvvvvvv change
             # self.ax2.set_xlim(self.wt0, self.wtf)
-            #                 ^^^^^^^^^^^^^^^^^^^^^^
+            # self.ax2.set_ylim(-1.0, 1.0)
 
-            ###################################################################
-            # Gyroscopes Raw
-            self.gyroXtoGraph[0:(self.wn - wi-1)] = \
-                self.gyroX[(wi+1):self.wn]
-            self.gyroXtoGraph[(self.wn - wi):self.wn] = \
-                self.gyroX[0:wi]
+            # self.points5magX.set_data(self.wt, self.magXtoGraph)
+            # self.points5magY.set_data(self.wt, self.magYtoGraph)
+            # self.points5magZ.set_data(self.wt, self.magZtoGraph)
 
-            self.gyroYtoGraph[0:(self.wn - wi-1)] = \
-                self.gyroY[(wi+1):self.wn]
-            self.gyroYtoGraph[(self.wn - wi):self.wn] = self.gyroY[0:wi]
+            # # TODO: Make this vvvvvvvvvvvvvvvvvvvvvv change
+            # # self.ax2.set_xlim(self.wt0, self.wtf)
+            # #                 ^^^^^^^^^^^^^^^^^^^^^^
 
-            self.gyroZtoGraph[0:(self.wn - wi-1)] = \
-                self.gyroZ[(wi+1):self.wn]
-            self.gyroZtoGraph[(self.wn - wi):self.wn] = self.gyroZ[0:wi]
+            # ###################################################################
+            # # Gyroscopes Raw
+            # self.gyroXtoGraph[0:(self.wn - wi-1)] = \
+            #     self.gyroX[(wi+1):self.wn]
+            # self.gyroXtoGraph[(self.wn - wi):self.wn] = \
+            #     self.gyroX[0:wi]
 
-            self.ax3.set_xlim(self.wt0, self.wtf)
-            self.ax3.set_ylim(-15.0, 15.0)
+            # self.gyroYtoGraph[0:(self.wn - wi-1)] = \
+            #     self.gyroY[(wi+1):self.wn]
+            # self.gyroYtoGraph[(self.wn - wi):self.wn] = self.gyroY[0:wi]
 
-            self.points6gyroX.set_data(self.wt, self.gyroXtoGraph)
-            self.points6gyroY.set_data(self.wt, self.gyroYtoGraph)
-            self.points6gyroZ.set_data(self.wt, self.gyroZtoGraph)
+            # self.gyroZtoGraph[0:(self.wn - wi-1)] = \
+            #     self.gyroZ[(wi+1):self.wn]
+            # self.gyroZtoGraph[(self.wn - wi):self.wn] = self.gyroZ[0:wi]
+
+            # self.ax3.set_xlim(self.wt0, self.wtf)
+            # self.ax3.set_ylim(-15.0, 15.0)
+
+            # self.points6gyroX.set_data(self.wt, self.gyroXtoGraph)
+            # self.points6gyroY.set_data(self.wt, self.gyroYtoGraph)
+            # self.points6gyroZ.set_data(self.wt, self.gyroZtoGraph)
 
             # TODO: Make this vvvvvvvvvvvvvvvvvvvvvv change
             # self.ax3.set_xlim(self.wt0, self.wtf)

@@ -319,6 +319,10 @@ if __name__ == '__main__':
                     cf_heading_angle = yaw*180.0/np.pi
                     if cf_heading_angle < 0.0:
                         cf_heading_angle = 360.0 + cf_heading_angle
+                    
+                    path_angle = rollspeed*180.0/np.pi
+                    if path_angle < 0.0:
+                        path_angle = 360.0 + path_angle
 
                 if msg_type == 'GPS_RAW_INT':
 
@@ -334,8 +338,8 @@ if __name__ == '__main__':
 
                     print("**************************************************")
                     print("    cog: {}".format(cog))
-                    print("    CF heading: {}".format(yaw*180.0/np.pi))
-                    print("    path angle: {}".format(rollspeed*180.0/np.pi))
+                    print("    CF heading: {}".format(cf_heading_angle))
+                    print("    path angle: {}".format(path_angle))
                     print("    cte:        {}".format(pitchspeed*180.0/np.pi))
                     print("    yaw:        {}, type: {}".format(yaw,
                                                                    type(yaw)))

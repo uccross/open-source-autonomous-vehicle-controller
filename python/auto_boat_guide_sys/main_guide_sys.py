@@ -417,7 +417,8 @@ if __name__ == '__main__':
             if (vizualize_attitude_flag and ((state == 'WAITING_TO_UPDATE_WPS')
                                              or state == 'SENDING_NEXT_WP')):
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
-                    av.update(msg)
+                    if msg:
+                        av.update(msg)
 
             status = logger.log(msg)
 

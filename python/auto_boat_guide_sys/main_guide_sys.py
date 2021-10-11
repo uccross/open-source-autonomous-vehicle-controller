@@ -331,8 +331,8 @@ if __name__ == '__main__':
                     print("**************************************************")
                     print("    cog: {}".format(cog))
                     print("    CF heading: {}".format(yaw*180.0/np.pi))
-                    print("    path angle: {}".format(rollspeed))
-                    print("    cte:        {}".format(rollspeed))
+                    print("    path angle: {}".format(rollspeed*180.0/np.pi))
+                    print("    cte:        {}".format(pitchspeed*180.0/np.pi))
                     print("    yaw:        {}, type: {}".format(yaw,
                                                                    type(yaw)))
                     print("    pitch:      {}, type: {}".format(pitch, type(pitch)))

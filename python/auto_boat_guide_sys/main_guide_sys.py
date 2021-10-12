@@ -188,6 +188,7 @@ if __name__ == '__main__':
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     msg_type = None
+    current_base_mode = -1
 
     ###########################################################################
     # Main Loop

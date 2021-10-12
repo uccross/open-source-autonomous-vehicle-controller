@@ -36,10 +36,10 @@
 #define UPPER_ACT_BOUND ((float) 0.8) // The maximum rudder actuator limit in radians
 #define LOWER_ACT_BOUND ((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
-#define SERVO_PAD 30.0
+#define SERVO_PAD 0.0
 #define SERVO_DELTA ((float) (RC_RX_MID_COUNTS - RC_RX_MIN_COUNTS)) - SERVO_PAD
 
-#define TRANSMIT_PRD 250 // Time to wait to check reference waypoint in milliseconds
+#define TRANSMIT_PRD 500 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.00001
 
@@ -500,7 +500,7 @@ int main(void) {
                     path_angle = lin_tra_get_path_angle();
                     heading_angle = yaw;
                     heading_angle_diff = heading_angle - path_angle;
-                    
+
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI),
                             (2.0 * M_PI)) - M_PI;
@@ -514,10 +514,10 @@ int main(void) {
                         heading_angle_diff); // Change in heading angle over time
 
                 // Scale resulting control input
-                //                u += UPPER_ACT_BOUND;
-                //                u /= UPPER_ACT_BOUND;
-                //                u *= ((float) RC_RX_MID_COUNTS);
-                //                u_pulse = ((uint16_t) u);
+                u /= UPPER_ACT_BOUND;
+                u *= (SERVO_DELTA);
+                u += ((float) RC_RX_MID_COUNTS);
+                u_pulse = ((uint16_t) u);
 
                 RC_servo_set_pulse(u_pulse, RC_STEERING);
 
@@ -539,8 +539,8 @@ int main(void) {
             publish_IMU_data(SCALED);
             publish_attitude(roll, pitch, yaw,
                     path_angle, /* Using differently on purpose */
-                    cross_track_error, /* Using differently on purpose */
-                    (float) heading_angle_diff); /* @TODO: add rates */
+                    heading_angle_diff, /* Using differently on purpose */
+                    (float) u_pulse); /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
 
             control_loop_count++;

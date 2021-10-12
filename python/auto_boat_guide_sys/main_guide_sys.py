@@ -319,6 +319,7 @@ if __name__ == '__main__':
 
                     rollspeed = nav_msg['rollspeed'] # Using as path angle
                     pitchspeed = nav_msg['pitchspeed'] # Using as cross track error
+                    yawspeed = nav_msg['yawspeed'] # Using as u_pulse
 
                     cf_heading_angle = yaw*180.0/np.pi
                     if cf_heading_angle < 0.0:
@@ -347,6 +348,7 @@ if __name__ == '__main__':
                     print("    path angle: {0:.6g}".format(path_angle))
                     print("    cte:        {0:.6g}".format(
                         pitchspeed*180.0/np.pi))
+                    pritn("    u_pulse: {}".format(yawspeed))
                     print("    yaw:        {0:.6g}".format(yaw))
                     print("    pitch:      {0:.6g}".format(pitch))
                     print("    roll:       {0:.6g}".format(roll))
@@ -377,10 +379,10 @@ if __name__ == '__main__':
                     print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                     print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
-                    wp_prev_en = np.array([[wp_prev_ned[0, 0],
-                                            wp_prev_ned[0, 1]]])
-                    vehi_pt_en = np.array([[vehi_pt_ned[0, 0],
-                                            vehi_pt_ned[0, 1]]])
+                    wp_prev_en = np.array([[wp_prev_ned[0, 1],
+                                            wp_prev_ned[0, 0]]])
+                    vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
+                                            vehi_pt_ned[0, 0]]])
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])
 

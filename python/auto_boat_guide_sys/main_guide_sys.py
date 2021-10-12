@@ -330,6 +330,10 @@ if __name__ == '__main__':
                     if path_angle < 0.0:
                         path_angle = 360.0 + path_angle
 
+                    angle_diff = pitchspeed*180.0/np.pi
+                    if angle_diff < 0.0:
+                        angle_diff = 360.0 + angle_diff
+
                 if msg_type == 'GPS_RAW_INT':
 
                     nav_msg = msg.to_dict()
@@ -347,9 +351,8 @@ if __name__ == '__main__':
                     print("    cog:        {0:.6g}".format(cog))
                     print("    CF heading: {0:.6g}".format(cf_heading_angle))
                     print("    path angle: {0:.6g}".format(path_angle))
-                    print("    cte:        {0:.6g}".format(
-                        pitchspeed*180.0/np.pi))
-                    print("    u_pulse:    {}".format(yawspeed))
+                    print("    cte:        {0:.6g}".format(angle_diff))
+                    print("    u_pulse:    {0:.6g}".format(yawspeed))
                     print("    yaw:        {0:.6g}".format(yaw))
                     print("    pitch:      {0:.6g}".format(pitch))
                     print("    roll:       {0:.6g}".format(roll))

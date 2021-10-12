@@ -37,7 +37,7 @@
 #define LOWER_ACT_BOUND ((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
 #define SERVO_PAD 0.0
-#define SERVO_DELTA ((float) (RC_RX_MID_COUNTS - RC_RX_MIN_COUNTS)) - SERVO_PAD
+#define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))
 
 #define TRANSMIT_PRD 500 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
@@ -515,8 +515,8 @@ int main(void) {
 
                 // Scale resulting control input
                 u /= UPPER_ACT_BOUND;
-                u *= (SERVO_DELTA);
-                u += ((float) RC_RX_MID_COUNTS);
+                u *= (SERVO_DELTA - SERVO_PAD);
+                u += ((float) RC_SERVO_CENTER_PULSE);
                 u_pulse = ((uint16_t) u);
 
                 RC_servo_set_pulse(u_pulse, RC_STEERING);

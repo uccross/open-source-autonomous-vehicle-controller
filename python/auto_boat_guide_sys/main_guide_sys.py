@@ -348,7 +348,7 @@ if __name__ == '__main__':
                     print("    path angle: {0:.6g}".format(path_angle))
                     print("    cte:        {0:.6g}".format(
                         pitchspeed*180.0/np.pi))
-                    print("    u_pulse: {}".format(yawspeed))
+                    print("    u_pulse:    {}".format(yawspeed))
                     print("    yaw:        {0:.6g}".format(yaw))
                     print("    pitch:      {0:.6g}".format(pitch))
                     print("    roll:       {0:.6g}".format(roll))

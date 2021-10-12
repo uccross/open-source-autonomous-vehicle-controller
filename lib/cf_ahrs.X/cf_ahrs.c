@@ -84,7 +84,7 @@ void cf_ahrs_init(float desired_dt, const float exp_gyro_bias[MSZ]) {
 
     /* See https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm 
      * for values (changes by 0.08 degrees each year) 
-     *              East,   North,    Down            */
+     *              East,    North,     Down            */
     lin_alg_set_v(5249.8, 22722.9, 41327.4, mag_vi);
     float mag_vi_norm = lin_alg_v_norm(mag_vi);
 
@@ -202,11 +202,11 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
      * the sign of rotation with the reference vectors */
 
     q_gyro[0] = 0.0;
-    q_gyro[1] = gyro_vb[0] - w_meas_sum[0] - gyro_bias[0];
+    q_gyro[1] = -gyro_vb[0] - w_meas_sum[0] + gyro_bias[0];
 
-    q_gyro[2] = gyro_vb[1] - w_meas_sum[1] - gyro_bias[1];
+    q_gyro[2] = -gyro_vb[1] - w_meas_sum[1] + gyro_bias[1];
 
-    q_gyro[3] = gyro_vb[2] - w_meas_sum[2] - gyro_bias[2];
+    q_gyro[3] = -gyro_vb[2] - w_meas_sum[2] + gyro_bias[2];
 
     lin_alg_q_mult(q_est, q_gyro, q_est_dot);
 

@@ -341,23 +341,24 @@ if __name__ == '__main__':
                     cog = nav_msg['cog']
 
                     print("**************************************************")
-                    print("    cog: {}".format(cog))
-                    print("    CF heading: {}".format(cf_heading_angle))
-                    print("    path angle: {}".format(path_angle))
-                    print("    cte:        {}".format(pitchspeed*180.0/np.pi))
-                    print("    yaw:        {}, type: {}".format(yaw,
-                                                                   type(yaw)))
-                    print("    pitch:      {}, type: {}".format(pitch, type(pitch)))
-                    print("    roll:       {}, type: {}".format(roll, type(roll)))
-                    print("    xacc:       {}".format(xacc))
-                    print("    yacc:       {}".format(yacc))
-                    print("    zacc:       {}".format(zacc))
-                    print("    xmag:       {}".format(xmag))
-                    print("    ymag:       {}".format(ymag))
-                    print("    zmag:       {}".format(zmag))
-                    print("    xgyro:      {}".format(xgyro))
-                    print("    ygyro:      {}".format(ygyro))
-                    print("    zgyro:      {}".format(zgyro))
+                    print("    mode:       {0:.6g}".format(current_base_mode))
+                    print("    cog:        {0:.6g}".format(cog))
+                    print("    CF heading: {0:.6g}".format(cf_heading_angle))
+                    print("    path angle: {0:.6g}".format(path_angle))
+                    print("    cte:        {0:.6g}".format(
+                        pitchspeed*180.0/np.pi))
+                    print("    yaw:        {0:.6g}".format(yaw))
+                    print("    pitch:      {0:.6g}".format(pitch))
+                    print("    roll:       {0:.6g}".format(roll))
+                    print("    xacc:       {0:.6g}".format(xacc))
+                    print("    yacc:       {0:.6g}".format(yacc))
+                    print("    zacc:       {0:.6g}".format(zacc))
+                    print("    xmag:       {0:.6g}".format(xmag))
+                    print("    ymag:       {0:.6g}".format(ymag))
+                    print("    zmag:       {0:.6g}".format(zmag))
+                    print("    xgyro:      {0:.6g}".format(xgyro))
+                    print("    ygyro:      {0:.6g}".format(ygyro))
+                    print("    zgyro:      {0:.6g}".format(zgyro))
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
@@ -394,13 +395,13 @@ if __name__ == '__main__':
             ##################################################################
 
             if msg.get_type() == 'HEARTBEAT':
-                if mode_print_flag:
-                    heartbeat_msg = msg.to_dict()
-                    current_base_mode = heartbeat_msg['base_mode']
+                heartbeat_msg = msg.to_dict()
+                current_base_mode = heartbeat_msg['base_mode']
 
-                    if current_base_mode != last_base_mode:
-                        last_base_mode = current_base_mode
+                if current_base_mode != last_base_mode:
+                    last_base_mode = current_base_mode
 
+                    if mode_print_flag:
                         print("MAVLink base_mode changed: {}".format(
                             current_base_mode))
 

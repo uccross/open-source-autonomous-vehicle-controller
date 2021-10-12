@@ -154,7 +154,7 @@ if __name__ == '__main__':
     t_graph = time.time()
 
     dt = 0.01  # seconds
-    dt_transmit = 0.25  # seconds
+    dt_transmit = 0.5  # seconds
     dt_graph = 0.005 # seconds
     xacc = 0.0
     yacc = 0.0

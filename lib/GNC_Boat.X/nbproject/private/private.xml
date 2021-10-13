@@ -3,13 +3,20 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/ICM-20948.X/ICM_20948.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/RC_RX.X/RC_RX.c</file>
             <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/pid_controller.X/pid_controller.h</file>
-            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/cf_ahrs.X/cf_ahrs.h</file>
             <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/Lin_alg.X/Lin_alg_float.c</file>
-            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/linear_trajectory.X/linear_trajectory.h</file>
-            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/GNC_Boat.X/main_gnc_boat.c</file>
-            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/linear_trajectory.X/linear_trajectory.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/RC_servo.X/RC_servo.c</file>
             <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/cf_ahrs.X/cf_ahrs.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/linear_trajectory.X/linear_trajectory.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/Publisher.X/Publisher.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/Publisher.X/Publisher.h</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/cf_ahrs.X/cf_ahrs.h</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/pid_controller.X/pid_controller.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/GNC_Boat.X/main_gnc_boat.c</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/Lin_alg.X/Lin_alg_float.h</file>
+            <file>file:/C:/Users/ladyb/OneDrive/Documents/open-source-autonomous-vehicle-controller/lib/RC_servo.X/RC_servo.h</file>
         </group>
     </open-files>
 </project-private>

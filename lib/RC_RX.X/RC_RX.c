@@ -51,13 +51,12 @@ struct RCRX_msg_buffer* RCRX_buf_p = &RCRX_msgs;
 
 static int8_t parsing_RX = FALSE;
 static volatile int8_t new_data_avail = FALSE;
-static int8_t parse_error = FALSE;
-static unsigned int parse_error_counter = 0;
 
 typedef enum {
-    WAIT_FOR_START,
+    WAIT_FIRST,
+    GET_SECOND,
+    GET_START,
     GET_DATA,
-    GET_END,
 } RCRX_state_t;
 
 /*******************************************************************************
@@ -89,7 +88,7 @@ void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void);
  * @brief Runs the RX state machine for receiving data, it is called from 
  * within the interrupt and reads the current character
  * @author Aaron Hunter */
-void RCRX_run_RX_state_machine(uint8_t char_in);
+static void RCRX_run_RX_state_machine(uint8_t char_in);
 
 /**
  * @Function uint8_t RCRX_calc_cmd(RCRX_channel_buffer* channels)
@@ -222,13 +221,37 @@ void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
  * @brief Runs the RX state machine for receiving data, it is called from 
  * within the interrupt and reads the current character
  * @author Aaron Hunter */
-void RCRX_run_RX_state_machine(uint8_t char_in) {
-    static RCRX_state_t current_state = WAIT_FOR_START;
-    RCRX_state_t next_state = WAIT_FOR_START;
 
+/**
+ * @Function void RCRX_run_RX_state_machine(uint8_t char_in);
+ * @param char_in, next character to process
+ * @return None
+ * @brief Runs the RX state machine for receiving data, it is called from 
+ * within the interrupt and reads the current character
+ * @author Aaron Hunter */
+static void RCRX_run_RX_state_machine(uint8_t char_in) {
+    static RCRX_state_t current_state = WAIT_FIRST;
+    RCRX_state_t next_state;
     static uint8_t byte_counter = 0;
     switch (current_state) {
-        case WAIT_FOR_START:
+        case WAIT_FIRST:
+#ifdef USB_DEBUG
+            printf("%c", char_in);
+#endif
+            if (char_in == END_BYTE) {
+                next_state = GET_SECOND;
+            } else {
+                next_state = WAIT_FIRST;
+            }
+            break;
+        case GET_SECOND:
+            if (char_in == END_BYTE) {
+                next_state = GET_START;
+            } else {
+                next_state = WAIT_FIRST;
+            }
+            break;
+        case GET_START:
             if (char_in == START_BYTE) {
                 byte_counter = 0;
                 parsing_RX = TRUE; //set parsing flag
@@ -237,36 +260,27 @@ void RCRX_run_RX_state_machine(uint8_t char_in) {
                 byte_counter++;
                 next_state = GET_DATA;
             } else {
-                next_state = WAIT_FOR_START;
+                next_state = WAIT_FIRST;
             }
             break;
         case GET_DATA:
             RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = char_in;
             byte_counter++;
-            if (byte_counter == (SBUS_BUFFER_LENGTH - 1)) {
-                next_state = GET_END;
-            } else {
-                next_state = GET_DATA;
-            }
-            break;
-        case GET_END:
-            if (char_in == END_BYTE) {
-                RCRX_msgs.sbus_buffer[RCRX_msgs.write_index][byte_counter] = END_BYTE;
+            if (byte_counter == (SBUS_BUFFER_LENGTH)) {
                 // set read index to most recent messsage
                 RCRX_msgs.read_index = RCRX_msgs.write_index;
                 //advance write index and wrap
                 RCRX_msgs.write_index = (RCRX_msgs.write_index + 1) % RX_NUM_MSGS;
                 new_data_avail = TRUE;
-                parse_error = FALSE; //clear previous parsing error
+                parsing_RX = FALSE; //clear the parsing flag to let app know write data is most current
+                next_state = WAIT_FIRST;
+
             } else {
-                parse_error = TRUE; //error occurred
-                parse_error_counter++;
+                next_state = GET_DATA;
             }
-            parsing_RX = FALSE; //clear the parsing flag to let app know write data is most current
-            next_state = WAIT_FOR_START;
             break;
         default:
-            next_state = WAIT_FOR_START;
+            next_state = WAIT_FIRST;
             break;
     }
     current_state = next_state;

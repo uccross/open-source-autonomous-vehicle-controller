@@ -118,7 +118,7 @@ char check_IMU_events(uint8_t data_type, struct IMU_output *data) {
         if (data_type == SCALED) {
             IMU_get_scaled_data(&IMU_scaled);
         }
-        
+
         data->acc.x = IMU_scaled.acc.x;
         data->acc.y = IMU_scaled.acc.y;
         data->acc.z = IMU_scaled.acc.z;
@@ -483,17 +483,17 @@ uint16_t calc_pw(uint16_t raw_counts) {
 }
 
 void set_control_output(void) {
-    int tol = 100;
-    if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
-        // update pulsewidths for each servo output
-        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
-    } else {
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
-    }
+    //    int tol = 100;
+    //    if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
+    // update pulsewidths for each servo output
+    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+    RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+    RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+    //    } else {
+    //        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
+    //        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
+    //        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+    //    }
 }
 /******************************************************************************
  * UNIT TEST(S)                                                               *

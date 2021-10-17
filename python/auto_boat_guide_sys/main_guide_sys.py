@@ -136,7 +136,7 @@ if __name__ == '__main__':
         # Handle any cleanup here
 
         # Close the csv file and mavlink connection
-        logger.close_log()  
+        logger.close_log()
         logger.close_mav_conn()
 
         print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
@@ -158,8 +158,8 @@ if __name__ == '__main__':
 
     dt = 0.01  # seconds
     dt_transmit = 0.5  # seconds
-    dt_graph = 0.005 
-    dt_hard_write = 5.0 # seconds
+    dt_graph = 0.005
+    dt_hard_write = 5.0  # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -174,6 +174,16 @@ if __name__ == '__main__':
     cf_heading_angle = 0.0
     path_angle = 0.0
     angle_diff = 0.0
+
+    xacc = 0.0
+    yacc = 0.0
+    zacc = 0.0
+    xmag = 0.0
+    ymag = 0.0
+    zmag = 0.0
+    xgyro = 0.0
+    ygyro = 0.0
+    zgyro = 0.0
 
     heading_angle = 0.0
 
@@ -329,14 +339,15 @@ if __name__ == '__main__':
                     pitch = nav_msg['pitch']
                     roll = nav_msg['roll']
 
-                    rollspeed = nav_msg['rollspeed'] # Using as path angle
-                    pitchspeed = nav_msg['pitchspeed'] # Using as cross track error
-                    yawspeed = nav_msg['yawspeed'] # Using as u_pulse
+                    rollspeed = nav_msg['rollspeed']  # Using as path angle
+                    # Using as cross track error
+                    pitchspeed = nav_msg['pitchspeed']
+                    yawspeed = nav_msg['yawspeed']  # Using as u_pulse
 
                     cf_heading_angle = yaw*180.0/np.pi
                     if cf_heading_angle < 0.0:
                         cf_heading_angle = 360.0 + cf_heading_angle
-                    
+
                     path_angle = rollspeed*180.0/np.pi
                     if path_angle < 0.0:
                         path_angle = 360.0 + path_angle
@@ -435,13 +446,12 @@ if __name__ == '__main__':
 
                 print("Time: {}".format(t_new))
 
-
         #######################################################################
         # Graphing
         if (t_new - t_graph) >= dt_graph:
             t_graph = t_new
             if (vizualize_attitude_flag and ((state == 'WAITING_TO_UPDATE_WPS')
-                                                or state == 'SENDING_NEXT_WP')):
+                                             or state == 'SENDING_NEXT_WP')):
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     if msg:
                         av.update(msg)
@@ -476,14 +486,14 @@ if __name__ == '__main__':
 
                 msg_list = [echo_msg]
 
-        # Periodically close and re-open the file to ensure that the data was 
-        # written to the CSV file, this unfortunately very slow, especially 
+        # Periodically close and re-open the file to ensure that the data was
+        # written to the CSV file, this unfortunately very slow, especially
         # compared to the MAVLink .log file.
         if (t_new - t_hard_write) >= dt_hard_write:
             t_hard_write = t_new
-            logger.close_log()  
+            logger.close_log()
             logger.open_log()
-            
+
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
         # Else, the guidance system is not engaged

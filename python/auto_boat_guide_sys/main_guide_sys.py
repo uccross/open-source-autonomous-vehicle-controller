@@ -168,6 +168,8 @@ if __name__ == '__main__':
     pitch = 0.0
     roll = 0.0
 
+    cf_heading_angle = 0.0
+
     heading_angle = 0.0
 
     # State Machine Transitions

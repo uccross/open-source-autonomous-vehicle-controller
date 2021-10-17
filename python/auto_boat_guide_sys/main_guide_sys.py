@@ -187,6 +187,32 @@ if __name__ == '__main__':
 
     heading_angle = 0.0
 
+    cog = 0.0
+
+    wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
+
+    vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
+
+    wp_prev_lla = np.array([[0.0, 0.0, 0.0]])    
+    vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])   
+    wp_next_lla = np.array([[0.0, 0.0, 0.0]])       
+
+    wp_prev_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
+    vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
+    wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
+
+    wp_prev_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
+    vehi_pt_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
+    wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
+
+    wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
+    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
+    wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
+
+    wp_prev_en = np.array([[wp_prev_ned[0, 1], wp_prev_ned[0, 0]]])
+    vehi_pt_en = np.array([[vehi_pt_ned[0, 1], vehi_pt_ned[0, 0]]])
+    wp_next_en = np.array([[wp_next_ned[0, 1], wp_next_ned[0, 0]]])
+
     # State Machine Transitions
     last_base_mode = -1
     state = 'IDLE'
@@ -437,7 +463,6 @@ if __name__ == '__main__':
                 print("    wp_next_en = {}".format(wp_next_en))
                 print("    norm = {}".format(
                     np.linalg.norm(vehi_pt_en - wp_next_en)))
-                
 
                 if current_base_mode != last_base_mode:
                     last_base_mode = current_base_mode

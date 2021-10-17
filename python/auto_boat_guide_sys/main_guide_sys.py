@@ -167,6 +167,9 @@ if __name__ == '__main__':
     yaw = 0.0
     pitch = 0.0
     roll = 0.0
+    yawspeed = 0.0
+    pitchspeed = 0.0
+    rollspeed = 0.0
 
     cf_heading_angle = 0.0
     path_angle = 0.0

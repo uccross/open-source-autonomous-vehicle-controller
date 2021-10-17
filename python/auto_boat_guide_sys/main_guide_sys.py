@@ -193,17 +193,17 @@ if __name__ == '__main__':
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_lla = np.array([[0.0, 0.0, 0.0]])    
-    vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])   
-    wp_next_lla = np.array([[0.0, 0.0, 0.0]])       
+    wp_prev_lla = np.array([[0.0, 0.0, 0.0]])
+    vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
+    wp_next_lla = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
-    vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
-    wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]]) 
+    wp_prev_lla_copy = np.array([[0.0, 0.0, 0.0]])
+    vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]])
+    wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
-    vehi_pt_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
-    wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]]) 
+    wp_prev_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
+    vehi_pt_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
+    wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
 
     wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
@@ -426,7 +426,10 @@ if __name__ == '__main__':
             # END OF STATE MACHINE
             ##################################################################
 
-            if msg.get_type() == 'HEARTBEAT':
+            if ((msg.get_type() == 'HEARTBEAT')
+                and ((state == 'WAITING_TO_UPDATE_WPS')
+                     or state == 'SENDING_NEXT_WP')):
+                     
                 heartbeat_msg = msg.to_dict()
                 current_base_mode = heartbeat_msg['base_mode']
 

@@ -169,6 +169,8 @@ if __name__ == '__main__':
     roll = 0.0
 
     cf_heading_angle = 0.0
+    path_angle = 0.0
+    angle_diff = 0.0
 
     heading_angle = 0.0
 

@@ -83,11 +83,8 @@ class MAVCSVLogger():
             self.writer = csv.DictWriter(csvfile, fieldnames=self.headers)
             self.writer.writeheader()
 
-        # Change to appending
-        self.csv_file_obj = open(self.csv_file, 'a')
-        self.writer = csv.DictWriter(self.csv_file_obj,
-                                     fieldnames=self.headers)
-        # extrasaction='ignore',
+        # Open the file and change to appending
+        self.open_log()
 
         return None
 
@@ -176,11 +173,24 @@ class MAVCSVLogger():
             0.0,
             0.0)
 
+    def open_log(self):
+        """
+        Wrapper function
+        """
+        self.csv_file_obj = open(self.csv_file, 'a')
+        self.writer = csv.DictWriter(self.csv_file_obj,
+                                     fieldnames=self.headers)
+
     def close_log(self):
         """
         Wrapper function
         """
         self.csv_file_obj.close()
+
+    def close_mav_conn(self):
+        """
+        Wrapper function
+        """
         self.mav_conn.close()
 
 

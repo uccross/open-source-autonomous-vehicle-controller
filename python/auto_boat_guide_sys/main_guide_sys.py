@@ -135,7 +135,9 @@ if __name__ == '__main__':
         """
         # Handle any cleanup here
 
-        logger.close_log()  # Close the csv file and mavlink connection
+        # Close the csv file and mavlink connection
+        logger.close_log()  
+        logger.close_mav_conn()
 
         print('\r\nSIGINT or CTRL-C detected. Exiting gracefully.')
         print('csv file closed')
@@ -152,10 +154,12 @@ if __name__ == '__main__':
     t_old = time.time()
     t_transmit = time.time()
     t_graph = time.time()
+    t_hard_write = time.time()
 
     dt = 0.01  # seconds
     dt_transmit = 0.5  # seconds
-    dt_graph = 0.005 # seconds
+    dt_graph = 0.005 
+    dt_hard_write = 5.0 # seconds
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -465,6 +469,14 @@ if __name__ == '__main__':
 
                 msg_list = [echo_msg]
 
+        # Periodically close and re-open the file to ensure that the data was 
+        # written to the CSV file, this unfortunately very slow, especially 
+        # compared to the MAVLink .log file.
+        if (t_new - t_hard_write) >= dt_hard_write:
+            t_hard_write = t_new
+            logger.close_log()  
+            logger.open_log()
+            
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
         # Else, the guidance system is not engaged

@@ -53,19 +53,13 @@
 int main(void) {
     uint32_t cur_time = 0;
     uint32_t transmit_time = 0;
-    uint32_t gps_start_time = 0;
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
-    uint32_t sm_start_time = 0;
-    //    uint8_t index;
+
     int8_t IMU_state = ERROR;
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
-
-    uint32_t i = 0;
-    uint32_t i_gyro = 0;
-    uint32_t j = 0;
 
 
 
@@ -151,16 +145,12 @@ int main(void) {
     float mag[MSZ] = {0.0};
     float gyro_bias[MSZ] = {0.0};
     float gyro[MSZ] = {0.0};
-    float gyro_x_buf[GYRO_BUF_LEN] = {0.0};
-    float gyro_y_buf[GYRO_BUF_LEN] = {0.0};
-    float gyro_z_buf[GYRO_BUF_LEN] = {0.0};\
-    char gyro_init_avg = FALSE;
     float roll = 0.0;
     float pitch = 0.0;
     float yaw = 0.0;
-    float roll_rate = 0.0;
-    float pitch_rate = 0.0;
-    float yaw_rate = 0.0;
+    //    float roll_rate = 0.0;
+    //    float pitch_rate = 0.0;
+    //    float yaw_rate = 0.0;
 
     // Controller
     pid_controller_t trajectory_tracker;
@@ -462,32 +452,6 @@ int main(void) {
 
                 }
             }
-            /******************************************************************
-             * Estimate the gyro drift with a moving average                  *
-             *****************************************************************/
-            //            gyro_x_buf[i_gyro] = gyro[0] / GYRO_N;
-            //            gyro_y_buf[i_gyro] = gyro[1] / GYRO_N;
-            //            gyro_z_buf[i_gyro] = gyro[2] / GYRO_N;
-            //
-            //            i_gyro = i % GYRO_BUF_LEN;
-            //
-            //            /* Update the average gyro bias */
-            //            if (i_gyro == 0) {
-            //
-            //                gyro_bias[0] = 0.0;
-            //                gyro_bias[2] = 0.0;
-            //                gyro_bias[3] = 0.0;
-            //
-            //                for (j = 0; j < GYRO_BUF_LEN; j++) {
-            //                    gyro_bias[0] += gyro_x_buf[j];
-            //                    gyro_bias[1] += gyro_y_buf[j];
-            //                    gyro_bias[2] += gyro_z_buf[j];
-            //                }
-            //
-            //                gyro_init_avg = TRUE;
-            //            }
-            //
-            //            i++;
 
             /******************************************************************
              * Control                                                        *
@@ -542,16 +506,11 @@ int main(void) {
                     heading_angle_diff, /* Using differently on purpose */
                     (float) u_pulse); /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
+            publish_GPS();
 
             control_loop_count++;
         }
 
-        // Publish GPS
-        //#ifdef USING_GPS
-        if (cur_time - gps_start_time >= GPS_PERIOD) {
-            gps_start_time = cur_time; //reset GPS timer
-            publish_GPS();
-        }
         //#endif
         // Publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {

@@ -383,9 +383,9 @@ void publish_GPS(void) {
             GPS_FIX_TYPE_3D_FIX,
             rmc_lat_int,
             rmc_long_int,
-            (int) (heading_angle * 1000000.0), // Replacing altitude with heading_angle
+            0, 
             (uint16_t) (gsa_hdop * 1000000.0),
-            (uint16_t) (rmc_vel * 1000), // Replacing epv/VDOP velocity - TODO: find why vel doesn't show up in .csv log file
+            0, // epv/VDOP velocity
             (uint16_t) (rmc_vel * 1000),
             (uint16_t) (rmc_cog),
             255, //satellites visible again, currently don't care

@@ -9,10 +9,6 @@
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
 import numpy as np
-import matplotlib
-import matplotlib.pyplot as plt
-import time
-from matplotlib.animation import FFMpegWriter
 
 
 def setQuaternionEulerAngles(psi, theta, phi):

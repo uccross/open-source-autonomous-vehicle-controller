@@ -228,10 +228,13 @@ if __name__ == '__main__':
                   'TRACKING_WP': 8}
 
     # Waypoint Queue       N/S Lat   , E/W Long
-    waypoints = np.array([[36.9557439, -122.0604691],
-                          [36.9556638, -122.0606960],
-                          [36.9554362, -122.0607348],
-                          [36.9556224, -122.0604107]])
+    # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
+    #                       [36.9556638, -122.0606960],
+    #                       [36.9554362, -122.0607348],
+    #                       [36.9556224, -122.0604107]])
+    waypoints = np.array([[36.9836576, -122.0238656], # Franklin street
+                          [36.9835265, -122.0241790],
+                          [36.9834655, -122.0241469]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     msg_type = None
@@ -523,10 +526,10 @@ if __name__ == '__main__':
         # Periodically close and re-open the file to ensure that the data was
         # written to the CSV file, this unfortunately very slow, especially
         # compared to the MAVLink .log file.
-        if (t_new - t_hard_write) >= dt_hard_write:
-            t_hard_write = t_new
-            logger.close_log()
-            logger.open_log()
+        # if (t_new - t_hard_write) >= dt_hard_write:
+        #     t_hard_write = t_new
+        #     logger.close_log()
+        #     logger.open_log()
 
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.

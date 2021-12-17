@@ -243,7 +243,7 @@ if __name__ == '__main__':
     #                       [36.9556638, -122.0606960],
     #                       [36.9554362, -122.0607348],
     #                       [36.9556224, -122.0604107]])
-    waypoints = np.array([[36.9836576, -122.0238656], # Franklin street
+    waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
                           [36.9835265, -122.0241790],
                           [36.9834655, -122.0241469]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
@@ -443,7 +443,7 @@ if __name__ == '__main__':
             if ((msg.get_type() == 'HEARTBEAT')
                 and ((state == 'WAITING_TO_UPDATE_WPS')
                      or state == 'SENDING_NEXT_WP')):
-                     
+
                 heartbeat_msg = msg.to_dict()
                 current_base_mode = heartbeat_msg['base_mode']
 
@@ -507,7 +507,9 @@ if __name__ == '__main__':
             if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
                 if (msg_type == 'ATTITUDE'):
                     if msg:
-                        tracker.update(msg, position_en=vehi_pt_en)
+                        tracker.update(msg, wp_prev_en=wp_prev_en,
+                                       wp_next_en=wp_next_en,
+                                       position_en=vehi_pt_en)
 
         #######################################################################
         # Log messages (at intervals)

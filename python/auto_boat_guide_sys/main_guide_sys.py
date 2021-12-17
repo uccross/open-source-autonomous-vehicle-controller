@@ -507,7 +507,7 @@ if __name__ == '__main__':
             if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
                 if (msg_type == 'ATTITUDE'):
                     if msg:
-                        tracker.update()
+                        tracker.update(msg)
 
         #######################################################################
         # Log messages (at intervals)

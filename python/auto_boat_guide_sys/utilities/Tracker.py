@@ -14,7 +14,7 @@ from matplotlib import gridspec
 
 
 class Tracker():
-    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=20):
+    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15):
         """
         :param graphInterval: number of main loop cycles before next dynamic
         graph evaluation
@@ -68,7 +68,7 @@ class Tracker():
 
         self.projxz = self.ax0.plot([], [], [], lw=2, color='blue')[0]
         self.projyz = self.ax0.plot([], [], [], lw=2, color='orange')[0]
-        self.projzx = self.ax0.plot([], [], [], lw=2, color='red')[0]
+        self.projyx = self.ax0.plot([], [], [], lw=2, color='red')[0]
 
         self.ax0.plot(cb, cc-self.offset, ca, lw=2, color='blue')[0]
         self.ax0.plot(cc-self.offset, ca, cb, lw=2, color='orange')[0]
@@ -102,7 +102,7 @@ class Tracker():
         self.ax1.set_title('Position')
         self.ax1.set_xlim(-x_bound, x_bound)
         self.ax1.set_ylim(-y_bound, y_bound)
-        self.ax1.set_ylim(-z_bound, z_bound)
+        self.ax1.set_zlim(-z_bound, z_bound)
         self.ax0.view_init(30, 30)
         self.ax0.set_xlabel("East (meters)")
         self.ax0.set_ylabel("North (meters)")
@@ -113,18 +113,22 @@ class Tracker():
                                   label='Cross-Track Error')[0]
 
         # Current linear trajectory segment vector
-        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple', 
-            label='Linear Trajectory')[0]
+        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple',
+                                     label='Linear Trajectory')[0]
 
         # Previous Waypoint
-        self.lin_prev = self.ax1.scatter([], [], lw=2, edgecolors='tab:blue',
+        self.lin_prev = self.ax1.scatter([], [], edgecolors='tab:blue',
                                          color='None', label='Prev WP')
         # Next Waypoint
-        self.lin_next = self.ax1.scatter([], [], lw=2, edgecolors='tab:orange',
+        self.lin_next = self.ax1.scatter([], [], edgecolors='tab:orange',
                                          color='None', label='Next WP')
 
+        # Vehicle Position
+        self.position = self.ax1.scatter([], [], edgecolors='tab:purple',
+                                         color='None', label='Position')
+
         # Heading Vector
-        self.heading_vec = self.ax1.plot([], [], lw=2, color='tab:purple')[0]
+        self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]
 
         self.ax1legend = self.ax1.legend()
 
@@ -139,12 +143,15 @@ class Tracker():
         self.j = 0  # Index for graphing
 
     def update(self, msg, wp_prev_en=np.zeros((1, 2)),
-               wp_next_en=np.zeros((1, 2)), clst_pt_en=np.zeros((1, 2))):
+               wp_next_en=np.zeros((1, 2)), clst_pt_en=np.zeros((1, 2)),
+               position_en=np.zeros((1, 2))):
         """
         :param msg: A MAVLink 'ATTITUDE' message
         :param wp_prev_en: The prev waypoint (meters) 1x2 vector: East, North
         :param wp_next_en: The next waypoint (meters) 1x2 vector: East, North
         :param clst_pt_en: The closest point (meters) 1x2 vector: East, North
+        :param position_en: The vehicle position (meters) 1x2 vector: East, 
+        North
         :return: None
         """
         if (msg.get_type() != 'ATTITUDE'):
@@ -162,6 +169,7 @@ class Tracker():
                 self.pitch = nav_msg['pitch']
                 self.roll = nav_msg['roll']
 
+            ###################################################################
             # Attitude
             attQuatX = Qu.rotateVectorWithQuaternion(
                 self.attVecX,
@@ -181,6 +189,7 @@ class Tracker():
                 self.pitch,
                 self.roll)
 
+            ###################################################################
             # Projecting the x-vector onto the three different planes
             self.projxz.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
                                  np.array([-self.offset, -self.offset]))
@@ -192,11 +201,12 @@ class Tracker():
             self.projyz.set_3d_properties(
                 np.array([self.og[2, 0], attQuatX[2, 0]]))
 
-            self.projzx.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
+            self.projyx.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
                                  np.array([self.og[1, 0], attQuatX[1, 0]]))
-            self.projzx.set_3d_properties(
+            self.projyx.set_3d_properties(
                 np.array([-self.offset, -self.offset]))
 
+            ###################################################################
             # Drawing the body reference-frame
             self.lineAttX.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
                                    np.array([self.og[1, 0], attQuatX[1, 0]]))
@@ -212,16 +222,23 @@ class Tracker():
                                    np.array([self.og[1, 0], attQuatZ[1, 0]]))
             self.lineAttZ.set_3d_properties(np.array([self.og[2, 0],
                                                       attQuatZ[2, 0]]))
+            ###################################################################
+            # Position
+            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
+            
+            self.heading_vec.set_data(np.array([position_en[0, 0],
+                                             position_en[0, 1]]))
 
             ###################################################################
             # Draw
 
+            ###################################################################
             # ax0
             self.fig.canvas.restore_region(self.background0)
             self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
             self.ax0.draw_artist(self.projxz)
             self.ax0.draw_artist(self.projyz)
-            self.ax0.draw_artist(self.projzx)
+            self.ax0.draw_artist(self.projyx)
             self.ax0.draw_artist(self.lineAttX)
             self.ax0.draw_artist(self.lineAttY)
             self.ax0.draw_artist(self.lineAttZ)
@@ -230,12 +247,14 @@ class Tracker():
 
             self.fig.canvas.flush_events()
 
+            ###################################################################
             # ax1
             self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.norm)
             self.ax1.draw_artist(self.lin_tra)
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)
+            self.ax1.draw_artist(self.position)
             self.ax1.draw_artist(self.heading_vec)
 
             self.fig.canvas.blit(self.ax1.bbox)
@@ -243,6 +262,8 @@ class Tracker():
             self.fig.canvas.flush_events()
 
             self.j += 1
+
+            ###################################################################
 
         self.i += 1
 

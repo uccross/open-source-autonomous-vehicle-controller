@@ -126,7 +126,7 @@ class AttitudeVizualizer():
 
         self.projxz = self.ax0.plot([], [], [], lw=2, color='blue')[0]
         self.projyz = self.ax0.plot([], [], [], lw=2, color='orange')[0]
-        self.projzx = self.ax0.plot([], [], [], lw=2, color='red')[0]
+        self.projyx = self.ax0.plot([], [], [], lw=2, color='red')[0]
 
         self.ax0.plot(cb, cc-self.offset, ca, lw=2, color='blue')[0]
         self.ax0.plot(cc-self.offset, ca, cb, lw=2, color='orange')[0]
@@ -312,9 +312,9 @@ class AttitudeVizualizer():
             self.projyz.set_3d_properties(
                 np.array([self.og[2, 0], attQuatX[2, 0]]))
 
-            self.projzx.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
+            self.projyx.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
                                  np.array([self.og[1, 0], attQuatX[1, 0]]))
-            self.projzx.set_3d_properties(
+            self.projyx.set_3d_properties(
                 np.array([-self.offset, -self.offset]))
 
             # Drawing the body reference-frame
@@ -422,7 +422,7 @@ class AttitudeVizualizer():
             self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
             self.ax0.draw_artist(self.projxz)
             self.ax0.draw_artist(self.projyz)
-            self.ax0.draw_artist(self.projzx)
+            self.ax0.draw_artist(self.projyx)
             self.ax0.draw_artist(self.lineAttX)
             self.ax0.draw_artist(self.lineAttY)
             self.ax0.draw_artist(self.lineAttZ)

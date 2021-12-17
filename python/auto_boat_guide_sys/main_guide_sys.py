@@ -132,7 +132,7 @@ if __name__ == '__main__':
 
     # Tracker
     if tracker_flag:
-        tracker = TR.
+        tracker = TR.Tracker(graphInterval=1)
 
     ###########################################################################
     # Helper method, based on
@@ -505,7 +505,10 @@ if __name__ == '__main__':
                         av.update(msg)
 
             if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
-                tracker.update()
+                if (msg_type == 'ATTITUDE'):
+                    if msg:
+                        av.update(msg)
+                        racker.update()
 
         #######################################################################
         # Log messages (at intervals)

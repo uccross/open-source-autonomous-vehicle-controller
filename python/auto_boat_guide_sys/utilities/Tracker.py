@@ -103,10 +103,10 @@ class Tracker():
         self.ax1.set_xlim(-x_bound, x_bound)
         self.ax1.set_ylim(-y_bound, y_bound)
         self.ax1.set_zlim(-z_bound, z_bound)
-        self.ax0.view_init(30, 70)
-        self.ax0.set_xlabel("East (meters)")
-        self.ax0.set_ylabel("North (meters)")
-        self.ax0.set_zlabel("Up (meters)")
+        self.ax1.view_init(70, 30)
+        self.ax1.set_xlabel("East (meters)")
+        self.ax1.set_ylabel("North (meters)")
+        self.ax1.set_zlabel("Up (meters)")
 
         # Vector tangent to the current linear trajectory segment vector
         self.norm = self.ax1.plot([], [], lw=2, color='lime',
@@ -129,7 +129,7 @@ class Tracker():
 
         # Vehicle Position
         self.position = self.ax1.scatter([], [], lw=2, edgecolors='tab:purple',
-                                         color='None', s=70, label='Position')
+                                         color='None', s=50, label='Position')
 
         # Heading Vector
         self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]

@@ -32,7 +32,7 @@ class Tracker():
 
         #######################################################################
         # Setup Dynamic Graphing
-        self.fig = plt.figure(figsize=(16, 8))
+        self.fig = plt.figure(figsize=(18, 9))
         # self.fig = plt.figure()
 
         gs = gridspec.GridSpec(nrows=4, ncols=6)
@@ -113,19 +113,19 @@ class Tracker():
                                   label='Cross-Track Error')[0]
 
         # Current linear trajectory segment vector
-        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple',
+        self.lin_tra = self.ax1.plot([0.0], [0.0], lw=2, color='tab:purple',
                                      label='Linear Trajectory')[0]
 
         # Previous Waypoint
-        self.lin_prev = self.ax1.scatter([], [], edgecolors='tab:blue',
-                                         color='None', label='Prev WP')
+        self.lin_prev = self.ax1.scatter([0.0], [0.0], edgecolors='tab:blue',
+                                         color='None', s=100, label='Prev WP')
         # Next Waypoint
-        self.lin_next = self.ax1.scatter([], [], edgecolors='tab:orange',
-                                         color='None', label='Next WP')
+        self.lin_next = self.ax1.scatter([0.0], [0.0], edgecolors='tab:orange',
+                                         color='None', s=100, label='Next WP')
 
         # Vehicle Position
-        self.position = self.ax1.scatter([], [], edgecolors='tab:purple',
-                                         color='None', label='Position')
+        self.position = self.ax1.scatter([0.0], [0.0], edgecolors='tab:purple',
+                                         color='None', s=100, label='Position')
 
         # Heading Vector
         self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]

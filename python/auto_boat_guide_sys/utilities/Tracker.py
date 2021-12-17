@@ -235,7 +235,7 @@ class Tracker():
             ###################################################################
             # ax0
             self.fig.canvas.restore_region(self.background0)
-            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
+            # self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
             self.ax0.draw_artist(self.projxz)
             self.ax0.draw_artist(self.projyz)
             self.ax0.draw_artist(self.projyx)

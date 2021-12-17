@@ -418,77 +418,66 @@ class AttitudeVizualizer():
             # Gyroscopes Integrated
 
             ###################################################################
-            # ax0
-            self.fig.canvas.restore_region(self.background0)
-            self.ax0.draw_artist(self.projxz)
-            self.fig.canvas.blit(self.ax0.bbox)
+            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
+            #
+            #
+            #
+            self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
+            self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
+            self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
 
-            self.ax0.draw_artist(self.projyz)
-            self.fig.canvas.blit(self.ax0.bbox)
-            
-            self.ax0.draw_artist(self.projzx)
-            self.fig.canvas.blit(self.ax0.bbox)
-            
-            self.ax0.draw_artist(self.lineAttX)
-            self.fig.canvas.blit(self.ax0.bbox)
-            
-            self.ax0.draw_artist(self.lineAttY)
-            self.fig.canvas.blit(self.ax0.bbox)
-            
-            self.ax0.draw_artist(self.lineAttZ)
-            self.fig.canvas.blit(self.ax0.bbox)
-
-            self.fig.canvas.flush_events()
-
-            # ax1
-            self.fig.canvas.restore_region(self.background1)
-            self.ax1.draw_artist(self.points4accelX)
-            self.fig.canvas.blit(self.ax1.bbox)
-
-            self.ax1.draw_artist(self.points4accelY)
-            self.fig.canvas.blit(self.ax1.bbox)
-
-            self.ax1.draw_artist(self.points4accelZ)
-            self.fig.canvas.blit(self.ax1.bbox)
-
-            self.fig.canvas.flush_events()
-
-            # ax2
-            self.fig.canvas.restore_region(self.background2)
-            self.ax2.draw_artist(self.points5magX)
-            self.fig.canvas.blit(self.ax2.bbox)
-
-            self.ax2.draw_artist(self.points5magY)
-            self.fig.canvas.blit(self.ax2.bbox)
-
-            self.ax2.draw_artist(self.points5magZ)
-            self.fig.canvas.blit(self.ax2.bbox)
-
-            self.fig.canvas.flush_events()
-
-            # ax3
-            self.fig.canvas.restore_region(self.background3)
-            self.ax3.draw_artist(self.points6gyroX)
-            self.fig.canvas.blit(self.ax3.bbox)
-
-            self.ax3.draw_artist(self.points6gyroY)
-            self.fig.canvas.blit(self.ax3.bbox)
-
-            self.ax3.draw_artist(self.points6gyroZ)
-            self.fig.canvas.blit(self.ax3.bbox)
-
-            self.fig.canvas.flush_events()
+            # In case an draw event is missed?
+            if ((self.background0 is None) or (self.background1 is None) or
+                    (self.background2 is None) or (self.background3 is None)):
+                self.draw_all()
 
             ###################################################################
-            # Necessary to force gui event processing, because matplotlib is
-            # not as great as you think Apparently the smallest sleep time one
-            # can request from Windows OS is about 10ms
-            # plt.pause(0.01)
+            # DRAW
+            self.draw_all()
 
-            # self.fig.canvas.flush_events()
+            self.fig.canvas.flush_events()
 
             self.j += 1
 
         self.i += 1
 
         return
+
+    def draw_all(self):
+        """
+        Draw all of the subplots
+        """
+        # ax0
+        self.fig.canvas.restore_region(self.background0)
+        self.ax0.draw_artist(self.projxz)
+        self.ax0.draw_artist(self.projyz)
+        self.ax0.draw_artist(self.projzx)
+        self.ax0.draw_artist(self.lineAttX)
+        self.ax0.draw_artist(self.lineAttY)
+        self.ax0.draw_artist(self.lineAttZ)
+
+        self.fig.canvas.blit(self.ax0.bbox)
+
+        # ax1
+        self.fig.canvas.restore_region(self.background1)
+        self.ax1.draw_artist(self.points4accelX)
+        self.ax1.draw_artist(self.points4accelY)
+        self.ax1.draw_artist(self.points4accelZ)
+
+        self.fig.canvas.blit(self.ax1.bbox)
+
+        # ax2
+        self.fig.canvas.restore_region(self.background2)
+        self.ax2.draw_artist(self.points5magX)
+        self.ax2.draw_artist(self.points5magY)
+        self.ax2.draw_artist(self.points5magZ)
+
+        self.fig.canvas.blit(self.ax2.bbox)
+
+        # ax3
+        self.fig.canvas.restore_region(self.background3)
+        self.ax3.draw_artist(self.points6gyroX)
+        self.ax3.draw_artist(self.points6gyroY)
+        self.ax3.draw_artist(self.points6gyroZ)
+
+        self.fig.canvas.blit(self.ax3.bbox)

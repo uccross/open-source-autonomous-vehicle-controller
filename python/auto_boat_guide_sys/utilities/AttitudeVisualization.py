@@ -305,36 +305,35 @@ class AttitudeVizualizer():
 
             # Projecting the x-vector onto the three different planes
             self.projxz.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
-                                np.array([-self.offset, -self.offset]))
+                                 np.array([-self.offset, -self.offset]))
             self.projxz.set_3d_properties(np.array([self.og[2, 0],
                                                     attQuatX[2, 0]]))
 
             self.projyz.set_data(np.array([-self.offset, -self.offset]),
-                                np.array([self.og[1, 0], attQuatX[1, 0]]))
+                                 np.array([self.og[1, 0], attQuatX[1, 0]]))
             self.projyz.set_3d_properties(
                 np.array([self.og[2, 0], attQuatX[2, 0]]))
 
             self.projzx.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
-                                np.array([self.og[1, 0], attQuatX[1, 0]]))
+                                 np.array([self.og[1, 0], attQuatX[1, 0]]))
             self.projzx.set_3d_properties(
                 np.array([-self.offset, -self.offset]))
 
             # Drawing the body reference-frame
             self.lineAttX.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
-                                np.array([self.og[1, 0], attQuatX[1, 0]]))
+                                   np.array([self.og[1, 0], attQuatX[1, 0]]))
             self.lineAttX.set_3d_properties(np.array([self.og[2, 0],
-                                                    attQuatX[2, 0]]))
+                                                      attQuatX[2, 0]]))
 
             self.lineAttY.set_data(np.array([self.og[0, 0], attQuatY[0, 0]]),
-                                np.array([self.og[1, 0], attQuatY[1, 0]]))
+                                   np.array([self.og[1, 0], attQuatY[1, 0]]))
             self.lineAttY.set_3d_properties(np.array([self.og[2, 0],
-                                                    attQuatY[2, 0]]))
+                                                      attQuatY[2, 0]]))
 
             self.lineAttZ.set_data(np.array([self.og[0, 0], attQuatZ[0, 0]]),
-                                np.array([self.og[1, 0], attQuatZ[1, 0]]))
+                                   np.array([self.og[1, 0], attQuatZ[1, 0]]))
             self.lineAttZ.set_3d_properties(np.array([self.og[2, 0],
-                                                    attQuatZ[2, 0]]))
-
+                                                      attQuatZ[2, 0]]))
 
             ###################################################################
             # Accelerometers Raw
@@ -362,7 +361,6 @@ class AttitudeVizualizer():
             # self.ax1.set_xlim(self.wt0, self.wtf)
             #                 ^^^^^^^^^^^^^^^^^^^^^^
 
-
             ###################################################################
             # Magnetometers Raw
             self.magXtoGraph[0:(self.wn - wi-1)] = \
@@ -377,7 +375,7 @@ class AttitudeVizualizer():
             self.magZtoGraph[0:(self.wn - wi-1)] = \
                 self.magZ[(wi+1):self.wn]
             self.magZtoGraph[(self.wn - wi):self.wn] = self.magZ[0:wi]
-                
+
             self.ax2.set_xlim(self.wt0, self.wtf)
             self.ax2.set_ylim(-1.0, 1.0)
 
@@ -418,34 +416,85 @@ class AttitudeVizualizer():
             ###################################################################
             # Gyroscopes Integrated
 
-
-            ###################################################################            
+            ###################################################################
+            # ax0
             self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projxz)
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projyz)
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
+            
+            self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projzx)
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
+            
+            self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttX)
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
+            
+            self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttY)
+            self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
+            
+            self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttZ)
             self.fig.canvas.blit(self.ax0.bbox)
+            self.fig.canvas.flush_events()
 
+            # ax1
             self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelX)
+            self.fig.canvas.blit(self.ax1.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelY)
+            self.fig.canvas.blit(self.ax1.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelZ)
             self.fig.canvas.blit(self.ax1.bbox)
+            self.fig.canvas.flush_events()
 
+            # ax2
             self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magX)
+            self.fig.canvas.blit(self.ax2.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magY)
+            self.fig.canvas.blit(self.ax2.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magZ)
             self.fig.canvas.blit(self.ax2.bbox)
+            self.fig.canvas.flush_events()
 
+            # ax3
             self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroX)
+            self.fig.canvas.blit(self.ax3.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroY)
+            self.fig.canvas.blit(self.ax3.bbox)
+            self.fig.canvas.flush_events()
+
+            self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroZ)
             self.fig.canvas.blit(self.ax3.bbox)
+            self.fig.canvas.flush_events()
 
             ###################################################################
             # Necessary to force gui event processing, because matplotlib is

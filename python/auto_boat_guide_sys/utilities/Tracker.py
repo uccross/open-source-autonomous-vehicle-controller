@@ -40,8 +40,8 @@ class Tracker():
         # Attitude
         self.ax0 = self.fig.add_subplot(gs[0:2, 0:2], projection='3d')
 
-        # Position 
-        self.ax1 = self.fig.add_subplot(gs[0:4, 2:6], projection='3d') 
+        # Position
+        self.ax1 = self.fig.add_subplot(gs[0:4, 2:6], projection='3d')
 
         self.fig.tight_layout(pad=4.0)
 
@@ -109,17 +109,19 @@ class Tracker():
         self.ax0.set_zlabel("Up (meters)")
 
         # Vector tangent to the current linear trajectory segment vector
-        self.norm = self.ax1.plot([], [], lw=2, color='lime')[0]
+        self.norm = self.ax1.plot([], [], lw=2, color='lime',
+                                  label='Cross-Track Error')[0]
 
         # Current linear trajectory segment vector
-        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple')[0]
+        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple', 
+            label='Linear Trajectory')[0]
 
         # Previous Waypoint
         self.lin_prev = self.ax1.scatter([], [], lw=2, edgecolors='tab:blue',
-                                         color='None')
+                                         color='None', label='Prev WP')
         # Next Waypoint
         self.lin_next = self.ax1.scatter([], [], lw=2, edgecolors='tab:orange',
-                                         color='None')
+                                         color='None', label='Next WP')
 
         # Heading Vector
         self.heading_vec = self.ax1.plot([], [], lw=2, color='tab:purple')[0]

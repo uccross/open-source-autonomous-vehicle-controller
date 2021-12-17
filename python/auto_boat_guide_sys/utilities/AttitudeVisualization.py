@@ -14,7 +14,7 @@ from matplotlib import gridspec
 
 
 class AttitudeVizualizer():
-    def __init__(self, debugFlag=False, graphInterval=100, wt0=0.0, wtf=200.0,
+    def __init__(self, debugFlag=False, graphInterval=50, wt0=0.0, wtf=200.0,
                  wdt=0.1):
         """
         :param debugFlag: Activates a majority of the print statements
@@ -421,79 +421,61 @@ class AttitudeVizualizer():
             self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projxz)
             self.fig.canvas.blit(self.ax0.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projyz)
             self.fig.canvas.blit(self.ax0.bbox)
-            # self.fig.canvas.flush_events()
             
-            # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projzx)
             self.fig.canvas.blit(self.ax0.bbox)
-            # self.fig.canvas.flush_events()
             
-            # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttX)
             self.fig.canvas.blit(self.ax0.bbox)
-            # self.fig.canvas.flush_events()
             
-            # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttY)
             self.fig.canvas.blit(self.ax0.bbox)
-            # self.fig.canvas.flush_events()
             
-            # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttZ)
             self.fig.canvas.blit(self.ax0.bbox)
+
             self.fig.canvas.flush_events()
 
             # ax1
             self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelX)
             self.fig.canvas.blit(self.ax1.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelY)
             self.fig.canvas.blit(self.ax1.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelZ)
             self.fig.canvas.blit(self.ax1.bbox)
+
             self.fig.canvas.flush_events()
 
             # ax2
             self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magX)
             self.fig.canvas.blit(self.ax2.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magY)
             self.fig.canvas.blit(self.ax2.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magZ)
             self.fig.canvas.blit(self.ax2.bbox)
+
             self.fig.canvas.flush_events()
 
             # ax3
             self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroX)
             self.fig.canvas.blit(self.ax3.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroY)
             self.fig.canvas.blit(self.ax3.bbox)
-            # self.fig.canvas.flush_events()
 
-            # self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroZ)
             self.fig.canvas.blit(self.ax3.bbox)
+
             self.fig.canvas.flush_events()
 
             ###################################################################
@@ -502,7 +484,7 @@ class AttitudeVizualizer():
             # can request from Windows OS is about 10ms
             # plt.pause(0.01)
 
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             self.j += 1
 

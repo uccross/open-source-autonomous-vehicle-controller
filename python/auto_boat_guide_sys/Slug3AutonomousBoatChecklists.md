@@ -47,9 +47,9 @@ This document has three lists, a pre-flight checklist, a pre-launch checklist, a
 - [ ] Connect to WiFi hotspot with a computer. 
   * Network name: SlugNetwork, 
   * password: Bananas!
-- [ ] SSH into pavlo@10.0.42.1 (double check with arp -a command in terminal), password: pavlo
+- [ ] SSH into pavlo@10.42.0.1 (double check with arp -a command in terminal), password: pavlo
 - [ ] cd to Repos/open-source-autonomous-vehicle-controller/python/auto_boat_guide_sys/
-- [ ] sudo python3 main_guide_sys.py -c "/def/ttyUSB1" --csv_file /media/pavlo/PGV/log_2021_10_9.csv --log_file /media/pavlo/PGV/log_2021_10_9.log -e --ecom "/dev/ttyUSB0" 
+- [ ] sudo python3 main_guide_sys.py -c "/dev/ttyUSB1" --csv_file /media/pavlo/PGV/log_2021_10_9.csv --log_file /media/pavlo/PGV/log_2021_10_9.log -e --ecom "/dev/ttyUSB0" 
   * The dates for the files should be changed accordingly
   * see -h option for more, such as -d for debug, -m for mode, and others
   * The usb ports might switch, so just swap ttyUSB0 with ttyUSB1 if the related error shows up, and double check connections
@@ -65,3 +65,16 @@ This document has three lists, a pre-flight checklist, a pre-launch checklist, a
 - [ ]  If in range of the Wifi hotspot, and ssh-ed in, control c (^c) to quit the guidance and logging python script
 - [ ] Push the emergency power button on the top
 - [ ] Take the boat out of the water.
+
+## Passwords
+tightvncserver: bananaslug
+raspberry pi 4: pavlo
+SlugNetwork: Bananas!
+VNC: pavlopavlo
+
+## Settuping VNC server on Raspberry Pi 4 running Ubuntu 21.04
+### (See: https://www.makeuseof.com/install-ubuntu-vnc-server-linux/)
+- [ ] sudo systemctl daemon-reload
+- [ ] sudo systemctl enable x11vnc.service 
+- [ ] sudo systemctl start x11vnc.service 
+- [ ] sudo systemctl status x11vnc.service

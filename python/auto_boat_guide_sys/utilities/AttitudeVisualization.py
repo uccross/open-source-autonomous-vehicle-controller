@@ -18,11 +18,8 @@ class AttitudeVizualizer():
                  wdt=0.1):
         """
         :param debugFlag: Activates a majority of the print statements
-        diagnostics mode, Hardware-in-the-loop (HIL) mode, or experimental mode,
-        as it runs
         :param graphInterval: number of main loop cycles before next dynamic
         graph evaluation
-        :param mavlinkMode: If using MAVLink
         :param wt0: The start time of a dynamic graphing window
         :param wtf: The final time of a dynamic graphing window
         :param wdt: The sample-time of a dynamic graphing window

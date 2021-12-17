@@ -4,12 +4,14 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
+from re import I
 import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
 from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
 from utilities import AttitudeVisualization as AV
+from utilities import Tracker as TR
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
@@ -48,6 +50,10 @@ parser.add_argument('--log_file', type=str, dest='log_file',
                     help='log file path')
 parser.add_argument('-m', '--mode', dest='mode_print_flag',
                     action='store_true', help='Flag to print mode changes')
+
+parser.add_argument('-t', '--tracker', dest='tracker_flag',
+                    action='store_true', help='Flag to print mode changes')
+
 parser.add_argument('-v', '--vizualize', dest='vizualize_attitude_flag',
                     action='store_true', help='Flag to print mode changes')
 
@@ -62,6 +68,7 @@ sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
+tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
 
 ###############################################################################
@@ -122,6 +129,10 @@ if __name__ == '__main__':
     if vizualize_attitude_flag:
         av = AV.AttitudeVizualizer(debugFlag=False, graphInterval=1, wt0=0,
                                    wtf=30, wdt=0.05)
+
+    # Tracker
+    if tracker_flag:
+        tracker = TR.
 
     ###########################################################################
     # Helper method, based on
@@ -492,6 +503,9 @@ if __name__ == '__main__':
                 if ((msg_type == 'ATTITUDE') or (msg_type == 'HIGHRES_IMU')):
                     if msg:
                         av.update(msg)
+
+            if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
+                tracker.update()
 
         #######################################################################
         # Log messages (at intervals)

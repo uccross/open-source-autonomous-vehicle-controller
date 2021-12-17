@@ -44,6 +44,9 @@ Section "Screen"
     EndSubSection
 EndSection
 
+***OR use the one found here:
+https://techoverflow.net/2019/02/23/how-to-run-x-server-using-xserver-xorg-video-dummy-driver-on-ubuntu/
+:
 Section "Monitor"
   Identifier "Monitor0"
   HorizSync 28.0-80.0

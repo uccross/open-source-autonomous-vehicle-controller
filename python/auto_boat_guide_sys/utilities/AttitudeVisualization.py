@@ -14,7 +14,7 @@ from matplotlib import gridspec
 
 
 class AttitudeVizualizer():
-    def __init__(self, debugFlag=False, graphInterval=50, wt0=0.0, wtf=200.0,
+    def __init__(self, debugFlag=False, graphInterval=400, wt0=0.0, wtf=200.0,
                  wdt=0.1):
         """
         :param debugFlag: Activates a majority of the print statements
@@ -87,7 +87,8 @@ class AttitudeVizualizer():
 
         #######################################################################
         # Setup Dynamic Graphing
-        self.fig = plt.figure(figsize=(16, 8))
+        # self.fig = plt.figure(figsize=(16, 8))
+        self.fig = plt.figure()
 
         gs = gridspec.GridSpec(nrows=4, ncols=6)
 

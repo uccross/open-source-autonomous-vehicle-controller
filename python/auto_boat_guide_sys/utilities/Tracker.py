@@ -32,7 +32,7 @@ class Tracker():
 
         #######################################################################
         # Setup Dynamic Graphing
-        self.fig = plt.figure(figsize=(18, 9))
+        self.fig = plt.figure(figsize=(18, 8))
         # self.fig = plt.figure()
 
         gs = gridspec.GridSpec(nrows=4, ncols=6)
@@ -103,7 +103,7 @@ class Tracker():
         self.ax1.set_xlim(-x_bound, x_bound)
         self.ax1.set_ylim(-y_bound, y_bound)
         self.ax1.set_zlim(-z_bound, z_bound)
-        self.ax0.view_init(30, 30)
+        self.ax0.view_init(30, 70)
         self.ax0.set_xlabel("East (meters)")
         self.ax0.set_ylabel("North (meters)")
         self.ax0.set_zlabel("Up (meters)")
@@ -117,15 +117,19 @@ class Tracker():
                                      label='Linear Trajectory')[0]
 
         # Previous Waypoint
-        self.lin_prev = self.ax1.scatter([0.0], [0.0], edgecolors='tab:blue',
-                                         color='None', s=100, label='Prev WP')
+        self.lin_prev = self.ax1.scatter([0.0], [0.0], lw=2,
+                                         edgecolors='tab:blue',
+                                         color='None', s=100,
+                                         label='Prev WP')
         # Next Waypoint
-        self.lin_next = self.ax1.scatter([0.0], [0.0], edgecolors='tab:orange',
-                                         color='None', s=100, label='Next WP')
+        self.lin_next = self.ax1.scatter([0.0], [0.0], lw=2,
+                                         edgecolors='tab:orange',
+                                         color='None', s=100,
+                                         label='Next WP')
 
         # Vehicle Position
-        self.position = self.ax1.scatter([0.0], [0.0], edgecolors='tab:purple',
-                                         color='None', s=100, label='Position')
+        self.position = self.ax1.scatter([], [], lw=2, edgecolors='tab:purple',
+                                         color='None', s=70, label='Position')
 
         # Heading Vector
         self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]
@@ -225,9 +229,9 @@ class Tracker():
             ###################################################################
             # Position
             self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
-            
+
             self.heading_vec.set_data(np.array([position_en[0, 0],
-                                             position_en[0, 1]]))
+                                                position_en[0, 1]]))
 
             ###################################################################
             # Draw

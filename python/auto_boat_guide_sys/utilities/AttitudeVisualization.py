@@ -429,7 +429,7 @@ class AttitudeVizualizer():
             # In case an draw event is missed?
             if ((self.background0 is None) or (self.background1 is None) or
                     (self.background2 is None) or (self.background3 is None)):
-                self.draw_all()
+                self.fig.canvas.flush_events()
 
             ###################################################################
             # DRAW

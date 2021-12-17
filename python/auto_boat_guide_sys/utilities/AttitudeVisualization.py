@@ -421,27 +421,27 @@ class AttitudeVizualizer():
             self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projxz)
             self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projyz)
             self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
             
             # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projzx)
             self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
             
             # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttX)
             self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
             
             # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttY)
             self.fig.canvas.blit(self.ax0.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
             
             # self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.lineAttZ)
@@ -452,12 +452,12 @@ class AttitudeVizualizer():
             self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelX)
             self.fig.canvas.blit(self.ax1.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelY)
             self.fig.canvas.blit(self.ax1.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background1)
             self.ax1.draw_artist(self.points4accelZ)
@@ -468,12 +468,12 @@ class AttitudeVizualizer():
             self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magX)
             self.fig.canvas.blit(self.ax2.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magY)
             self.fig.canvas.blit(self.ax2.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background2)
             self.ax2.draw_artist(self.points5magZ)
@@ -484,12 +484,12 @@ class AttitudeVizualizer():
             self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroX)
             self.fig.canvas.blit(self.ax3.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroY)
             self.fig.canvas.blit(self.ax3.bbox)
-            self.fig.canvas.flush_events()
+            # self.fig.canvas.flush_events()
 
             # self.fig.canvas.restore_region(self.background3)
             self.ax3.draw_artist(self.points6gyroZ)

@@ -420,13 +420,13 @@ class AttitudeVizualizer():
             ###################################################################
             # Draw
 
-            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
-            #
-            #
-            #
-            self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
-            self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
-            self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
+            # self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
+            # #
+            # #
+            # #
+            # self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
+            # self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
+            # self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
 
             # ax0
             self.fig.canvas.restore_region(self.background0)
@@ -436,6 +436,7 @@ class AttitudeVizualizer():
             self.ax0.draw_artist(self.lineAttX)
             self.ax0.draw_artist(self.lineAttY)
             self.ax0.draw_artist(self.lineAttZ)
+            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
 
             self.fig.canvas.blit(self.ax0.bbox)
 
@@ -446,6 +447,7 @@ class AttitudeVizualizer():
             self.ax1.draw_artist(self.points4accelX)
             self.ax1.draw_artist(self.points4accelY)
             self.ax1.draw_artist(self.points4accelZ)
+            self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
 
             self.fig.canvas.blit(self.ax1.bbox)
 
@@ -456,6 +458,7 @@ class AttitudeVizualizer():
             self.ax2.draw_artist(self.points5magX)
             self.ax2.draw_artist(self.points5magY)
             self.ax2.draw_artist(self.points5magZ)
+            self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
 
             self.fig.canvas.blit(self.ax2.bbox)
 
@@ -466,6 +469,7 @@ class AttitudeVizualizer():
             self.ax3.draw_artist(self.points6gyroX)
             self.ax3.draw_artist(self.points6gyroY)
             self.ax3.draw_artist(self.points6gyroZ)
+            self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
 
             self.fig.canvas.blit(self.ax3.bbox)
 

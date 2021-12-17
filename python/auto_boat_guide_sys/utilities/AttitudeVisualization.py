@@ -420,6 +420,14 @@ class AttitudeVizualizer():
             ###################################################################
             # Draw
 
+            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
+            #
+            #
+            #
+            self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
+            self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
+            self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
+
             # ax0
             self.fig.canvas.restore_region(self.background0)
             self.ax0.draw_artist(self.projxz)
@@ -462,14 +470,6 @@ class AttitudeVizualizer():
             self.fig.canvas.blit(self.ax3.bbox)
 
             self.fig.canvas.flush_events()
-
-            self.background0 = self.fig.canvas.copy_from_bbox(self.ax0.bbox)
-            #
-            #
-            #
-            self.background1 = self.fig.canvas.copy_from_bbox(self.ax1.bbox)
-            self.background2 = self.fig.canvas.copy_from_bbox(self.ax2.bbox)
-            self.background3 = self.fig.canvas.copy_from_bbox(self.ax3.bbox)
 
             self.j += 1
 

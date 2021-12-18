@@ -14,7 +14,7 @@ from matplotlib import gridspec
 
 
 class Tracker():
-    def __init__(self, graphInterval=400, x_bound=20, y_bound=20, z_bound=15):
+    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15):
         """
         :param graphInterval: number of main loop cycles before next dynamic
         graph evaluation
@@ -103,7 +103,7 @@ class Tracker():
         self.ax1.set_xlim(-x_bound, x_bound)
         self.ax1.set_ylim(-y_bound, y_bound)
         self.ax1.set_zlim(-z_bound, z_bound)
-        self.ax1.view_init(60, 30)
+        self.ax1.view_init(50, 30)
         self.ax1.set_xlabel("East (meters)")
         self.ax1.set_ylabel("North (meters)")
         self.ax1.set_zlabel("Up (meters)")
@@ -113,31 +113,31 @@ class Tracker():
                                   label='Cross-Track Error')[0]
 
         # Current linear trajectory segment vector
-        self.lin_tra = self.ax1.plot([0.0], [0.0], lw=2, color='tab:purple',
+        self.lin_tra = self.ax1.plot([], [], lw=2, color='tab:purple',
                                      label='Linear Trajectory')[0]
 
         # Previous Waypoint
-        self.lin_prev = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+        self.lin_prev = self.ax1.plot([], [], lw=2, marker='o',
                                       markeredgecolor='tab:blue',
                                       markerfacecolor='None',
-                                      color='None', markersize=100,
+                                      color='None', markersize=20,
                                       label='Prev WP')[0]
         # Next Waypoint
-        self.lin_next = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+        self.lin_next = self.ax1.plot([], [], lw=2, marker='o',
                                       markeredgecolor='tab:orange',
                                       markerfacecolor='None',
-                                      color='None', markersize=100,
+                                      color='None', markersize=20,
                                       label='Next WP')[0]
 
         # Vehicle Position
-        self.position = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+        self.position = self.ax1.plot([], [], lw=2, marker='o',
                                       markeredgecolor='tab:purple',
                                       markerfacecolor='None',
-                                      color='None', markersize=50,
+                                      color='None', markersize=10,
                                       label='Position')[0]
 
         # Heading Vector
-        self.heading_vec = self.ax1.plot([0.0], [0.0], color='tab:purple')[0]
+        self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]
 
         self.ax1legend = self.ax1.legend()
 
@@ -232,7 +232,12 @@ class Tracker():
             self.lineAttZ.set_3d_properties(np.array([self.og[2, 0],
                                                       attQuatZ[2, 0]]))
             ###################################################################
-            # Position
+            # Trajectory, Position, etc.
+            self.lin_tra.set_data(
+                np.array([wp_prev_en[0, 0], wp_next_en[0, 0]]),
+                np.array([wp_prev_en[0, 1], wp_next_en[0, 1]]))
+            self.lin_tra.set_3d_properties(np.array([0.0]))
+
             self.lin_prev.set_data(wp_prev_en[:, 0], wp_prev_en[:, 1])
             self.lin_prev.set_3d_properties(np.array([0.0]))
 
@@ -267,7 +272,7 @@ class Tracker():
             # ax1
             self.fig.canvas.restore_region(self.background1)
             # self.ax1.draw_artist(self.norm)
-            # self.ax1.draw_artist(self.lin_tra)
+            self.ax1.draw_artist(self.lin_tra)
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)
             self.ax1.draw_artist(self.position)

@@ -8,6 +8,9 @@
 import numpy as np
 
 class Linear():
+
+    north_vec = np.array([[0.0, 1.0]])
+
     def __init__(self, vehiPT=np.zeros((1, 2)), prevWP=np.zeros((1, 2)),
                  nextWP=np.zeros((1, 2)), closPT=np.zeros((1, 2)),
                  pathAngle=0.0):
@@ -131,8 +134,8 @@ class Linear():
         # Move vector to origin
         p1v = self.nextWP - self.prevWP
 
-        self.pathAngle = np.arctan2(CONST.north_vec[0, 1],
-                                    CONST.north_vec[0, 0]) \
+        self.pathAngle = np.arctan2(self.north_vec[0, 1],
+                                    self.north_vec[0, 0]) \
             - np.arctan2(p1v[0, 1], p1v[0, 0])
 
         # Make sure the heading angle is wrapped to [-pi, pi]

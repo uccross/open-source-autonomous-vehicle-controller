@@ -507,6 +507,7 @@ if __name__ == '__main__':
             if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
                 if (msg_type == 'ATTITUDE'):
                     if msg:
+                        #@TODO: Add closest point from micro?
                         tracker.update(msg, wp_prev_en=wp_prev_en,
                                        wp_next_en=wp_next_en,
                                        position_en=vehi_pt_en)

@@ -11,6 +11,7 @@ import numpy as np
 from utilities import Quaternions as Qu
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+from utilities import Linear as LN
 
 
 class Tracker():
@@ -29,6 +30,10 @@ class Tracker():
         self.yaw = 0.0
         self.pitch = 0.0
         self.roll = 0.0
+
+        #@TODO: Add closest point from micro? AND so get rid of linear 
+        # trajectory here (below)
+        self.trajectory = LN.Linear()
 
         #######################################################################
         # Setup Dynamic Graphing
@@ -199,6 +204,13 @@ class Tracker():
                 self.roll)
 
             ###################################################################
+            # Trajectory (might get rid of this)
+            self.trajectory.setPreviousWaypoint(wp_prev_en)
+            self.trajectory.setNextWaypoint(wp_next_en)
+            self.trajectory.udpate(position_en)
+            clst_pt_en = self.trajectory.getClosestPoint()
+
+            ###################################################################
             # Projecting the x-vector onto the three different planes
             self.projxz.set_data(np.array([self.og[0, 0], attQuatX[0, 0]]),
                                  np.array([-self.offset, -self.offset]))
@@ -233,6 +245,11 @@ class Tracker():
                                                       attQuatZ[2, 0]]))
             ###################################################################
             # Trajectory, Position, etc.
+            self.norm.set_data(
+                np.array([position_en[0, 0], clst_pt_en[0, 0]]),
+                np.array([position_en[0, 1], clst_pt_en[0, 1]]))
+            self.norm.set_3d_properties(np.array([0.0]))
+
             self.lin_tra.set_data(
                 np.array([wp_prev_en[0, 0], wp_next_en[0, 0]]),
                 np.array([wp_prev_en[0, 1], wp_next_en[0, 1]]))
@@ -271,7 +288,7 @@ class Tracker():
             ###################################################################
             # ax1
             self.fig.canvas.restore_region(self.background1)
-            # self.ax1.draw_artist(self.norm)
+            self.ax1.draw_artist(self.norm)
             self.ax1.draw_artist(self.lin_tra)
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)

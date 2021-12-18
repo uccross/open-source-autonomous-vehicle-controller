@@ -31,7 +31,7 @@ class Tracker():
         self.pitch = 0.0
         self.roll = 0.0
 
-        #@TODO: Add closest point from micro? AND so get rid of linear 
+        # @TODO: Add closest point from micro? AND so get rid of linear
         # trajectory here (below)
         self.trajectory = LN.Linear()
 
@@ -264,8 +264,12 @@ class Tracker():
             self.position.set_data(position_en[:, 0], position_en[:, 1])
             self.position.set_3d_properties(np.array([0.0]))
 
-            # self.heading_vec.set_data(np.array([position_en[0, 0],
-            #                                     position_en[0, 1]]))
+            self.heading_vec.set_data(
+                np.array([position_en[0, 0],                        # x_0
+                          position_en[0, 0] + attQuatX[0, 0]]),     # x_1
+                np.array([position_en[0, 1],                        # y_0
+                          position_en[0, 1] + attQuatX[0, 1]]))     # y_1
+            self.position.set_3d_properties(np.array([0.0, 0.0]))   # z_0, z_1
 
             ###################################################################
             # Draw

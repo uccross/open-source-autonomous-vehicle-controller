@@ -14,7 +14,7 @@ from matplotlib import gridspec
 
 
 class Tracker():
-    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15):
+    def __init__(self, graphInterval=400, x_bound=20, y_bound=20, z_bound=15):
         """
         :param graphInterval: number of main loop cycles before next dynamic
         graph evaluation
@@ -103,7 +103,7 @@ class Tracker():
         self.ax1.set_xlim(-x_bound, x_bound)
         self.ax1.set_ylim(-y_bound, y_bound)
         self.ax1.set_zlim(-z_bound, z_bound)
-        self.ax1.view_init(70, 30)
+        self.ax1.view_init(60, 30)
         self.ax1.set_xlabel("East (meters)")
         self.ax1.set_ylabel("North (meters)")
         self.ax1.set_zlabel("Up (meters)")
@@ -229,9 +229,11 @@ class Tracker():
             ###################################################################
             # Position
             self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
+            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
+            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
 
-            self.heading_vec.set_data(np.array([position_en[0, 0],
-                                                position_en[0, 1]]))
+            # self.heading_vec.set_data(np.array([position_en[0, 0],
+            #                                     position_en[0, 1]]))
 
             ###################################################################
             # Draw
@@ -254,8 +256,8 @@ class Tracker():
             ###################################################################
             # ax1
             self.fig.canvas.restore_region(self.background1)
-            self.ax1.draw_artist(self.norm)
-            self.ax1.draw_artist(self.lin_tra)
+            # self.ax1.draw_artist(self.norm)
+            # self.ax1.draw_artist(self.lin_tra)
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)
             self.ax1.draw_artist(self.position)

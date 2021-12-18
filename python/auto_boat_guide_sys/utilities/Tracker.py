@@ -229,8 +229,8 @@ class Tracker():
                                                       attQuatZ[2, 0]]))
             ###################################################################
             # Position
-            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
-            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
+            self.lin_prev.set_offsets([wp_prev_en[0, 0], wp_prev_en[0, 1]])
+            self.lin_next.set_offsets([wp_next_en[0, 0], wp_next_en[0, 1]])
             self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
 
             # self.heading_vec.set_data(np.array([position_en[0, 0],
@@ -262,7 +262,7 @@ class Tracker():
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)
             self.ax1.draw_artist(self.position)
-            self.ax1.draw_artist(self.heading_vec)
+            # self.ax1.draw_artist(self.heading_vec)
 
             self.fig.canvas.blit(self.ax1.bbox)
 

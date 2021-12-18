@@ -297,7 +297,7 @@ class Tracker():
             self.ax1.draw_artist(self.lin_prev)
             self.ax1.draw_artist(self.lin_next)
             self.ax1.draw_artist(self.position)
-            # self.ax1.draw_artist(self.heading_vec)
+            self.ax1.draw_artist(self.heading_vec)
 
             self.fig.canvas.blit(self.ax1.bbox)
 

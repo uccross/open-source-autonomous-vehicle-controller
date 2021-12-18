@@ -128,11 +128,12 @@ class Tracker():
                                          label='Next WP')
 
         # Vehicle Position
-        self.position = self.ax1.scatter([], [], lw=2, edgecolors='tab:purple',
+        self.position = self.ax1.scatter([0.0], [0.0], lw=2,
+                                         edgecolors='tab:purple',
                                          color='None', s=50, label='Position')
 
         # Heading Vector
-        self.heading_vec = self.ax1.plot([], [], color='tab:purple')[0]
+        self.heading_vec = self.ax1.plot([0.0], [0.0], color='tab:purple')[0]
 
         self.ax1legend = self.ax1.legend()
 

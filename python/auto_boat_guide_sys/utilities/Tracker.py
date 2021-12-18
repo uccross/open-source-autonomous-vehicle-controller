@@ -117,20 +117,24 @@ class Tracker():
                                      label='Linear Trajectory')[0]
 
         # Previous Waypoint
-        self.lin_prev = self.ax1.scatter([0.0], [0.0], lw=2,
-                                         edgecolors='tab:blue',
-                                         color='None', s=100,
-                                         label='Prev WP')
+        self.lin_prev = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+                                      markeredgecolor='tab:blue',
+                                      markerfacecolor='None',
+                                      color='None', markersize=100,
+                                      label='Prev WP')[0]
         # Next Waypoint
-        self.lin_next = self.ax1.scatter([0.0], [0.0], lw=2,
-                                         edgecolors='tab:orange',
-                                         color='None', s=100,
-                                         label='Next WP')
+        self.lin_next = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+                                      markeredgecolor='tab:orange',
+                                      markerfacecolor='None',
+                                      color='None', markersize=100,
+                                      label='Next WP')[0]
 
         # Vehicle Position
-        self.position = self.ax1.scatter([0.0], [0.0], lw=2,
-                                         edgecolors='tab:purple',
-                                         color='None', s=50, label='Position')
+        self.position = self.ax1.plot([0.0], [0.0], lw=2, marker='o',
+                                      markeredgecolor='tab:purple',
+                                      markerfacecolor='None',
+                                      color='None', markersize=50,
+                                      label='Position')[0]
 
         # Heading Vector
         self.heading_vec = self.ax1.plot([0.0], [0.0], color='tab:purple')[0]
@@ -229,9 +233,14 @@ class Tracker():
                                                       attQuatZ[2, 0]]))
             ###################################################################
             # Position
-            self.lin_prev.set_offsets([wp_prev_en[0, 0], wp_prev_en[0, 1]])
-            self.lin_next.set_offsets([wp_next_en[0, 0], wp_next_en[0, 1]])
-            self.position.set_offsets([position_en[0, 0], position_en[0, 1]])
+            self.lin_prev.set_data(wp_prev_en[:, 0], wp_prev_en[:, 1])
+            self.lin_prev.set_3d_properties(np.array([0.0]))
+
+            self.lin_next.set_data([wp_next_en[:, 0], wp_next_en[:, 1]])
+            self.lin_next.set_3d_properties(np.array([0.0]))
+
+            self.position.set_data(position_en[:, 0], position_en[:, 1])
+            self.position.set_3d_properties(np.array([0.0]))
 
             # self.heading_vec.set_data(np.array([position_en[0, 0],
             #                                     position_en[0, 1]]))

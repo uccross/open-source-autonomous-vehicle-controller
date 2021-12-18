@@ -158,7 +158,7 @@ class Tracker():
 
     def update(self, msg, wp_prev_en=np.zeros((1, 2)),
                wp_next_en=np.zeros((1, 2)), clst_pt_en=np.zeros((1, 2)),
-               position_en=np.zeros((1, 2))):
+               position_en=np.zeros((1, 2)), h_scale=5):
         """
         :param msg: A MAVLink 'ATTITUDE' message
         :param wp_prev_en: The prev waypoint (meters) 1x2 vector: East, North
@@ -166,6 +166,7 @@ class Tracker():
         :param clst_pt_en: The closest point (meters) 1x2 vector: East, North
         :param position_en: The vehicle position (meters) 1x2 vector: East, 
         North
+        :param h_scale: Scalar to scale the heading vector
         :return: None
         """
         if (msg.get_type() != 'ATTITUDE'):
@@ -265,11 +266,11 @@ class Tracker():
             self.position.set_3d_properties(np.array([0.0]))
 
             self.heading_vec.set_data(
-                np.array([position_en[0, 0],                        # x_0
-                          position_en[0, 0] + attQuatX[0, 0]]),     # x_1
-                np.array([position_en[0, 1],                        # y_0
-                          position_en[0, 1] + attQuatX[1, 0]]))     # y_1
-            self.heading_vec.set_3d_properties(np.array([0.0, 0.0]))   # z_0, z_1
+                np.array([position_en[0, 0],                            # x_0
+                          position_en[0, 0] + h_scale*attQuatX[0, 0]]), # x_1
+                np.array([position_en[0, 1],                            # y_0
+                          position_en[0, 1] + h_scale*attQuatX[1, 0]])) # y_1
+            self.heading_vec.set_3d_properties(np.array([0.0, 0.0]))    # z_0, z_1
 
             ###################################################################
             # Draw

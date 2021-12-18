@@ -269,7 +269,7 @@ class Tracker():
                           position_en[0, 0] + attQuatX[0, 0]]),     # x_1
                 np.array([position_en[0, 1],                        # y_0
                           position_en[0, 1] + attQuatX[1, 0]]))     # y_1
-            self.position.set_3d_properties(np.array([0.0, 0.0]))   # z_0, z_1
+            self.heading_vec.set_3d_properties(np.array([0.0, 0.0]))   # z_0, z_1
 
             ###################################################################
             # Draw

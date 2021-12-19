@@ -518,6 +518,7 @@ if __name__ == '__main__':
                         trajectory.setNextWaypoint(wp_next_en)
                         trajectory.udpate(vehi_pt_en)
                         path_angle_checked = trajectory.getPathAngle()
+                        path_angle_checked *=180.0/np.pi
                         clst_pt_en = trajectory.getClosestPoint()
 
                         tracker.update(msg, wp_prev_en=wp_prev_en,

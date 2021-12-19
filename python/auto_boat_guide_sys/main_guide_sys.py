@@ -17,6 +17,7 @@ import time
 from signal import signal, SIGINT
 from sys import exit
 import copy
+from utilities import Linear as LN
 
 ###############################################################################
 # Parse Arguments
@@ -133,6 +134,7 @@ if __name__ == '__main__':
     # Tracker
     if tracker_flag:
         tracker = TR.Tracker(graphInterval=1)
+        trajectory = LN.Linear()
 
     ###########################################################################
     # Helper method, based on
@@ -507,10 +509,18 @@ if __name__ == '__main__':
             if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
                 if (msg_type == 'ATTITUDE'):
                     if msg:
+                        ######################################################
                         #@TODO: Add closest point from micro?
+                        # Trajectory (might get rid of this)
+                        trajectory.setPreviousWaypoint(wp_prev_en)
+                        trajectory.setNextWaypoint(wp_next_en)
+                        trajectory.udpate(vehi_pt_en)
+                        clst_pt_en = trajectory.getClosestPoint()
+
                         tracker.update(msg, wp_prev_en=wp_prev_en,
                                        wp_next_en=wp_next_en,
-                                       position_en=vehi_pt_en)
+                                       position_en=vehi_pt_en, 
+                                       clst_pt_en=clst_pt_en)
 
         #######################################################################
         # Log messages (at intervals)

@@ -31,10 +31,6 @@ class Tracker():
         self.pitch = 0.0
         self.roll = 0.0
 
-        # @TODO: Add closest point from micro? AND so get rid of linear
-        # trajectory here (below)
-        self.trajectory = LN.Linear()
-
         #######################################################################
         # Setup Dynamic Graphing
         self.fig = plt.figure(figsize=(16, 8))
@@ -203,13 +199,6 @@ class Tracker():
                 self.yaw,
                 self.pitch,
                 self.roll)
-
-            ###################################################################
-            # Trajectory (might get rid of this)
-            self.trajectory.setPreviousWaypoint(wp_prev_en)
-            self.trajectory.setNextWaypoint(wp_next_en)
-            self.trajectory.udpate(position_en)
-            clst_pt_en = self.trajectory.getClosestPoint()
 
             ###################################################################
             # Projecting the x-vector onto the three different planes

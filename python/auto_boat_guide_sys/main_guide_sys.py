@@ -186,6 +186,7 @@ if __name__ == '__main__':
 
     cf_heading_angle = 0.0
     path_angle = 0.0
+    path_angle_checked = 0.0
     angle_diff = 0.0
 
     xacc = 0.0
@@ -454,6 +455,7 @@ if __name__ == '__main__':
                 print("    cog:        {0:.6g}".format(cog))
                 print("    CF heading: {0:.6g}".format(cf_heading_angle))
                 print("    path angle: {0:.6g}".format(path_angle))
+                print("    ^__checked: {0:.6g}".format(path_angle_checked))
                 print("    cte:        {0:.6g}".format(angle_diff))
                 print("    u_pulse:    {0:.6g}".format(yawspeed))
                 print("    yaw:        {0:.6g}".format(yaw))
@@ -515,6 +517,7 @@ if __name__ == '__main__':
                         trajectory.setPreviousWaypoint(wp_prev_en)
                         trajectory.setNextWaypoint(wp_next_en)
                         trajectory.udpate(vehi_pt_en)
+                        path_angle_checked = trajectory.getPathAngle()
                         clst_pt_en = trajectory.getClosestPoint()
 
                         tracker.update(msg, wp_prev_en=wp_prev_en,

@@ -180,6 +180,13 @@ class Tracker():
                 self.pitch = nav_msg['pitch']
                 self.roll = nav_msg['roll']
 
+                # Minor fix for yaw constant orientation offset done here AND
+                # on micro @TODO: find root cause to avoid doing this patch 
+                # (below). Spent a while searching for cause, couldn't find, 
+                # but simplest fix was chosen to save time time. 
+                self.yaw -= (np.pi/2.0)
+                self.yaw = ((self.yaw + np.pi) % (2.0 * np.pi)) - np.pi
+
             ###################################################################
             # Attitude
             attQuatX = Qu.rotateVectorWithQuaternion(

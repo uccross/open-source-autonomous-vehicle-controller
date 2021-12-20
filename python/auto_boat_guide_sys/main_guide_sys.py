@@ -203,6 +203,8 @@ if __name__ == '__main__':
 
     cog = 0.0
 
+    rad2deg = 180.0/np.pi
+
     wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
@@ -458,20 +460,20 @@ if __name__ == '__main__':
                 print("    CF heading: {0:.6g}".format(cf_heading_angle))
                 print("    path angle: {0:.6g}".format(path_angle))
                 print("    ^__checked: {0:.6g}".format(path_angle_checked))
-                print("    cte:        {0:.6g}".format(angle_diff))
+                print("    angle_diff: {0:.6g}".format(angle_diff))
                 print("    u_pulse:    {0:.6g}".format(yawspeed))
-                print("    yaw:        {0:.6g}".format(yaw))
-                print("    pitch:      {0:.6g}".format(pitch))
-                print("    roll:       {0:.6g}".format(roll))
+                print("    yaw:        {0:.6g}".format(yaw*rad2deg))
+                print("    pitch:      {0:.6g}".format(pitch*rad2deg))
+                print("    roll:       {0:.6g}".format(roll*rad2deg))
                 print("    xacc:       {0:.6g}".format(xacc))
                 print("    yacc:       {0:.6g}".format(yacc))
                 print("    zacc:       {0:.6g}".format(zacc))
                 print("    xmag:       {0:.6g}".format(xmag))
                 print("    ymag:       {0:.6g}".format(ymag))
                 print("    zmag:       {0:.6g}".format(zmag))
-                print("    xgyro:      {0:.6g}".format(xgyro))
-                print("    ygyro:      {0:.6g}".format(ygyro))
-                print("    zgyro:      {0:.6g}".format(zgyro))
+                print("    xgyro:      {0:.6g}".format(xgyro*rad2deg))
+                print("    ygyro:      {0:.6g}".format(ygyro*rad2deg))
+                print("    zgyro:      {0:.6g}".format(zgyro*rad2deg))
 
                 print("    wp_prev_lla_copy = {}".format(wp_prev_lla_copy))
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))

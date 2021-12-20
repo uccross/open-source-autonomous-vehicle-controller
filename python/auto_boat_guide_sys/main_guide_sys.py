@@ -386,8 +386,8 @@ if __name__ == '__main__':
                     roll = nav_msg['roll']
 
                     # @TODO: get rid of this (below) after debugging:
-                    currnet_wp_state = ack_result.keys()[
-                        ack_result.values().index(int(nav_msg['roll']))]
+                    currnet_wp_state = list(ack_result.keys())[
+                        list(ack_result.values()).index(int(nav_msg['roll']))]
                     #
 
                     rollspeed = nav_msg['rollspeed']  # Using as path angle

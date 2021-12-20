@@ -385,29 +385,29 @@ if __name__ == '__main__':
                     pitch = nav_msg['pitch']
                     roll = nav_msg['roll']
 
-                    if int(roll) == 0:
-                        currnet_wp_state = 'ERROR_WP'
-                    if int(roll) == 1:
-                        currnet_wp_state = 'FINDING_REF_WP'
-                    if int(roll) == 2:
-                        currnet_wp_state = 'SENDING_REF_WP'
-                    if int(roll) == 3:
-                        currnet_wp_state = 'CHECKING_REF_WP'
-                    if int(roll) == 4:
-                        currnet_wp_state = 'WAITING_FOR_PREV_WP'
-                    if int(roll) == 5:
-                        currnet_wp_state = 'CHECKING_PREV_WP'
-                    if int(roll) == 6:
-                        currnet_wp_state = 'WAITING_FOR_NEXT_WP'
-                    if int(roll) == 7:
-                        currnet_wp_state = 'CHECKING_NEXT_WP'
-                    if int(roll) == 8:
-                        currnet_wp_state = 'TRACKING_WP'
-
                     rollspeed = nav_msg['rollspeed']  # Using as path angle
                     # Using as cross track error
                     pitchspeed = nav_msg['pitchspeed']
-                    yawspeed = nav_msg['yawspeed']  # Using as u_pulse
+                    yawspeed = nav_msg['yawspeed']  # Using as currnet_wp_state
+
+                    if int(yawspeed) == 0:
+                        currnet_wp_state = 'ERROR_WP'
+                    if int(yawspeed) == 1:
+                        currnet_wp_state = 'FINDING_REF_WP'
+                    if int(yawspeed) == 2:
+                        currnet_wp_state = 'SENDING_REF_WP'
+                    if int(yawspeed) == 3:
+                        currnet_wp_state = 'CHECKING_REF_WP'
+                    if int(yawspeed) == 4:
+                        currnet_wp_state = 'WAITING_FOR_PREV_WP'
+                    if int(yawspeed) == 5:
+                        currnet_wp_state = 'CHECKING_PREV_WP'
+                    if int(yawspeed) == 6:
+                        currnet_wp_state = 'WAITING_FOR_NEXT_WP'
+                    if int(yawspeed) == 7:
+                        currnet_wp_state = 'CHECKING_NEXT_WP'
+                    if int(yawspeed) == 8:
+                        currnet_wp_state = 'TRACKING_WP'
 
                     cf_heading_angle = yaw*180.0/np.pi
                     # if cf_heading_angle < 0.0:

@@ -388,16 +388,16 @@ if __name__ == '__main__':
                     yawspeed = nav_msg['yawspeed']  # Using as u_pulse
 
                     cf_heading_angle = yaw*180.0/np.pi
-                    # if cf_heading_angle < 0.0:
-                    #     cf_heading_angle = 360.0 + cf_heading_angle
+                    if cf_heading_angle < 0.0:
+                        cf_heading_angle = 360.0 + cf_heading_angle
 
                     path_angle = rollspeed*180.0/np.pi
-                    # if path_angle < 0.0:
-                    #     path_angle = 360.0 + path_angle
+                    if path_angle < 0.0:
+                        path_angle = 360.0 + path_angle
 
                     angle_diff = pitchspeed*180.0/np.pi
-                    # if angle_diff < 0.0:
-                    #     angle_diff = 360.0 + angle_diff
+                    if angle_diff < 0.0:
+                        angle_diff = 360.0 + angle_diff
 
                 if msg_type == 'GPS_RAW_INT':
 
@@ -433,6 +433,8 @@ if __name__ == '__main__':
                                             wp_next_ned[0, 0]]])
 
                     if wpq.isNearNext(vehi_pt_en):
+                        wp_prev = wp_next
+                        wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
             # Print the state transition

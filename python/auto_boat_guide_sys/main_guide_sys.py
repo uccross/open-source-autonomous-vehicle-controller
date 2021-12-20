@@ -385,10 +385,24 @@ if __name__ == '__main__':
                     pitch = nav_msg['pitch']
                     roll = nav_msg['roll']
 
-                    # @TODO: get rid of this (below) after debugging:
-                    currnet_wp_state = list(ack_result.keys())[
-                        list(ack_result.values()).index(int(roll))]
-                    #
+                    if int(roll) == 0:
+                        currnet_wp_state = 'ERROR_WP'
+                    if int(roll) == 1:
+                        currnet_wp_state = 'FINDING_REF_WP'
+                    if int(roll) == 2:
+                        currnet_wp_state = 'SENDING_REF_WP'
+                    if int(roll) == 3:
+                        currnet_wp_state = 'CHECKING_REF_WP'
+                    if int(roll) == 4:
+                        currnet_wp_state = 'WAITING_FOR_PREV_WP'
+                    if int(roll) == 5:
+                        currnet_wp_state = 'CHECKING_PREV_WP'
+                    if int(roll) == 6:
+                        currnet_wp_state = 'WAITING_FOR_NEXT_WP'
+                    if int(roll) == 7:
+                        currnet_wp_state = 'CHECKING_NEXT_WP'
+                    if int(roll) == 8:
+                        currnet_wp_state = 'TRACKING_WP'
 
                     rollspeed = nav_msg['rollspeed']  # Using as path angle
                     # Using as cross track error

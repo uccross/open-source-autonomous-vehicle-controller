@@ -242,6 +242,7 @@ if __name__ == '__main__':
                   'WAITING_FOR_NEXT_WP': 6,
                   'CHECKING_NEXT_WP': 7,
                   'TRACKING_WP': 8}
+    currnet_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     # Waypoint Queue       N/S Lat   , E/W Long
     # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
@@ -384,6 +385,11 @@ if __name__ == '__main__':
                     pitch = nav_msg['pitch']
                     roll = nav_msg['roll']
 
+                    # @TODO: get rid of this (below) after debugging:
+                    currnet_wp_state = ack_result.keys()[
+                        ack_result.values().index(int(nav_msg['roll']))]
+                    #
+
                     rollspeed = nav_msg['rollspeed']  # Using as path angle
                     # Using as cross track error
                     pitchspeed = nav_msg['pitchspeed']
@@ -486,6 +492,9 @@ if __name__ == '__main__':
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
                 print("    wp_next_en = {}".format(wp_next_en))
+
+                print("    currnet_wp_state: {}".format(currnet_wp_state))
+
                 print("    norm = {}".format(
                     np.linalg.norm(vehi_pt_en - wp_next_en)))
 
@@ -516,7 +525,7 @@ if __name__ == '__main__':
                 if (msg_type == 'ATTITUDE'):
                     if msg:
                         ######################################################
-                        #@TODO: Add closest point from micro?
+                        # @TODO: Add closest point from micro?
                         # Trajectory (might get rid of this)
                         trajectory.setPreviousWaypoint(wp_prev_en)
                         trajectory.setNextWaypoint(wp_next_en)
@@ -524,15 +533,15 @@ if __name__ == '__main__':
                         trajectory.udpate(vehi_pt_en)
 
                         path_angle_checked = trajectory.getPathAngle()
-                        path_angle_checked *=180.0/np.pi
+                        path_angle_checked *= 180.0/np.pi
                         # if path_anlge_checked < 0.0:
                         #     path_anlge_checked = 360.0 + path_anlge_checked
-                            
+
                         clst_pt_en = trajectory.getClosestPoint()
 
                         tracker.update(msg, wp_prev_en=wp_prev_en,
                                        wp_next_en=wp_next_en,
-                                       position_en=vehi_pt_en, 
+                                       position_en=vehi_pt_en,
                                        clst_pt_en=clst_pt_en)
 
         #######################################################################

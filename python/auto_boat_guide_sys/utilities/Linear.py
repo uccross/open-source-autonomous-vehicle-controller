@@ -139,7 +139,7 @@ class Linear():
             - np.arctan2(p1v[0, 1], p1v[0, 0])
 
         # Make sure the heading angle is wrapped to [-pi, pi]
-        self.pathAngle = (self.pathAngle + np.pi) % (2.0 * np.pi) - np.pi
+        self.pathAngle = ((self.pathAngle + np.pi) % (2.0 * np.pi)) - np.pi
 
         return self.pathAngle
 

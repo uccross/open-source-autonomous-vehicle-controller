@@ -449,6 +449,9 @@ if __name__ == '__main__':
                         vehi_pt_en[0][1] = x_pm[1][0]
                         logger.send_HIL_GPS(vehi_pt_en)
 
+                if msg_type == 'RC_CHANNELS_RAW':
+                    u_pulse = nav_msg['chan4_raw']
+
                 if msg_type == 'HIGHRES_IMU':
                     nav_msg = msg.to_dict()
                     xacc = nav_msg['xacc']
@@ -573,7 +576,7 @@ if __name__ == '__main__':
                 print("    path angle: {0:.6g}".format(path_angle))
                 print("    ^__checked: {0:.6g}".format(path_angle_checked))
                 print("    angle_diff: {0:.6g}".format(angle_diff))
-                print("    u_pulse:    {0:.6g}".format(yawspeed))
+                print("    u_pulse:    {0:.6g}".format(u_pulse))
                 print("    yaw:        {0:.6g}".format(yaw*rad2deg))
                 print("    pitch:      {0:.6g}".format(pitch*rad2deg))
                 print("    roll:       {0:.6g}".format(roll*rad2deg))

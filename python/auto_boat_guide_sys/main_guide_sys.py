@@ -450,6 +450,7 @@ if __name__ == '__main__':
                         logger.send_HIL_GPS(vehi_pt_en)
 
                 if msg_type == 'RC_CHANNELS_RAW':
+                    print(nav_msg)
                     u_pulse = nav_msg['chan4_raw']
 
                 if msg_type == 'HIGHRES_IMU':

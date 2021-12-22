@@ -429,9 +429,9 @@ if __name__ == '__main__':
                             0.0,  # xacc
                             0.0,  # yacc
                             0.0,  # zacc
-                            x_os[3][0],  # xgyro
-                            x_os[4][0],  # ygyro
-                            x_os[5][0],  # zgyro
+                            x_os[0][0],  # xgyro --> actually sending roll angle
+                            x_os[1][0],  # ygyro --> actually sending pitch angle
+                            x_os[2][0],  # zgyro --> actually sending yaw angle
                             0.0,  # xmag
                             0.0,  # ymag
                             0.0,  # zmag

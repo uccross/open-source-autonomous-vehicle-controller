@@ -52,6 +52,9 @@ parser.add_argument('--log_file', type=str, dest='log_file',
 parser.add_argument('-m', '--mode', dest='mode_print_flag',
                     action='store_true', help='Flag to print mode changes')
 
+parser.add_argument('-s', '--simulation', dest='simulation_flag',
+                    action='store_true', help='Flag to print mode changes')
+
 parser.add_argument('-t', '--tracker', dest='tracker_flag',
                     action='store_true', help='Flag to print mode changes')
 
@@ -69,6 +72,7 @@ sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
+simulation_flag = arguments.simulation_flag
 tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
 
@@ -166,13 +170,26 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     t_transmit = time.time()
+    t_sim = time.time()
+    t_uc = time.time()
     t_graph = time.time()
     t_hard_write = time.time()
 
-    dt = 0.01  # seconds
+    dt_sim = 0.001  # seconds
+    dt_uc = 0.01 # seconds
+    dt_log = 0.05 # seconds
     dt_transmit = 0.5  # seconds
     dt_graph = 0.005
     dt_hard_write = 5.0  # seconds
+
+    point_mass_state_vec = np.zeros((6, 1))
+    orientation_state_vec = np.zeros((6, 1))
+
+    reference_speed = 10.00
+    
+    mass = 20.0  # kg
+    radius = 0.045  # meters
+
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -228,10 +245,14 @@ if __name__ == '__main__':
     wp_prev_en = np.array([[wp_prev_ned[0, 1], wp_prev_ned[0, 0]]])
     vehi_pt_en = np.array([[vehi_pt_ned[0, 1], vehi_pt_ned[0, 0]]])
     wp_next_en = np.array([[wp_next_ned[0, 1], wp_next_ned[0, 0]]])
-
+    
+    ###########################################################################
     # State Machine Transitions
     last_base_mode = -1
-    state = 'IDLE'
+    if simulation_flag:
+        state = 'WAITING_TO_UPDATE_WPS'
+    else:
+        state = 'IDLE'
     last_state = state
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
@@ -256,6 +277,14 @@ if __name__ == '__main__':
 
     msg_type = None
     current_base_mode = -1
+
+    ###########################################################################
+    # Simulation 
+    if simulation_flag:
+        from utilities import HIL_DummyVehicle
+        Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
+                          orientation_state_vec, radius, reference_speed 
+                          distance_weight=0)
 
     ###########################################################################
     # Main Loop
@@ -289,6 +318,7 @@ if __name__ == '__main__':
             if state == 'IDLE':
                 state = 'WAITING_FOR_REF_POINT'
 
+            ###################################################################
             elif state == 'WAITING_FOR_REF_POINT':
 
                 # If we get the following message type, echo back the reference
@@ -321,6 +351,7 @@ if __name__ == '__main__':
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 
+            ###################################################################
             elif state == 'SENDING_PREV_WP':
                 # Send the previous waypoint (not the reference) for the
                 # linear trajectory tracking
@@ -345,6 +376,7 @@ if __name__ == '__main__':
                         wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
+            ###################################################################
             elif state == 'SENDING_NEXT_WP':
                 # Send the next waypoint for the linear trajectory tracking
 
@@ -365,7 +397,38 @@ if __name__ == '__main__':
 
                         state = 'WAITING_TO_UPDATE_WPS'
 
+            ###################################################################
             elif state == 'WAITING_TO_UPDATE_WPS':
+
+                if simulation_flag:
+                    # Send the simulated IMU data
+                    x_pm = Slug3.get_vehicle_point_state()
+                    x_os = Slug3.get_vehicle_orientation_state()
+                    logger.send_HIL_sensor(
+                        0.0, # t_usec
+                        0.0, # xacc
+                        0.0, # yacc 
+                        0.0, # zacc
+                        x_os[3][0], # xgyro
+                        x_os[4][0], # ygyro 
+                        x_os[5][0], # zgyro
+                        0.0, # xmag
+                        0.0, # ymag 
+                        0.0, # zmag
+                    )
+
+                    # Send the simulated GPS data
+                    # Send new 'previous' waypoint
+                    logger.send_mav_cmd_nav_waypoint(wp_next, 0.0)
+                    
+                    # Send new 'next' waypoint
+                    logger.send_mav_cmd_nav_waypoint(wp_next, 0.0)
+
+                    # Send GPS position of vehicle to be echoed back
+                    vehi_pt_en[0][0] = x_pm[0][0]
+                    vehi_pt_en[0][1] = x_pm[0][1]
+                    logger.send_HIL_GPS(vehi_pt_en)
+
                 if msg_type == 'HIGHRES_IMU':
                     nav_msg = msg.to_dict()
                     xacc = nav_msg['xacc']
@@ -449,16 +512,22 @@ if __name__ == '__main__':
 
                     wp_prev_en = np.array([[wp_prev_ned[0, 1],
                                             wp_prev_ned[0, 0]]])
+
                     vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
                                             vehi_pt_ned[0, 0]]])
+                
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])
 
-                    if wpq.isNearNext(vehi_pt_en):
-                        wp_prev = wp_next
-                        wp_next = wpq.getNext()
-                        state = 'SENDING_NEXT_WP'
+                if wpq.isNearNext(vehi_pt_en):
 
+                    # Udpate previous
+                    wp_prev_lla = wp_next_lla
+
+                    # Update next
+                    wp_next_lla = wpq.getNext()
+
+            ###################################################################
             # Print the state transition
             if state != last_state:
                 print("State: {} --> {}".format(last_state, state))
@@ -526,6 +595,15 @@ if __name__ == '__main__':
                 print("Time: {}".format(t_new))
 
         #######################################################################
+        # Simulation Update Vehicle
+        if simulation_flag:
+            if (t_new - t_sim) >= dt_sim:
+                t_sim = t_new
+
+                input_angle = yawspeed
+                Slug3.update(input_angle)
+                
+        #######################################################################
         # Graphing
         if (t_new - t_graph) >= dt_graph:
             t_graph = t_new
@@ -560,7 +638,7 @@ if __name__ == '__main__':
 
         #######################################################################
         # Log messages (at intervals)
-        if (t_new - t_old) >= dt:
+        if (t_new - t_old) >= dt_log:
             t_old = t_new
 
             status = logger.log(msg)

@@ -153,12 +153,13 @@ class MAVCSVLogger():
 
         return ret_type
 
-    
-    def send_mav_cmd_nav_waypoint(self, wp_lat_lon):
+    def send_mav_cmd_nav_waypoint(self, wp_lat_lon, wp_type=-1.0):
         """
         :param wp_lat_lon: A waypoint with the following structure: 
         np.array([[0.0, 0.1]]) with lattitude as the first element and 
         longitude as the second element
+        :param wp_type: 0.0 if previous wayopint, 1.0 if next waypoint, and 2.0
+        for vehicle position 
         """
         self.mav_conn.mav.command_long_send(
             self.mav_conn.target_system,
@@ -170,8 +171,47 @@ class MAVCSVLogger():
             0.0,  # Yaw
             wp_lat_lon[0, 0],  # Latitude
             wp_lat_lon[0, 1],  # Longitude
-            0.0,
+            wp_type,  # altitude being used as 'previous' if 0.0 or 'next' if 1.0
             0.0)
+
+    def send_HIL_GPS(self, vehi_pt_en):
+        """
+        :param vehi_pt_en: np.zeros((1, 2)) East, North
+        """
+        self.send_mav_cmd_nav_waypoint(vehi_pt_en, wp_type_en=2.0)
+
+    def send_HIL_sensor(self, t_usec, xacc, yacc, zacc, xmag, ymag, zmag,
+                        xgyro, ygyro, zgyro):
+        """
+        :param t_usec:
+        :param xacc:
+        :param yacc:
+        :param zacc:
+        :param xmag:
+        :param ymag:
+        :param zmag:
+        :param xgyro:
+        :param ygyro:
+        :param zgyro:
+        """
+        self.mav_conn.mav.hil_sensor_send(
+            int(t_usec),  # Time microseconds
+            xacc,  # xacc
+            yacc,  # yacc
+            zacc,  # zacc
+            xgyro,  # xgyro
+            ygyro,  # ygyro
+            zgyro,  # zgyro
+            xmag,  # xmag
+            ymag,  # ymag
+            zmag,  # zmag
+            0.0,  # abs_pressure
+            0.0,  # diff_pressure
+            0.0,  # pressure_alt
+            0.0,  # temperature
+            0,  # fields_updated
+            0# sensor ID
+        )
 
     def open_log(self):
         """

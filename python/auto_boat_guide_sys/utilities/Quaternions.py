@@ -100,3 +100,49 @@ def rotateVectorWithQuaternion(v, psi=0.0, theta=0.0, phi=0.0):
     vNew = multiplyQuaternions(p, q)
 
     return vNew[1:4]
+
+
+def quaternionToEulerAngles(q):
+    """
+    See page 167.
+    :param q: A quaternion
+    :return: Euler angles: phi, theta, psi
+    """
+
+    phi = np.arctan2((2.0 * q[2][0] * q[3][0] + 2.0 * q[0][0] * q[1][0]),
+                     (2.0 * q[0][0] * q[0][0] + 2.0 * q[3][0] * q[3][0] - 1.0))
+
+    theta = np.arcsin(-(2.0 * q[1][0] * q[3][0] - 2.0 * q[0][0] * q[2][0]))
+
+    psi = np.arctan2((2.0*q[1][0]*q[2][0] + 2.0*q[0][0]*q[3][0]),
+                     (2.0*q[0][0]*q[0][0] - 1.0 + 2.0*q[1][0]*q[1][0]))
+
+    return phi, theta, psi
+
+def quaternionToDCM(q):
+    """
+    See page 168.
+    :param q: A quaternion
+    :return: R a rotation matrix direction cosine matrix (DCM)
+    """
+
+    # q_a = np.copy(q)
+    # q[0][0] = q_a[0][0] 
+    # q[1][0] = q_a[3][0] #x -> z
+    # q[2][0] = q_a[2][0] #y -> y
+    # q[3][0] = q_a[1][0] #z -> x
+
+    R = np.zeros((3,3))
+    R[0][0] = 2.0 * q[0][0] * q[0][0] - 1.0 + 2.0 * q[1][0] * q[1][0];
+    R[0][1] = 2.0 * q[1][0] * q[2][0] + 2.0 * q[0][0] * q[3][0];
+    R[0][2] = 2.0 * q[1][0] * q[3][0] - 2.0 * q[0][0] * q[2][0];
+
+    R[1][0] = 2.0 * q[1][0] * q[2][0] - 2.0 * q[0][0] * q[3][0];
+    R[1][1] = 2.0 * q[0][0] * q[0][0] - 1.0 + 2.0 * q[2][0] * q[2][0];
+    R[1][2] = 2.0 * q[2][0] * q[3][0] + 2.0 * q[0][0] * q[1][0];
+
+    R[2][0] = 2.0 * q[1][0] * q[3][0] + 2.0 * q[0][0] * q[2][0];
+    R[2][1] = 2.0 * q[2][0] * q[3][0] - 2.0 * q[0][0] * q[1][0];
+    R[2][2] = 2.0 * q[0][0] * q[0][0] - 1.0 + 2.0 * q[3][0] * q[3][0];
+
+    return R

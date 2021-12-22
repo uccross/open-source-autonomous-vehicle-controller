@@ -185,7 +185,7 @@ if __name__ == '__main__':
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
 
-    reference_speed = 10.00
+    reference_speed = 1000.00
 
     mass = 20.0  # kg
     radius = 0.045  # meters
@@ -283,8 +283,11 @@ if __name__ == '__main__':
     if simulation_flag:
         from utilities import HIL_DummyVehicle
 
-        Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
-                                           orientation_state_vec, radius, reference_speed)
+        Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass,
+                                           point_mass_state_vec,
+                                           orientation_state_vec,
+                                           radius,
+                                           reference_speed)
 
         wp_prev_ll = wpq.getNext()
         wp_prev_lla = np.array([[wp_prev_ll[0, 0],  # lat

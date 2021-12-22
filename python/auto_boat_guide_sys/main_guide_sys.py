@@ -315,6 +315,11 @@ if __name__ == '__main__':
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
+        
+        # Simulation vehicle state
+        if simulation_flag:
+            x_pm = Slug3.get_vehicle_point_state()
+            x_os = Slug3.get_vehicle_orientation_state()
 
         # Check messages to update the state machine
         if msg:
@@ -419,9 +424,6 @@ if __name__ == '__main__':
                 if simulation_flag:
                     if (t_new - t_transmit) >= dt_transmit:
                         t_transmit = t_new
-                        # Send the simulated IMU data
-                        x_pm = Slug3.get_vehicle_point_state()
-                        x_os = Slug3.get_vehicle_orientation_state()
                         logger.send_HIL_sensor(
                             0.0,  # t_usec
                             0.0,  # xacc
@@ -490,18 +492,18 @@ if __name__ == '__main__':
                     if int(yawspeed) == 8:
                         pic32_wp_state = 'TRACKING_WP'
 
-                    cf_heading_angle = yaw*180.0/np.pi
+                    cf_heading_angle = yaw*rad2deg
                     # if cf_heading_angle < 0.0:
                     #     cf_heading_angle = 360.0 + cf_heading_angle
 
                     if simulation_flag:
-                        cf_heading_angle = x_os[2][0]
+                        cf_heading_angle = x_os[2][0]*rad2deg
 
-                    path_angle = rollspeed*180.0/np.pi
+                    path_angle = rollspeed*rad2deg
                     # if path_angle < 0.0:
                     #     path_angle = 360.0 + path_angle
 
-                    angle_diff = pitchspeed*180.0/np.pi
+                    angle_diff = pitchspeed*rad2deg
                     # if angle_diff < 0.0:
                     #     angle_diff = 360.0 + angle_diff
 

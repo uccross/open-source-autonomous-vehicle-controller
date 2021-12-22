@@ -283,8 +283,7 @@ if __name__ == '__main__':
     if simulation_flag:
         from utilities import HIL_DummyVehicle
         Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
-                          orientation_state_vec, radius, reference_speed 
-                          distance_weight=0)
+                          orientation_state_vec, radius, reference_speed)
 
     ###########################################################################
     # Main Loop

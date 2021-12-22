@@ -81,7 +81,7 @@ class DualModel():
         self.thrust_mag_cmd = self.reference_speed
 
         # Adjust the thrust magnitude within the body frame
-        self.F_thrust_body.update(x=self.thrust_mag_cmd*np.sin(-self.tvc_angle),
+        self.F_thrust_body.update(x=self.thrust_mag_cmd*np.sin(self.tvc_angle),
                                   y=self.thrust_mag_cmd*np.cos(self.tvc_angle),
                                   z=0.0)
 

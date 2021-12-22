@@ -433,17 +433,20 @@ if __name__ == '__main__':
                         0.0,  # zmag
                     )
                     time.sleep(dt_transmit)
+                    msg = logger.mav_conn.recv_match()
 
                     # Send the simulated GPS data
                     # Send new 'previous' waypoint
                     logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
 
                     time.sleep(dt_transmit)
+                    msg = logger.mav_conn.recv_match()
 
                     # Send new 'next' waypoint
                     logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
 
                     time.sleep(dt_transmit)
+                    msg = logger.mav_conn.recv_match()
 
                     # Send GPS position of vehicle to be echoed back
                     vehi_pt_en[0][0] = x_pm[0][0]

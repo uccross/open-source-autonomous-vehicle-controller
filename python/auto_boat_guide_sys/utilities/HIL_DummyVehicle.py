@@ -54,6 +54,8 @@ class DualModel():
         self.T_thrust = Torque.FromThrust()
         self.T_drag = Torque.FromDrag()
 
+        self.reference_speed = reference_speed
+
         self.is_mission_complete = False
 
         return
@@ -76,6 +78,8 @@ class DualModel():
         # Forces @TODO have controller for commanded angel vs measured
 
         # Thrust
+        self.thrust_mag_cmd = self.reference_speed
+
         # Adjust the thrust magnitude within the body frame
         self.F_thrust_body.update(x=self.thrust_mag_cmd*np.sin(-self.tvc_angle),
                                   y=self.thrust_mag_cmd*np.cos(self.tvc_angle),

@@ -152,11 +152,13 @@ class Tracker():
         self.i = 0  # Index for graphing udpate
         self.j = 0  # Index for graphing
 
-    def update(self, msg, wp_prev_en=np.zeros((1, 2)),
+    def update(self, yaw, pitch, roll, wp_prev_en=np.zeros((1, 2)),
                wp_next_en=np.zeros((1, 2)), clst_pt_en=np.zeros((1, 2)),
                position_en=np.zeros((1, 2)), h_scale=5):
         """
-        :param msg: A MAVLink 'ATTITUDE' message
+        :param yaw:
+        :param pitch:
+        :param roll:
         :param wp_prev_en: The prev waypoint (meters) 1x2 vector: East, North
         :param wp_next_en: The next waypoint (meters) 1x2 vector: East, North
         :param clst_pt_en: The closest point (meters) 1x2 vector: East, North
@@ -165,27 +167,21 @@ class Tracker():
         :param h_scale: Scalar to scale the heading vector
         :return: None
         """
-        if (msg.get_type() != 'ATTITUDE'):
-            print("ERROR: Tracker: Wrong message: {}".format(
-                msg))
-            return
 
         # Update graphs only at specified intervals to help with speed of
         # graphing
         if np.mod(self.i, self.graphInterval) == 0:
 
-            if msg.get_type() == 'ATTITUDE':
-                nav_msg = msg.to_dict()
-                self.yaw = nav_msg['yaw']
-                self.pitch = nav_msg['pitch']
-                self.roll = nav_msg['roll']
+            self.yaw = yaw
+            self.pitch = pitch
+            self.roll = roll
 
-                # Minor fix for yaw constant orientation offset done here AND
-                # on micro @TODO: find root cause to avoid doing this patch 
-                # (below). Spent a while searching for cause, couldn't find, 
-                # but simplest fix was chosen to save time time. 
-                self.yaw -= (np.pi/2.0)
-                self.yaw = ((self.yaw + np.pi) % (2.0 * np.pi)) - np.pi
+            # Minor fix for yaw constant orientation offset done here AND
+            # on micro @TODO: find root cause to avoid doing this patch 
+            # (below). Spent a while searching for cause, couldn't find, 
+            # but simplest fix was chosen to save time time. 
+            self.yaw -= (np.pi/2.0)
+            self.yaw = ((self.yaw + np.pi) % (2.0 * np.pi)) - np.pi
 
             ###################################################################
             # Attitude

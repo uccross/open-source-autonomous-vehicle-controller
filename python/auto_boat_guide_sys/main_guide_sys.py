@@ -636,28 +636,26 @@ if __name__ == '__main__':
                     if msg:
                         av.update(msg)
 
-            if (tracker_flag and (state == 'WAITING_TO_UPDATE_WPS')):
-                if (msg_type == 'ATTITUDE'):
-                    if msg:
-                        ######################################################
-                        # @TODO: Add closest point from micro?
-                        # Trajectory (might get rid of this)
-                        trajectory.setPreviousWaypoint(wp_prev_en)
-                        trajectory.setNextWaypoint(wp_next_en)
+            if tracker_flag:
+                ###############################################################
+                # @TODO: Add closest point from micro?
+                # Trajectory (might get rid of this)
+                trajectory.setPreviousWaypoint(wp_prev_en)
+                trajectory.setNextWaypoint(wp_next_en)
 
-                        trajectory.udpate(vehi_pt_en)
+                trajectory.udpate(vehi_pt_en)
 
-                        path_angle_checked = trajectory.getPathAngle()
-                        path_angle_checked *= 180.0/np.pi
-                        # if path_anlge_checked < 0.0:
-                        #     path_anlge_checked = 360.0 + path_anlge_checked
+                path_angle_checked = trajectory.getPathAngle()
+                path_angle_checked *= 180.0/np.pi
+                # if path_anlge_checked < 0.0:
+                #     path_anlge_checked = 360.0 + path_anlge_checked
 
-                        clst_pt_en = trajectory.getClosestPoint()
+                clst_pt_en = trajectory.getClosestPoint()
 
-                        tracker.update(msg, wp_prev_en=wp_prev_en,
-                                       wp_next_en=wp_next_en,
-                                       position_en=vehi_pt_en,
-                                       clst_pt_en=clst_pt_en)
+                tracker.update(yaw, pitch, roll, wp_prev_en=wp_prev_en,
+                                wp_next_en=wp_next_en,
+                                position_en=vehi_pt_en,
+                                clst_pt_en=clst_pt_en)
 
         #######################################################################
         # Log messages (at intervals)

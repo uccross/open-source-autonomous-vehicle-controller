@@ -249,10 +249,9 @@ if __name__ == '__main__':
     ###########################################################################
     # State Machine Transitions
     last_base_mode = -1
-    if simulation_flag:
-        state = 'WAITING_TO_UPDATE_WPS'
-    else:
-        state = 'IDLE'
+
+    state = 'IDLE'
+
     last_state = state
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,

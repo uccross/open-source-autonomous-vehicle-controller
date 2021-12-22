@@ -494,6 +494,9 @@ if __name__ == '__main__':
                     # if cf_heading_angle < 0.0:
                     #     cf_heading_angle = 360.0 + cf_heading_angle
 
+                    if simulation_flag:
+                        cf_heading_angle = x_os[2][0]
+
                     path_angle = rollspeed*180.0/np.pi
                     # if path_angle < 0.0:
                     #     path_angle = 360.0 + path_angle

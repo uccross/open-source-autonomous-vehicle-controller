@@ -512,9 +512,9 @@ if __name__ == '__main__':
 
                     wp_prev_en = np.array([[wp_prev_ned[0, 1],
                                             wp_prev_ned[0, 0]]])
-
-                    vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
-                                            vehi_pt_ned[0, 0]]])
+                    if not simulation_flag:
+                        vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
+                                                vehi_pt_ned[0, 0]]])
                 
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])

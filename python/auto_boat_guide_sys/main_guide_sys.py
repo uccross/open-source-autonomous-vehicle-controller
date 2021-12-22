@@ -221,26 +221,6 @@ if __name__ == '__main__':
     cog = 0.0
 
     rad2deg = 180.0/np.pi
-    
-    ###########################################################################
-    # State Machine Transitions
-    last_base_mode = -1
-    if simulation_flag:
-        state = 'WAITING_TO_UPDATE_WPS'
-    else:
-        state = 'IDLE'
-        
-    last_state = state
-    ack_result = {'ERROR_WP': 0,
-                  'FINDING_REF_WP': 1,
-                  'SENDING_REF_WP': 2,
-                  'CHECKING_REF_WP': 3,
-                  'WAITING_FOR_PREV_WP': 4,
-                  'CHECKING_PREV_WP': 5,
-                  'WAITING_FOR_NEXT_WP': 6,
-                  'CHECKING_NEXT_WP': 7,
-                  'TRACKING_WP': 8}
-    currnet_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     # Waypoint Queue       N/S Lat   , E/W Long
     # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
@@ -280,12 +260,38 @@ if __name__ == '__main__':
     current_base_mode = -1
 
     ###########################################################################
+    # State Machine Transitions
+    last_base_mode = -1
+    state = 'IDLE'
+        
+    last_state = state
+
+    ack_result = {'ERROR_WP': 0,
+                  'FINDING_REF_WP': 1,
+                  'SENDING_REF_WP': 2,
+                  'CHECKING_REF_WP': 3,
+                  'WAITING_FOR_PREV_WP': 4,
+                  'CHECKING_PREV_WP': 5,
+                  'WAITING_FOR_NEXT_WP': 6,
+                  'CHECKING_NEXT_WP': 7,
+                  'TRACKING_WP': 8}
+                  
+    pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
+
+    ###########################################################################
     # Simulation 
     if simulation_flag:
         from utilities import HIL_DummyVehicle
+        
         Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
                           orientation_state_vec, radius, reference_speed)
 
+        wp_prev_lla = wpq.getNext()
+        wp_next_lla = wpq.getNext()
+
+        state = 'WAITING_TO_UPDATE_WPS'
+        last_state = state
+        
     ###########################################################################
     # Main Loop
     while True:
@@ -451,26 +457,26 @@ if __name__ == '__main__':
                     rollspeed = nav_msg['rollspeed']  # Using as path angle
                     # Using as cross track error
                     pitchspeed = nav_msg['pitchspeed']
-                    yawspeed = nav_msg['yawspeed']  # Using as currnet_wp_state
+                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
                     if int(yawspeed) == 0:
-                        currnet_wp_state = 'ERROR_WP'
+                        pic32_wp_state = 'ERROR_WP'
                     if int(yawspeed) == 1:
-                        currnet_wp_state = 'FINDING_REF_WP'
+                        pic32_wp_state = 'FINDING_REF_WP'
                     if int(yawspeed) == 2:
-                        currnet_wp_state = 'SENDING_REF_WP'
+                        pic32_wp_state = 'SENDING_REF_WP'
                     if int(yawspeed) == 3:
-                        currnet_wp_state = 'CHECKING_REF_WP'
+                        pic32_wp_state = 'CHECKING_REF_WP'
                     if int(yawspeed) == 4:
-                        currnet_wp_state = 'WAITING_FOR_PREV_WP'
+                        pic32_wp_state = 'WAITING_FOR_PREV_WP'
                     if int(yawspeed) == 5:
-                        currnet_wp_state = 'CHECKING_PREV_WP'
+                        pic32_wp_state = 'CHECKING_PREV_WP'
                     if int(yawspeed) == 6:
-                        currnet_wp_state = 'WAITING_FOR_NEXT_WP'
+                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
                     if int(yawspeed) == 7:
-                        currnet_wp_state = 'CHECKING_NEXT_WP'
+                        pic32_wp_state = 'CHECKING_NEXT_WP'
                     if int(yawspeed) == 8:
-                        currnet_wp_state = 'TRACKING_WP'
+                        pic32_wp_state = 'TRACKING_WP'
 
                     cf_heading_angle = yaw*180.0/np.pi
                     # if cf_heading_angle < 0.0:
@@ -576,7 +582,7 @@ if __name__ == '__main__':
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
                 print("    wp_next_en = {}".format(wp_next_en))
 
-                print("    currnet_wp_state: {}".format(currnet_wp_state))
+                print("    pic32_wp_state: {}".format(pic32_wp_state))
 
                 print("    norm = {}".format(
                     np.linalg.norm(vehi_pt_en - wp_next_en)))

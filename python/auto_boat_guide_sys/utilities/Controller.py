@@ -6,7 +6,7 @@
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
 import numpy as np
-from ..Constants import Constants as CNST
+from . import Constants as CNST
 
 
 class PID():

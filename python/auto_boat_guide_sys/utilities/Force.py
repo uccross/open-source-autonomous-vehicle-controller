@@ -7,7 +7,7 @@
 
 import numpy as np
 import copy
-from ..Constants import Constants as CNST
+from . import Constants as CNST
 
 class Thrust():
     def __init__(self):

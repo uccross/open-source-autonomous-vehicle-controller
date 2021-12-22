@@ -425,7 +425,7 @@ if __name__ == '__main__':
 
                     # Send GPS position of vehicle to be echoed back
                     vehi_pt_en[0][0] = x_pm[0][0]
-                    vehi_pt_en[0][1] = x_pm[0][1]
+                    vehi_pt_en[0][1] = x_pm[1][0]
                     logger.send_HIL_GPS(vehi_pt_en)
 
                 if msg_type == 'HIGHRES_IMU':

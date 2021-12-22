@@ -8,8 +8,8 @@
 import numpy as np
 from scipy.linalg import expm
 
-from ..utilities import Constants as CNST
-from ..utilities import Quaternions as QU
+from . import Constants as CNST
+from . import Quaternions as QU
 
 
 class PointMassDynamics():

@@ -221,8 +221,38 @@ if __name__ == '__main__':
     cog = 0.0
 
     rad2deg = 180.0/np.pi
+    
+    ###########################################################################
+    # State Machine Transitions
+    last_base_mode = -1
+    if simulation_flag:
+        state = 'WAITING_TO_UPDATE_WPS'
+    else:
+        state = 'IDLE'
+        
+    last_state = state
+    ack_result = {'ERROR_WP': 0,
+                  'FINDING_REF_WP': 1,
+                  'SENDING_REF_WP': 2,
+                  'CHECKING_REF_WP': 3,
+                  'WAITING_FOR_PREV_WP': 4,
+                  'CHECKING_PREV_WP': 5,
+                  'WAITING_FOR_NEXT_WP': 6,
+                  'CHECKING_NEXT_WP': 7,
+                  'TRACKING_WP': 8}
+    currnet_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
-    wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
+    # Waypoint Queue       N/S Lat   , E/W Long
+    # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
+    #                       [36.9556638, -122.0606960],
+    #                       [36.9554362, -122.0607348],
+    #                       [36.9556224, -122.0604107]])
+    waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
+                          [36.9835265, -122.0241790],
+                          [36.9834655, -122.0241469]])
+    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
+
+    wp_ref_lla = np.array([[36.9836576, -122.0238656, 0.0]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
 
@@ -245,34 +275,6 @@ if __name__ == '__main__':
     wp_prev_en = np.array([[wp_prev_ned[0, 1], wp_prev_ned[0, 0]]])
     vehi_pt_en = np.array([[vehi_pt_ned[0, 1], vehi_pt_ned[0, 0]]])
     wp_next_en = np.array([[wp_next_ned[0, 1], wp_next_ned[0, 0]]])
-    
-    ###########################################################################
-    # State Machine Transitions
-    last_base_mode = -1
-
-    state = 'IDLE'
-
-    last_state = state
-    ack_result = {'ERROR_WP': 0,
-                  'FINDING_REF_WP': 1,
-                  'SENDING_REF_WP': 2,
-                  'CHECKING_REF_WP': 3,
-                  'WAITING_FOR_PREV_WP': 4,
-                  'CHECKING_PREV_WP': 5,
-                  'WAITING_FOR_NEXT_WP': 6,
-                  'CHECKING_NEXT_WP': 7,
-                  'TRACKING_WP': 8}
-    currnet_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
-
-    # Waypoint Queue       N/S Lat   , E/W Long
-    # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
-    #                       [36.9556638, -122.0606960],
-    #                       [36.9554362, -122.0607348],
-    #                       [36.9556224, -122.0604107]])
-    waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
-                          [36.9835265, -122.0241790],
-                          [36.9834655, -122.0241469]])
-    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     msg_type = None
     current_base_mode = -1

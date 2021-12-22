@@ -176,8 +176,8 @@ if __name__ == '__main__':
     t_hard_write = time.time()
 
     dt_sim = 0.001  # seconds
-    dt_uc = 0.01 # seconds
-    dt_log = 0.05 # seconds
+    dt_uc = 0.01  # seconds
+    dt_log = 0.05  # seconds
     dt_transmit = 0.5  # seconds
     dt_graph = 0.005
     dt_hard_write = 5.0  # seconds
@@ -186,7 +186,7 @@ if __name__ == '__main__':
     orientation_state_vec = np.zeros((6, 1))
 
     reference_speed = 10.00
-    
+
     mass = 20.0  # kg
     radius = 0.045  # meters
 
@@ -227,9 +227,9 @@ if __name__ == '__main__':
     #                       [36.9556638, -122.0606960],
     #                       [36.9554362, -122.0607348],
     #                       [36.9556224, -122.0604107]])
-    waypoints = np.array([[36.9836576, -122.0238656, 0.0],  # Franklin street
-                          [36.9835265, -122.0241790, 0.0],
-                          [36.9834655, -122.0241469, 0.0]])
+    waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
+                          [36.9835265, -122.0241790],
+                          [36.9834655, -122.0241469]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     wp_ref_lla = np.array([[36.9836576, -122.0238656, 0.0]])
@@ -263,7 +263,7 @@ if __name__ == '__main__':
     # State Machine Transitions
     last_base_mode = -1
     state = 'IDLE'
-        
+
     last_state = state
 
     ack_result = {'ERROR_WP': 0,
@@ -275,19 +275,26 @@ if __name__ == '__main__':
                   'WAITING_FOR_NEXT_WP': 6,
                   'CHECKING_NEXT_WP': 7,
                   'TRACKING_WP': 8}
-                  
+
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     ###########################################################################
-    # Simulation 
+    # Simulation
     if simulation_flag:
         from utilities import HIL_DummyVehicle
-        
-        Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
-                          orientation_state_vec, radius, reference_speed)
 
-        wp_prev_lla = wpq.getNext()
-        wp_next_lla = wpq.getNext()
+        Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass, point_mass_state_vec,
+                                           orientation_state_vec, radius, reference_speed)
+
+        wp_prev_ll = wpq.getNext()
+        wp_prev_lla = np.array([[wp_prev_ll[0, 0],  # lat
+                                 wp_prev_ll[0, 1],  # lon
+                                 0.0]])          # alt
+
+        wp_next_ll = wpq.getNext()
+        wp_next_lla = np.array([[wp_next_ll[0, 0],  # lat
+                                 wp_next_ll[0, 1],  # lon
+                                 0.0]])          # alt
 
         state = 'WAITING_TO_UPDATE_WPS'
         last_state = state
@@ -411,22 +418,22 @@ if __name__ == '__main__':
                     x_pm = Slug3.get_vehicle_point_state()
                     x_os = Slug3.get_vehicle_orientation_state()
                     logger.send_HIL_sensor(
-                        0.0, # t_usec
-                        0.0, # xacc
-                        0.0, # yacc 
-                        0.0, # zacc
-                        x_os[3][0], # xgyro
-                        x_os[4][0], # ygyro 
-                        x_os[5][0], # zgyro
-                        0.0, # xmag
-                        0.0, # ymag 
-                        0.0, # zmag
+                        0.0,  # t_usec
+                        0.0,  # xacc
+                        0.0,  # yacc
+                        0.0,  # zacc
+                        x_os[3][0],  # xgyro
+                        x_os[4][0],  # ygyro
+                        x_os[5][0],  # zgyro
+                        0.0,  # xmag
+                        0.0,  # ymag
+                        0.0,  # zmag
                     )
 
                     # Send the simulated GPS data
                     # Send new 'previous' waypoint
                     logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
-                    
+
                     # Send new 'next' waypoint
                     logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
 
@@ -521,7 +528,7 @@ if __name__ == '__main__':
                     if not simulation_flag:
                         vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
                                                 vehi_pt_ned[0, 0]]])
-                
+
                     wp_next_en = np.array([[wp_next_ned[0, 1],
                                             wp_next_ned[0, 0]]])
 
@@ -608,7 +615,7 @@ if __name__ == '__main__':
 
                 input_angle = yawspeed
                 Slug3.update(input_angle)
-                
+
         #######################################################################
         # Graphing
         if (t_new - t_graph) >= dt_graph:

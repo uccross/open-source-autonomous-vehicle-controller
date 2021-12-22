@@ -232,7 +232,7 @@ if __name__ == '__main__':
                           [36.9834655, -122.0241469]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
-    wp_ref_lla = np.array([[36.9836576, -122.0238656, 0.0]])
+    wp_ref_lla = np.array([[36.9836576, -122.0241886, 0.0]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
 

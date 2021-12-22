@@ -420,30 +420,32 @@ if __name__ == '__main__':
                     # Send the simulated IMU data
                     x_pm = Slug3.get_vehicle_point_state()
                     x_os = Slug3.get_vehicle_orientation_state()
-                    logger.send_HIL_sensor(
-                        0.0,  # t_usec
-                        0.0,  # xacc
-                        0.0,  # yacc
-                        0.0,  # zacc
-                        x_os[3][0],  # xgyro
-                        x_os[4][0],  # ygyro
-                        x_os[5][0],  # zgyro
-                        0.0,  # xmag
-                        0.0,  # ymag
-                        0.0,  # zmag
-                    )
+                    if (t_new - t_transmit) >= dt_transmit:
+                        t_transmit = t_new
+                        logger.send_HIL_sensor(
+                            0.0,  # t_usec
+                            0.0,  # xacc
+                            0.0,  # yacc
+                            0.0,  # zacc
+                            x_os[3][0],  # xgyro
+                            x_os[4][0],  # ygyro
+                            x_os[5][0],  # zgyro
+                            0.0,  # xmag
+                            0.0,  # ymag
+                            0.0,  # zmag
+                        )
 
-                    # Send the simulated GPS data
-                    # Send new 'previous' waypoint
-                    logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
+                        # Send the simulated GPS data
+                        # Send new 'previous' waypoint
+                        logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
 
-                    # Send new 'next' waypoint
-                    logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
+                        # Send new 'next' waypoint
+                        logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
 
-                    # Send GPS position of vehicle to be echoed back
-                    vehi_pt_en[0][0] = x_pm[0][0]
-                    vehi_pt_en[0][1] = x_pm[1][0]
-                    logger.send_HIL_GPS(vehi_pt_en)
+                        # Send GPS position of vehicle to be echoed back
+                        vehi_pt_en[0][0] = x_pm[0][0]
+                        vehi_pt_en[0][1] = x_pm[1][0]
+                        logger.send_HIL_GPS(vehi_pt_en)
 
                 if msg_type == 'HIGHRES_IMU':
                     nav_msg = msg.to_dict()

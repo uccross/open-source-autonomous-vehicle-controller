@@ -178,7 +178,7 @@ class MAVCSVLogger():
         """
         :param vehi_pt_en: np.zeros((1, 2)) East, North
         """
-        self.send_mav_cmd_nav_waypoint(vehi_pt_en, wp_type_en=2.0)
+        self.send_mav_cmd_nav_waypoint(vehi_pt_en, wp_type=2.0)
 
     def send_HIL_sensor(self, t_usec, xacc, yacc, zacc, xmag, ymag, zmag,
                         xgyro, ygyro, zgyro):

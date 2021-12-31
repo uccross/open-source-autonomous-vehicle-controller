@@ -305,16 +305,6 @@ if __name__ == '__main__':
                                            radius,
                                            reference_speed)
 
-        wp_prev_ll = wpq.getNext()
-        wp_prev_lla = np.array([[wp_prev_ll[0, 0],  # lat
-                                 wp_prev_ll[0, 1],  # lon
-                                 0.0]])          # alt
-
-        wp_next_ll = wpq.getNext()
-        wp_next_lla = np.array([[wp_next_ll[0, 0],  # lat
-                                 wp_next_ll[0, 1],  # lon
-                                 0.0]])          # alt
-
         state = 'SENDING_REF_POINT'
         last_state = state
 
@@ -404,7 +394,6 @@ if __name__ == '__main__':
                 # equal to 1
                 if msg_type == 'COMMAND_ACK':
                     nav_msg = msg.to_dict()
-                    result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         print("    lat: {}, type: {}".format(lat,
@@ -429,7 +418,6 @@ if __name__ == '__main__':
                 if msg.get_type() == 'COMMAND_ACK':
 
                     nav_msg = msg.to_dict()
-                    result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         wp_ref_lla = np.array([[wp_ref_lat_lon[0, 0],  # lat
@@ -455,7 +443,6 @@ if __name__ == '__main__':
                 if msg.get_type() == 'COMMAND_ACK':
 
                     nav_msg = msg.to_dict()
-                    result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
                         wp_prev_lla = np.array([[wp_prev[0, 0],  # lat
@@ -477,7 +464,6 @@ if __name__ == '__main__':
                 if msg.get_type() == 'COMMAND_ACK':
 
                     nav_msg = msg.to_dict()
-                    result = nav_msg['result']
 
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
                         wp_next_lla = np.array([[wp_next[0, 0],  # lat

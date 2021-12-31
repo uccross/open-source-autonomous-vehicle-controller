@@ -106,6 +106,7 @@ int main(void) {
     float wp_a_lat_lon[DIM]; // [lat, lon]
     float wp_b_lat_lon[DIM];
     float wp_received_ll[DIM]; // [lat, lon]
+    float last_wp_received_ll[DIM]; // [lat, lon]
 
     float wp_prev_lla[DIM + 1]; // [lat, lon, alt]
     float vehi_pt_lla[DIM + 1]; // [lat, lon, alt]
@@ -198,6 +199,7 @@ int main(void) {
     waypoints_state_t current_wp_state;
     char is_new_imu = FALSE;
     char is_new_msg = FALSE;
+    char is_new_wp = FALSE;
     char is_new_gps = FALSE;
     char found_ref_point = FALSE;
 
@@ -232,6 +234,11 @@ int main(void) {
             /* Hardware in the loop (HIL, or sometimes HITL)*/
             is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id,
                     &cmd, &wp_type);
+
+            if ((last_wp_received_ll[0] != wp_received_ll[0]) &&
+                    (last_wp_received_ll[1] != wp_received_ll[1])) {
+                is_new_wp = TRUE;
+            }
 
             /* Receive IMU Events from computer */
             if (msg_id == MAVLINK_MSG_ID_HIL_SENSOR) {
@@ -341,7 +348,8 @@ int main(void) {
 
                 // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT) &&
-                        (cur_time >= WAIT_TIME_FOR_TRANSITION)) {
+                        (cur_time >= WAIT_TIME_FOR_TRANSITION) &&
+                        (is_new_wp == TRUE)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -355,7 +363,8 @@ int main(void) {
             case CHECKING_REF_WP:
 
                 // State exit case
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
 
@@ -385,7 +394,8 @@ int main(void) {
 
             case WAITING_FOR_PREV_WP:
 
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -403,7 +413,8 @@ int main(void) {
             case CHECKING_PREV_WP:
                 /* Check for a second previous waypoint and compare them to 
                  * make sure that they match */
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
 
@@ -433,7 +444,8 @@ int main(void) {
             case WAITING_FOR_NEXT_WP:
 
                 // State exit case
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -454,7 +466,8 @@ int main(void) {
 
                 /* Check for a second 'next' waypoint and compare them to make
                  * sure that they match */
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
 
@@ -488,7 +501,8 @@ int main(void) {
             case TRACKING_WP:
 
                 // State exit case
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
+                        (is_new_wp == TRUE)) {
 
                     /* If the newest received waypoint is the 'next' waypoint
                      * then the Companion computer has indicated that 'prev' 
@@ -503,7 +517,14 @@ int main(void) {
         }
         is_new_msg = FALSE; /* Set the new message as FALSE after the state 
                           * machine has run*/
+        is_new_wp = FALSE;
         cmd = 0;
+
+        last_wp_received_ll[0] = wp_received_ll[0];
+        last_wp_received_ll[1] = wp_received_ll[1];
+
+        //        wp_received_ll[0] = 0.0; /* latitude */
+        //        wp_received_ll[1] = 0.0; /* longitude */
 
         /**********************************************************************
          * CONTROL: Control and publish data                                  *

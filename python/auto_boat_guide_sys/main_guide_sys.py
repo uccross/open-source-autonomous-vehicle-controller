@@ -616,7 +616,7 @@ if __name__ == '__main__':
         # HEARTBEAT and extra information
         print("Waiting for hearbeat...")
         while True:
-            msg = logger.mav_conn.recv_match()      
+            msg = logger.mav_conn.recv_match(blocking=True)      
             if msg:
                 if msg.get_type() == 'HEARTBEAT':
                     break

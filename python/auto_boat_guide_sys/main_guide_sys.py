@@ -606,70 +606,72 @@ if __name__ == '__main__':
             # END OF STATE MACHINE
             ##################################################################
 
-            while True:
-                msg = logger.mav_conn.recv_match()      
-                if msg:
-                    if msg.get_type() == 'HEARTBEAT':
-                        break
-                else:
-                    print('.', end='')
-
-            if (msg.get_type() == 'HEARTBEAT'):
-
-                heartbeat_msg = msg.to_dict()
-                current_base_mode = heartbeat_msg['base_mode']
-
-                print("**************************************************")
-                print("    mode:       {0:.6g}".format(current_base_mode))
-                print("    cog:        {0:.6g}".format(cog))
-                print("    CF heading: {0:.6g}".format(cf_heading_angle))
-                print("    path angle: {0:.6g}".format(path_angle))
-                print("    ^__checked: {0:.6g}".format(path_angle_checked))
-                print("    angle_diff: {0:.6g}".format(angle_diff))
-                print("    servo4_raw: {0:.6g}".format(servo4_raw))
-                print("    yaw:        {0:.6g}".format(yaw*rad2deg))
-                print("    pitch:      {0:.6g}".format(pitch*rad2deg))
-                print("    roll:       {0:.6g}".format(roll*rad2deg))
-                print("    xacc:       {0:.6g}".format(xacc))
-                print("    yacc:       {0:.6g}".format(yacc))
-                print("    zacc:       {0:.6g}".format(zacc))
-                print("    xmag:       {0:.6g}".format(xmag))
-                print("    ymag:       {0:.6g}".format(ymag))
-                print("    zmag:       {0:.6g}".format(zmag))
-                print("    xgyro:      {0:.6g}".format(xgyro*rad2deg))
-                print("    ygyro:      {0:.6g}".format(ygyro*rad2deg))
-                print("    zgyro:      {0:.6g}".format(zgyro*rad2deg))
-
-                print("    wp_prev_lla_copy = {}".format(wp_prev_lla_copy))
-                print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
-                print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
-
-                print("    wp_prev_lla_copy2 = {}".format(wp_prev_lla_copy2))
-                print("    vehi_pt_lla_copy2 = {}".format(vehi_pt_lla_copy2))
-                print("    wp_next_lla_copy2 = {}".format(wp_next_lla_copy2))
-
-                print("    wp_prev_en = {}".format(wp_prev_en))
-                print("    vehi_pt_en = {}".format(vehi_pt_en))
-                print("    wp_next_en = {}".format(wp_next_en))
-
-                print("    state:          {}".format(state))
-                print("    pic32_wp_state: {}".format(pic32_wp_state))
-
-                print("    norm = {}".format(
-                    np.linalg.norm(vehi_pt_en - wp_next_en)))
-
-                if current_base_mode != last_base_mode:
-                    last_base_mode = current_base_mode
-
-                    if mode_print_flag:
-                        print("MAVLink base_mode changed: {}".format(
-                            current_base_mode))
-
             if debug_flag:
                 print("\r\nMsg:")
                 print(msg)
 
                 print("Time: {}".format(t_new))
+
+        #######################################################################
+        # HEARTBEAT and extra information
+        while True:
+            msg = logger.mav_conn.recv_match()      
+            if msg:
+                if msg.get_type() == 'HEARTBEAT':
+                    break
+            else:
+                print('.', end='')
+
+        if (msg.get_type() == 'HEARTBEAT'):
+
+            heartbeat_msg = msg.to_dict()
+            current_base_mode = heartbeat_msg['base_mode']
+
+            print("**************************************************")
+            print("    mode:       {0:.6g}".format(current_base_mode))
+            print("    cog:        {0:.6g}".format(cog))
+            print("    CF heading: {0:.6g}".format(cf_heading_angle))
+            print("    path angle: {0:.6g}".format(path_angle))
+            print("    ^__checked: {0:.6g}".format(path_angle_checked))
+            print("    angle_diff: {0:.6g}".format(angle_diff))
+            print("    servo4_raw: {0:.6g}".format(servo4_raw))
+            print("    yaw:        {0:.6g}".format(yaw*rad2deg))
+            print("    pitch:      {0:.6g}".format(pitch*rad2deg))
+            print("    roll:       {0:.6g}".format(roll*rad2deg))
+            print("    xacc:       {0:.6g}".format(xacc))
+            print("    yacc:       {0:.6g}".format(yacc))
+            print("    zacc:       {0:.6g}".format(zacc))
+            print("    xmag:       {0:.6g}".format(xmag))
+            print("    ymag:       {0:.6g}".format(ymag))
+            print("    zmag:       {0:.6g}".format(zmag))
+            print("    xgyro:      {0:.6g}".format(xgyro*rad2deg))
+            print("    ygyro:      {0:.6g}".format(ygyro*rad2deg))
+            print("    zgyro:      {0:.6g}".format(zgyro*rad2deg))
+
+            print("    wp_prev_lla_copy = {}".format(wp_prev_lla_copy))
+            print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
+            print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
+
+            print("    wp_prev_lla_copy2 = {}".format(wp_prev_lla_copy2))
+            print("    vehi_pt_lla_copy2 = {}".format(vehi_pt_lla_copy2))
+            print("    wp_next_lla_copy2 = {}".format(wp_next_lla_copy2))
+
+            print("    wp_prev_en = {}".format(wp_prev_en))
+            print("    vehi_pt_en = {}".format(vehi_pt_en))
+            print("    wp_next_en = {}".format(wp_next_en))
+
+            print("    state:          {}".format(state))
+            print("    pic32_wp_state: {}".format(pic32_wp_state))
+
+            print("    norm = {}".format(
+                np.linalg.norm(vehi_pt_en - wp_next_en)))
+
+            if current_base_mode != last_base_mode:
+                last_base_mode = current_base_mode
+
+                if mode_print_flag:
+                    print("MAVLink base_mode changed: {}".format(
+                        current_base_mode))
 
         #######################################################################
         # Simulation Update Vehicle

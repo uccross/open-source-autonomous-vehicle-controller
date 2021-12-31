@@ -447,7 +447,7 @@ if __name__ == '__main__':
                         print("    wp_prev_lla = {}".format(wp_prev_lla))
 
                         wp_next = wpq.getNext()
-                        state = 'SENDING_NEXT_WP'
+                        state = 'SENDING_PREV_WP'
 
             ###################################################################
             elif state == 'SENDING_PREV_WP':

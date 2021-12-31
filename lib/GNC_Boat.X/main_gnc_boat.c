@@ -26,7 +26,7 @@
 /******************************************************************************
  * #DEFINES                                                                   *
  *****************************************************************************/
-#define HEARTBEAT_PERIOD 500 //1 sec interval for hearbeat update
+#define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
@@ -589,7 +589,6 @@ int main(void) {
              * Publish data                                                   *
              *****************************************************************/
             publish_RC_signals_raw();
-            publish_HIL_servo_output_raw(u_pulse);
             publish_IMU_data(SCALED);
             publish_attitude(roll,
                     pitch,
@@ -606,7 +605,11 @@ int main(void) {
         // Publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-            publish_heartbeat(); // TODO: add argument to update the mode 
+            publish_heartbeat(); // TODO: add argument to update the mode
+            
+#ifdef HIL
+            publish_HIL_servo_output_raw(u_pulse);
+#endif 
 
             LATAbits.LATA3 ^= 1; /* Set LED4 */
 

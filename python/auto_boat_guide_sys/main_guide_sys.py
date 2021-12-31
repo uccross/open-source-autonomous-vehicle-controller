@@ -175,6 +175,7 @@ if __name__ == '__main__':
     t_uc = time.time()
     t_graph = time.time()
     t_hard_write = time.time()
+    t_info = time.time()
 
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
@@ -183,6 +184,7 @@ if __name__ == '__main__':
     dt_HIL_transmit = 0.5  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
+    dt_info = 1.0 # seconds
 
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
@@ -605,12 +607,20 @@ if __name__ == '__main__':
             # END OF STATE MACHINE
             ###################################################################
 
-            ###################################################################
-            # HEARTBEAT and extra information  
-            if (msg_type == 'HEARTBEAT'):
+            if debug_flag:
+                print("\r\nMsg:")
+                print(msg)
 
-                heartbeat_msg = msg.to_dict()
-                current_base_mode = heartbeat_msg['base_mode']
+                print("Time: {}".format(t_new))
+
+            ###################################################################
+            # Information
+            if (t_new - t_info) >= dt_info:
+                t_info = t_new
+
+                if (msg_type == 'HEARTBEAT'):
+                    heartbeat_msg = msg.to_dict()
+                    current_base_mode = heartbeat_msg['base_mode']
 
                 print("**************************************************")
                 print("    mode:       {0:.6g}".format(current_base_mode))
@@ -657,12 +667,6 @@ if __name__ == '__main__':
                     if mode_print_flag:
                         print("MAVLink base_mode changed: {}".format(
                             current_base_mode))
-
-            if debug_flag:
-                print("\r\nMsg:")
-                print(msg)
-
-                print("Time: {}".format(t_new))
 
         #######################################################################
         # Simulation Update Vehicle

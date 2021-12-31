@@ -614,7 +614,6 @@ if __name__ == '__main__':
 
         #######################################################################
         # HEARTBEAT and extra information
-        print("Waiting for hearbeat...")
         msg = logger.mav_conn.recv_match(blocking=True)     
 
         if (msg.get_type() == 'HEARTBEAT'):

@@ -199,7 +199,7 @@ int main(void) {
     char found_ref_point = FALSE;
 
 #ifdef HIL
-    current_wp_state = TRACKING_WP;
+    current_wp_state = WAITING_FOR_REF_WP;
 #else
     current_wp_state = FINDING_REF_WP;
 #endif

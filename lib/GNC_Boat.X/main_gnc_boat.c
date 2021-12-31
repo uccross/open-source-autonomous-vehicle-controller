@@ -28,7 +28,7 @@
  *****************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
 #define RAW 1
 #define SCALED 2
@@ -61,8 +61,6 @@ int main(void) {
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
 
-
-
     /**************************************************************************
      * Initialization routines                                                *
      *************************************************************************/
@@ -85,7 +83,7 @@ int main(void) {
     RC_channels_init(); //set channels to midpoint of RC system
     RC_servo_init(); // start the servo subsystem
 
-
+#ifndef HIL
     IMU_state = IMU_init(IMU_SPI_MODE);
 
     if (IMU_state == ERROR && IMU_retry > 0) {
@@ -96,6 +94,7 @@ int main(void) {
 #endif
         IMU_retry--;
     }
+#endif
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
@@ -129,18 +128,19 @@ int main(void) {
     uint16_t u_pulse = 0; // Pulse from converted control effort
 
     // Attitude
-    struct IMU_output data;
-    data.acc.x = 0.0;
-    data.acc.y = 0.0;
-    data.acc.z = 0.0;
+    struct IMU_output imu;
+    imu.acc.x = 0.0;
+    imu.acc.y = 0.0;
+    imu.acc.z = 0.0;
 
-    data.mag.x = 0.0;
-    data.mag.y = 0.0;
-    data.mag.z = 0.0;
+    imu.mag.x = 0.0;
+    imu.mag.y = 0.0;
+    imu.mag.z = 0.0;
 
-    data.gyro.x = 0.0;
-    data.gyro.y = 0.0;
-    data.gyro.z = 0.0;
+    imu.gyro.x = 0.0;
+    imu.gyro.y = 0.0;
+    imu.gyro.z = 0.0;
+
     float acc[MSZ] = {0.0};
     float mag[MSZ] = {0.0};
     float gyro_bias[MSZ] = {0.0};
@@ -169,12 +169,16 @@ int main(void) {
     // MAVLink and State Machine
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
     uint8_t last_mode = current_mode;
+    uint32_t msg_id = 0;
     uint16_t cmd = 0;
+    float wp_type = -1.0;
 
     enum waypoints_state {
         ERROR_WP = 0,
         FINDING_REF_WP, /* Find the reference point for the LTP calculation */
         SENDING_REF_WP, /* Send the reference point for the LTP calculation */
+        WAITING_FOR_REF_WP, /* In case of HIL simulation, wait for reference 
+                             * point from the Companion Computer */
         CHECKING_REF_WP, /* Check the reference point sending and comparing 
                           * echo from Companion Computer */
         WAITING_FOR_PREV_WP, /* Wait for the previous waypoint from the 
@@ -183,16 +187,22 @@ int main(void) {
         WAITING_FOR_NEXT_WP, /* Wait for the next waypoint from the 
                               * Companion Computer */
         CHECKING_NEXT_WP, /* Echo test the next waypoint */
-        TRACKING_WP /* Track the line connecting the previous and next waypoint */
+        TRACKING_WP /* Track the line connecting the previous and next 
+                     * waypoint */
     };
     typedef enum waypoints_state waypoints_state_t;
 
-    waypoints_state_t current_wp_state = FINDING_REF_WP;
-    waypoints_state_t last_wp_state = FINDING_REF_WP;
-    char new_imu = FALSE;
-    char new_msg = FALSE;
-    char new_gps = FALSE;
+    waypoints_state_t current_wp_state;
+    char is_new_imu = FALSE;
+    char is_new_msg = FALSE;
+    char is_new_gps = FALSE;
     char found_ref_point = FALSE;
+
+#ifdef HIL
+    current_wp_state = TRACKING_WP;
+#else
+    current_wp_state = FINDING_REF_WP;
+#endif
 
 
     publisher_set_mode(MAV_MODE_MANUAL_ARMED);
@@ -206,25 +216,45 @@ int main(void) {
     while (1) {
         cur_time = Sys_timer_get_msec();
 
+
         /**********************************************************************
-         * Check for all events                                               *
+         * Check for all events:                                              *
+         * - HIL                                                              *
+         * - Real sensors                                                     *
          *********************************************************************/
-        new_imu = check_IMU_events(SCALED, &data);
-        new_msg = check_mavlink_serial_events(wp_received_ll, &cmd);
+#ifdef HIL
+        /* Hardware in the loop (HIL, or sometimes HITL)*/
+        is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id, &cmd,
+                &wp_type);
+
+        /* Receive IMU Events from computer */
+        if (msg_id == MAVLINK_MSG_ID_HIL_SENSOR) {
+            check_HIL_IMU_events(&imu);
+        }
+
+        /* Receive GPS Events from computer */
+        if ((cmd == MAV_CMD_NAV_WAYPOINT) && (wp_type == VEHI_PT)) {
+            is_new_gps = TRUE;
+        }
+#else
+        is_new_imu = check_IMU_events(SCALED, &imu);
+        is_new_msg = check_mavlink_serial_events(wp_received_ll, &cmd,
+                &wp_type);
         check_RC_events(); //check incoming RC commands
-        new_gps = check_GPS_events(); //check and process incoming GPS messages
+        is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
         /* Update aiding vectors and gyro angular rates */
-        if (new_imu == TRUE) {
-            lin_alg_set_v(data.acc.x, data.acc.y, data.acc.z, acc);
-            lin_alg_set_v(data.mag.x, data.mag.y, data.mag.z, mag);
-            lin_alg_set_v(data.gyro.x, data.gyro.y, data.gyro.z, gyro);
+        if (is_new_imu == TRUE) {
+            lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
+            lin_alg_set_v(imu.mag.x, imu.mag.y, imu.mag.z, mag);
+            lin_alg_set_v(imu.gyro.x, imu.gyro.y, imu.gyro.z, gyro);
             lin_alg_v_scale(GYRO_SCALE, gyro);
         }
+#endif
 
         /* Convert the gps position to the Local Tangent Plane (LTP) if a 
          * reference point has been established*/
-        if ((new_gps == TRUE) && (found_ref_point == TRUE)) {
+        if ((is_new_gps == TRUE) && (found_ref_point == TRUE)) {
             vehi_pt_lla[0] = wp_received_ll[0]; /* latitude */
             vehi_pt_lla[1] = wp_received_ll[1]; /* longitude */
             vehi_pt_lla[2] = 0.0; /* altitude */
@@ -254,9 +284,13 @@ int main(void) {
             case ERROR_WP:
                 break;
 
+                /* Wait until a GPS fix is achieved. The starting  GPS position is
+                 * reference waypoint for the LTP. This may take up to about 20 
+                 * minutes for the first try after power on. */
             case FINDING_REF_WP:
+
                 // State exit case
-                if ((new_gps == TRUE) &&
+                if ((is_new_gps == TRUE) &&
                         (current_mode == MAV_MODE_AUTO_ARMED)) {
                     publisher_get_gps_rmc_position(wp_a_lat_lon);
 
@@ -275,19 +309,35 @@ int main(void) {
                 }
                 break;
 
+                /* Send the reference waypoint */
             case SENDING_REF_WP:
 
                 LATCbits.LATC1 ^= 1; // Toggle LED 5
                 // Transmit periodically, until the exit condition is met
                 if ((cur_time - transmit_time) >= TRANSMIT_PRD) {
                     transmit_time = cur_time;
-                    publish_waypoint(wp_a_lat_lon);
+                    if ((wp_a_lat_lon[0] != 0.0) && (wp_a_lat_lon[1] != 0.0)) {
+                        publish_waypoint(wp_a_lat_lon);
+                    }
                 }
 
                 // State exit case
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
+
+                    current_wp_state = CHECKING_REF_WP;
+                }
+                break;
+
+            case WAITING_FOR_REF_WP:
+
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_a_lat_lon[0] = wp_received_ll[0];
+                    wp_a_lat_lon[1] = wp_received_ll[1];
+
+                    publish_waypoint(wp_a_lat_lon); /* Echo back the received 
+                                                     * waypoint */
 
                     current_wp_state = CHECKING_REF_WP;
                 }
@@ -309,14 +359,17 @@ int main(void) {
                     current_wp_state = WAITING_FOR_PREV_WP;
                 } else {
                     publish_ack(ERROR_WP);
-
+#ifdef HIL
+                    current_wp_state = WAITING_FOR_REF_WP;
+#else
                     current_wp_state = FINDING_REF_WP;
+#endif
                 }
                 break;
 
             case WAITING_FOR_PREV_WP:
 
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -334,7 +387,7 @@ int main(void) {
             case CHECKING_PREV_WP:
                 /* Check for a second previous waypoint and compare them to 
                  * make sure that they match */
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
 
@@ -362,7 +415,7 @@ int main(void) {
                 break;
 
             case WAITING_FOR_NEXT_WP:
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -380,7 +433,7 @@ int main(void) {
             case CHECKING_NEXT_WP:
                 /* Check for a second next waypoint and compare them to make
                  * sure that they match */
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
 
@@ -388,12 +441,6 @@ int main(void) {
                         wp_next_lla[0] = wp_b_lat_lon[0]; /* latitude */
                         wp_next_lla[1] = wp_b_lat_lon[1]; /* longitude */
                         wp_next_lla[2] = 0.0; /* altitude */
-
-                        if (last_wp_state == TRACKING_WP) {
-                            wp_prev_en[0] = wp_next_en[0];
-                            wp_prev_en[1] = wp_next_en[1];
-                            lin_tra_set_prev_wp(wp_prev_en);
-                        }
 
                         /* Convert to ENU */
                         lin_tra_lla_to_enu(wp_next_lla, ref_lla, wp_next_enu);
@@ -418,18 +465,47 @@ int main(void) {
                 break;
 
             case TRACKING_WP:
-                last_wp_state = current_wp_state;
 
-                /* Check for new next waypoint */
-                if ((new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-                    wp_a_lat_lon[0] = wp_received_ll[0];
-                    wp_a_lat_lon[1] = wp_received_ll[1];
+                /* Check for new waypoints */
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
 
-                    current_wp_state = CHECKING_NEXT_WP;
+                    /* Is it a 'next' waypoint or a 'previous' waypoint?*/
+
+                    /* PREVIOUS */
+                    if (wp_type == WP_PREV) {
+                        wp_prev_lla[0] = wp_received_ll[0]; /* latitude */
+                        wp_prev_lla[1] = wp_received_ll[1]; /* longitude */
+                        wp_prev_lla[2] = 0.0; /* altitude */
+
+                        /* Convert to ENU */
+                        lin_tra_lla_to_enu(wp_prev_lla, ref_lla, wp_prev_enu);
+
+                        /* The next waypoint becomes the previous waypoint*/
+                        wp_prev_en[0] = wp_prev_enu[1];
+                        wp_prev_en[1] = wp_prev_enu[0]; /* @TODO: FIX ENU->NED*/
+                        lin_tra_set_prev_wp(wp_prev_en);
+                    }
+
+                    /* NEXT */
+                    if (wp_type == WP_NEXT) {
+                        wp_next_lla[0] = wp_received_ll[0]; /* latitude */
+                        wp_next_lla[1] = wp_received_ll[1]; /* longitude */
+                        wp_next_lla[2] = 0.0; /* altitude */
+
+                        /* Convert to ENU */
+                        lin_tra_lla_to_enu(wp_next_lla, ref_lla, wp_next_enu);
+
+                        /* The next waypoint becomes the previous waypoint*/
+                        wp_next_en[0] = wp_next_enu[1];
+                        wp_next_en[1] = wp_next_enu[0]; /* @TODO: FIX ENU->NED*/
+                        lin_tra_set_next_wp(wp_next_en);
+                    }
+
+                    lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
                 }
                 break;
         }
-        new_msg = FALSE; /* Set the new message as FALSE after the state 
+        is_new_msg = FALSE; /* Set the new message as FALSE after the state 
                           * machine has run*/
 
         /**********************************************************************
@@ -439,7 +515,7 @@ int main(void) {
             control_start_time = cur_time; //reset control loop timer
 
             set_control_output(); // set actuator outputs
-
+#ifndef HIL
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
 
             if (IMU_state == ERROR) {
@@ -452,6 +528,19 @@ int main(void) {
 
                 }
             }
+#endif
+
+            /******************************************************************
+             * Complementary filter attitude and heading reference system     *
+             *****************************************************************/
+            /* Update */
+#ifdef HIL
+            yaw = imu.gyro.z; /* Using gyro z as yaw angle for HIL */
+            pitch = imu.gyro.y; /* Using gyro y as pitch angle for HIL */
+            roll = imu.gyro.x; /* Using gyro x as roll angle for HIL */
+#else
+            cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
+#endif
 
             /******************************************************************
              * Control                                                        *
@@ -462,12 +551,17 @@ int main(void) {
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
                     path_angle = lin_tra_get_path_angle();
+
+                    /* Path Angle with angle offset for now */
                     heading_angle = yaw;
+                    heading_angle += (M_PI / 2.0);
+                    heading_angle = fmod(
+                            (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
+
                     heading_angle_diff = heading_angle - path_angle;
 
                     heading_angle_diff = fmod(
-                            (heading_angle_diff + M_PI),
-                            (2.0 * M_PI)) - M_PI;
+                            (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
 
 
@@ -487,11 +581,6 @@ int main(void) {
 
             }
 
-            /******************************************************************
-             * Complementary filter attitude and heading reference system     *
-             *****************************************************************/
-            /* Update */
-            cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 
             // Information from trajectory
 
@@ -500,14 +589,16 @@ int main(void) {
              * Publish data                                                   *
              *****************************************************************/
             publish_RC_signals_raw();
+            publish_HIL_servo_output_raw(u_pulse);
             publish_IMU_data(SCALED);
-            publish_attitude(roll, pitch, yaw,
-                    path_angle, /* Using differently on purpose */
-                    heading_angle_diff, /* Using differently on purpose */
-                    (float) u_pulse); /* Using differently on purpose */ /* @TODO: add rates */
+            publish_attitude(roll,
+                    pitch,
+                    heading_angle, /* Using differently on purpose */
+                    path_angle, // roll-rate, /* Using differently on purpose */
+                    wp_type, // pitch-rate, /* Using differently on purpose */
+                    (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
             publish_GPS();
-
             control_loop_count++;
         }
 

@@ -269,12 +269,13 @@ if __name__ == '__main__':
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
                   'SENDING_REF_WP': 2,
-                  'CHECKING_REF_WP': 3,
-                  'WAITING_FOR_PREV_WP': 4,
-                  'CHECKING_PREV_WP': 5,
-                  'WAITING_FOR_NEXT_WP': 6,
-                  'CHECKING_NEXT_WP': 7,
-                  'TRACKING_WP': 8}
+                  'WAITING_FOR_REF_WP':3,
+                  'CHECKING_REF_WP': 4,
+                  'WAITING_FOR_PREV_WP': 5,
+                  'CHECKING_PREV_WP': 6,
+                  'WAITING_FOR_NEXT_WP': 7,
+                  'CHECKING_NEXT_WP': 8,
+                  'TRACKING_WP': 9}
 
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
@@ -301,7 +302,7 @@ if __name__ == '__main__':
                                  wp_next_ll[0, 1],  # lon
                                  0.0]])          # alt
 
-        state = 'WAITING_TO_UPDATE_WPS'
+        state = 'SENDING_REF_POINT'
         last_state = state
 
     ###########################################################################
@@ -339,11 +340,9 @@ if __name__ == '__main__':
 
             ##################################################################
             # START OF STATE MACHINE
-            if state == 'IDLE':
-                state = 'WAITING_FOR_REF_POINT'
 
             ###################################################################
-            elif state == 'WAITING_FOR_REF_POINT':
+            if state == 'WAITING_FOR_REF_POINT':
 
                 # If we get the following message type, echo back the reference
                 # waypoint
@@ -374,6 +373,31 @@ if __name__ == '__main__':
 
                         wp_prev = wpq.getNext()
                         state = 'SENDING_PREV_WP'
+
+            
+            ###################################################################
+            elif state == 'SENDING_REF_POINT':
+                # Send the reference ponit for the linear trajectory tracking
+
+                if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
+                    logger.send_mav_cmd_nav_waypoint(wp_prev)
+
+                # Exit this state after getting an acknowledgment with a result
+                # equal to 1
+                if msg.get_type() == 'COMMAND_ACK':
+
+                    nav_msg = msg.to_dict()
+                    result = nav_msg['result']
+
+                    if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
+                        wp_prev_lla = np.array([[wp_prev[0, 0],  # lat
+                                                 wp_prev[0, 1],  # lon
+                                                 0.0]])          # alt
+                        print("    wp_prev_lla = {}".format(wp_prev_lla))
+
+                        wp_next = wpq.getNext()
+                        state = 'SENDING_NEXT_WP'
 
             ###################################################################
             elif state == 'SENDING_PREV_WP':
@@ -563,12 +587,7 @@ if __name__ == '__main__':
                                             wp_next_ned[0, 0]]])
 
                 if wpq.isNearNext(vehi_pt_en):
-
-                    # Udpate previous
-                    wp_prev_lla = wp_next_lla
-
-                    # Update next
-                    wp_next_lla = wpq.getNext()
+                    state = 'SENDING_NEXT_WP'
 
             ###################################################################
             # Print the state transition
@@ -579,9 +598,7 @@ if __name__ == '__main__':
             # END OF STATE MACHINE
             ##################################################################
 
-            if ((msg.get_type() == 'HEARTBEAT')
-                and ((state == 'WAITING_TO_UPDATE_WPS')
-                     or state == 'SENDING_NEXT_WP')):
+            if (msg.get_type() == 'HEARTBEAT'):
 
                 heartbeat_msg = msg.to_dict()
                 current_base_mode = heartbeat_msg['base_mode']

@@ -638,6 +638,7 @@ if __name__ == '__main__':
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
                 print("    wp_next_en = {}".format(wp_next_en))
 
+                print("    state:          {}".format(state))
                 print("    pic32_wp_state: {}".format(pic32_wp_state))
 
                 print("    norm = {}".format(

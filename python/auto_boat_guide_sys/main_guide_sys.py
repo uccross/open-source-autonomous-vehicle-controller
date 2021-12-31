@@ -392,7 +392,7 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
                     result = nav_msg['result']
 
-                    if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
+                    if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         wp_prev_lla = np.array([[wp_prev[0, 0],  # lat
                                                  wp_prev[0, 1],  # lon
                                                  0.0]])          # alt

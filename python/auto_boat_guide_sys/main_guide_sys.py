@@ -606,12 +606,11 @@ if __name__ == '__main__':
             # END OF STATE MACHINE
             ##################################################################
 
-            wait_flag = True
-            while wait_flag:
+            while True:
                 msg = logger.mav_conn.recv_match()      
                 if msg:
                     if msg.get_type() == 'HEARTBEAT':
-                        wait_flag = False
+                        break
                 else:
                     print('.', end='')
 

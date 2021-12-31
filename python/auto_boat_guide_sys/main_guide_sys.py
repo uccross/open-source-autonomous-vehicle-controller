@@ -123,7 +123,9 @@ if __name__ == '__main__':
                      'horizontal_fov', 'quaternion',
                      'data', 'reason', 'base_mode', 'mavlink_version',
                      'custom_mode', 'autopilot', 'system_status', 'type',
-                     'vy', 'y', 'vx', 'vz', 'z', 'x', 'command', 'result']
+                     'vy', 'y', 'vx', 'vz', 'z', 'x', 'command', 'result',
+                     'port', 'chan8_raw', 'chan6_raw', 'chan6_raw', 
+                     'chan5_raw', 'chan4_raw', 'chan3_raw', 'chan2_raw']
 
     # Data logger
     logger = MCL.MAVCSVLogger(

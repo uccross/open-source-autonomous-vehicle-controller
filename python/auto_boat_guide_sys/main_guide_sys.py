@@ -619,8 +619,6 @@ if __name__ == '__main__':
             if msg:
                 if msg.get_type() == 'HEARTBEAT':
                     break
-            else:
-                print('.', end='')
 
         if (msg.get_type() == 'HEARTBEAT'):
 

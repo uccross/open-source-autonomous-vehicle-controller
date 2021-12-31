@@ -205,6 +205,7 @@ if __name__ == '__main__':
     path_angle = 0.0
     path_angle_checked = 0.0
     angle_diff = 0.0
+    servo4_raw = 0
 
     xacc = 0.0
     yacc = 0.0

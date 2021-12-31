@@ -233,6 +233,7 @@ if __name__ == '__main__':
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     wp_ref_lla = np.array([[36.9836576, -122.0241886, 0.0]])
+    wp_ref_lat_lon = np.array([[36.9836576, -122.0238656]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
 
@@ -381,7 +382,7 @@ if __name__ == '__main__':
 
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_prev)
+                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1

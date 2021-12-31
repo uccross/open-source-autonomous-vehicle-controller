@@ -27,6 +27,8 @@
  * #DEFINES                                                                   *
  *****************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
+#define MAV_SERIAL_READ_PERIOD 10 
+#define WAIT_TIME_FOR_TRANSITION 7000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
@@ -55,6 +57,7 @@ int main(void) {
     uint32_t transmit_time = 0;
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
+    uint32_t mav_serial_start_time = 0;
 
     int8_t IMU_state = ERROR;
     int8_t IMU_retry = 5;
@@ -222,35 +225,39 @@ int main(void) {
          * - HIL                                                              *
          * - Real sensors                                                     *
          *********************************************************************/
+
+        if (cur_time - mav_serial_start_time >= MAV_SERIAL_READ_PERIOD) {
+            mav_serial_start_time = cur_time; //reset the timer
 #ifdef HIL
-        /* Hardware in the loop (HIL, or sometimes HITL)*/
-        is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id, &cmd,
-                &wp_type);
+            /* Hardware in the loop (HIL, or sometimes HITL)*/
+            is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id,
+                    &cmd, &wp_type);
 
-        /* Receive IMU Events from computer */
-        if (msg_id == MAVLINK_MSG_ID_HIL_SENSOR) {
-            check_HIL_IMU_events(&imu);
-        }
+            /* Receive IMU Events from computer */
+            if (msg_id == MAVLINK_MSG_ID_HIL_SENSOR) {
+                check_HIL_IMU_events(&imu);
+            }
 
-        /* Receive GPS Events from computer */
-        if ((cmd == MAV_CMD_NAV_WAYPOINT) && (wp_type == VEHI_PT)) {
-            is_new_gps = TRUE;
-        }
+            /* Receive GPS Events from computer */
+            if ((cmd == MAV_CMD_NAV_WAYPOINT) && (wp_type == VEHI_PT)) {
+                is_new_gps = TRUE;
+            }
 #else
-        is_new_imu = check_IMU_events(SCALED, &imu);
-        is_new_msg = check_mavlink_serial_events(wp_received_ll, &cmd,
-                &wp_type);
-        check_RC_events(); //check incoming RC commands
-        is_new_gps = check_GPS_events(); //check and process incoming GPS messages
+            is_new_imu = check_IMU_events(SCALED, &imu);
+            is_new_msg = check_mavlink_serial_events(wp_received_ll, &cmd,
+                    &wp_type);
+            check_RC_events(); //check incoming RC commands
+            is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
-        /* Update aiding vectors and gyro angular rates */
-        if (is_new_imu == TRUE) {
-            lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
-            lin_alg_set_v(imu.mag.x, imu.mag.y, imu.mag.z, mag);
-            lin_alg_set_v(imu.gyro.x, imu.gyro.y, imu.gyro.z, gyro);
-            lin_alg_v_scale(GYRO_SCALE, gyro);
-        }
+            /* Update aiding vectors and gyro angular rates */
+            if (is_new_imu == TRUE) {
+                lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
+                lin_alg_set_v(imu.mag.x, imu.mag.y, imu.mag.z, mag);
+                lin_alg_set_v(imu.gyro.x, imu.gyro.y, imu.gyro.z, gyro);
+                lin_alg_v_scale(GYRO_SCALE, gyro);
+            }
 #endif
+        }
 
         /* Convert the gps position to the Local Tangent Plane (LTP) if a 
          * reference point has been established*/
@@ -332,7 +339,9 @@ int main(void) {
             case WAITING_FOR_REF_WP:
                 //                LATCbits.LATC1 ^= 1; // Toggle LED 5
 
-                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                // State exit case
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT) &&
+                        (cur_time >= WAIT_TIME_FOR_TRANSITION)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
 
@@ -344,10 +353,12 @@ int main(void) {
                 break;
 
             case CHECKING_REF_WP:
+
+                // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
                     wp_b_lat_lon[1] = wp_received_ll[1];
-                    
+
                     if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
 
                         ref_lla[0] = wp_a_lat_lon[0]; // latitude
@@ -420,6 +431,8 @@ int main(void) {
                 break;
 
             case WAITING_FOR_NEXT_WP:
+
+                // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
                     wp_a_lat_lon[1] = wp_received_ll[1];
@@ -436,7 +449,10 @@ int main(void) {
                 break;
 
             case CHECKING_NEXT_WP:
-                /* Check for a second next waypoint and compare them to make
+
+                // State exit case
+
+                /* Check for a second 'next' waypoint and compare them to make
                  * sure that they match */
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_b_lat_lon[0] = wp_received_ll[0];
@@ -471,47 +487,23 @@ int main(void) {
 
             case TRACKING_WP:
 
-                /* Check for new waypoints */
+                // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
 
-                    /* Is it a 'next' waypoint or a 'previous' waypoint?*/
+                    /* If the newest received waypoint is the 'next' waypoint
+                     * then the Companion computer has indicated that 'prev' 
+                     * and 'next' waypoints are being updated. */
+                    if (lin_tra_calc_dist(wp_received_ll, wp_next_en) < TOL) {
 
-                    /* PREVIOUS */
-                    if (wp_type == WP_PREV) {
-                        wp_prev_lla[0] = wp_received_ll[0]; /* latitude */
-                        wp_prev_lla[1] = wp_received_ll[1]; /* longitude */
-                        wp_prev_lla[2] = 0.0; /* altitude */
-
-                        /* Convert to ENU */
-                        lin_tra_lla_to_enu(wp_prev_lla, ref_lla, wp_prev_enu);
-
-                        /* The next waypoint becomes the previous waypoint*/
-                        wp_prev_en[0] = wp_prev_enu[1];
-                        wp_prev_en[1] = wp_prev_enu[0]; /* @TODO: FIX ENU->NED*/
-                        lin_tra_set_prev_wp(wp_prev_en);
+                        current_wp_state = WAITING_FOR_PREV_WP;
                     }
 
-                    /* NEXT */
-                    if (wp_type == WP_NEXT) {
-                        wp_next_lla[0] = wp_received_ll[0]; /* latitude */
-                        wp_next_lla[1] = wp_received_ll[1]; /* longitude */
-                        wp_next_lla[2] = 0.0; /* altitude */
-
-                        /* Convert to ENU */
-                        lin_tra_lla_to_enu(wp_next_lla, ref_lla, wp_next_enu);
-
-                        /* The next waypoint becomes the previous waypoint*/
-                        wp_next_en[0] = wp_next_enu[1];
-                        wp_next_en[1] = wp_next_enu[0]; /* @TODO: FIX ENU->NED*/
-                        lin_tra_set_next_wp(wp_next_en);
-                    }
-
-                    lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
                 }
                 break;
         }
         is_new_msg = FALSE; /* Set the new message as FALSE after the state 
                           * machine has run*/
+        cmd = 0;
 
         /**********************************************************************
          * CONTROL: Control and publish data                                  *

@@ -26,7 +26,7 @@
 /******************************************************************************
  * #DEFINES                                                                   *
  *****************************************************************************/
-#define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
+#define HEARTBEAT_PERIOD 500 //1 sec interval for hearbeat update
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))

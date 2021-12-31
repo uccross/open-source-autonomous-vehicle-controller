@@ -126,7 +126,11 @@ if __name__ == '__main__':
                      'vy', 'y', 'vx', 'vz', 'z', 'x', 'command', 'result',
                      'port', 'chan8_raw', 'chan7_raw', 'chan6_raw', 
                      'chan5_raw', 'chan4_raw', 'chan3_raw', 'chan2_raw', 
-                     'chan1_raw', 'rssi']
+                     'chan1_raw', 'rssi', 'servo16_raw', 'servo15_raw', 
+                     'servo14_raw', 'servo13_raw', 'servo12_raw', 
+                     'servo11_raw', 'servo10_raw', 'servo9_raw', 'servo8_raw', 
+                     'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw', 
+                     'servo3_raw', 'servo2_raw', 'servo1_raw']
 
     # Data logger
     logger = MCL.MAVCSVLogger(

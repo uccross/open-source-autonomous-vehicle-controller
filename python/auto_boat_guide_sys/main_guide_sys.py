@@ -307,6 +307,8 @@ if __name__ == '__main__':
         state = 'SENDING_REF_POINT'
         last_state = state
 
+        pic32_wp_state = 'WAITING_FOR_REF_WP'
+
     ###########################################################################
     # Main Loop
     while True:
@@ -521,16 +523,18 @@ if __name__ == '__main__':
                     if int(yawspeed) == 2:
                         pic32_wp_state = 'SENDING_REF_WP'
                     if int(yawspeed) == 3:
-                        pic32_wp_state = 'CHECKING_REF_WP'
+                        pic32_wp_state = 'WAITING_FOR_REF_WP'
                     if int(yawspeed) == 4:
-                        pic32_wp_state = 'WAITING_FOR_PREV_WP'
+                        pic32_wp_state = 'CHECKING_REF_WP'
                     if int(yawspeed) == 5:
-                        pic32_wp_state = 'CHECKING_PREV_WP'
+                        pic32_wp_state = 'WAITING_FOR_PREV_WP'
                     if int(yawspeed) == 6:
-                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                        pic32_wp_state = 'CHECKING_PREV_WP'
                     if int(yawspeed) == 7:
-                        pic32_wp_state = 'CHECKING_NEXT_WP'
+                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
                     if int(yawspeed) == 8:
+                        pic32_wp_state = 'CHECKING_NEXT_WP'
+                    if int(yawspeed) == 9:
                         pic32_wp_state = 'TRACKING_WP'
 
                     if not simulation_flag:

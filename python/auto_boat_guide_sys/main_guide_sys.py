@@ -446,6 +446,7 @@ if __name__ == '__main__':
                                                  0.0]])          # alt
                         print("    wp_ref_lla = {}".format(wp_ref_lla))
 
+                        wp_prev = wpq.getNext()
                         wp_next = wpq.getNext()
                         state = 'SENDING_PREV_WP'
 

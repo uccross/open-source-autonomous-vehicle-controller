@@ -322,14 +322,15 @@ int main(void) {
 
                 // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-                    wp_b_lat_lon[0] = wp_received_ll[0];
-                    wp_b_lat_lon[1] = wp_received_ll[1];
+                    wp_a_lat_lon[0] = wp_received_ll[0];
+                    wp_a_lat_lon[1] = wp_received_ll[1];
 
                     current_wp_state = CHECKING_REF_WP;
                 }
                 break;
 
             case WAITING_FOR_REF_WP:
+                //                LATCbits.LATC1 ^= 1; // Toggle LED 5
 
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];
@@ -343,26 +344,31 @@ int main(void) {
                 break;
 
             case CHECKING_REF_WP:
-                // State exit case
-                if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
+                if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                    wp_b_lat_lon[0] = wp_received_ll[0];
+                    wp_b_lat_lon[1] = wp_received_ll[1];
+                    
+                    if (lin_tra_calc_dist(wp_a_lat_lon, wp_b_lat_lon) < TOL) {
 
-                    ref_lla[0] = wp_a_lat_lon[0]; // latitude
-                    ref_lla[1] = wp_a_lat_lon[1]; // longitude
-                    ref_lla[2] = 0.0; // Altitude
+                        ref_lla[0] = wp_a_lat_lon[0]; // latitude
+                        ref_lla[1] = wp_a_lat_lon[1]; // longitude
+                        ref_lla[2] = 0.0; // Altitude
 
-                    found_ref_point = TRUE;
+                        found_ref_point = TRUE;
 
-                    /* The ack result is the current state */
-                    publish_ack(CHECKING_REF_WP);
+                        /* The ack result is the current state */
+                        publish_ack(CHECKING_REF_WP);
 
-                    current_wp_state = WAITING_FOR_PREV_WP;
-                } else {
-                    publish_ack(ERROR_WP);
+                        current_wp_state = WAITING_FOR_PREV_WP;
+                    } else {
+                        publish_ack(ERROR_WP);
 #ifdef HIL
-                    current_wp_state = WAITING_FOR_REF_WP;
+                        LATCbits.LATC1 ^= 1; // Toggle LED 5
+                        current_wp_state = WAITING_FOR_REF_WP;
 #else
-                    current_wp_state = FINDING_REF_WP;
+                        current_wp_state = FINDING_REF_WP;
 #endif
+                    }
                 }
                 break;
 
@@ -596,7 +602,9 @@ int main(void) {
                     wp_type, // pitch-rate, /* Using differently on purpose */
                     (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
+#ifndef HIL
             publish_GPS();
+#endif 
             control_loop_count++;
         }
 
@@ -605,7 +613,7 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat(); // TODO: add argument to update the mode
-            
+
 #ifdef HIL
             publish_HIL_servo_output_raw(u_pulse);
 #endif 

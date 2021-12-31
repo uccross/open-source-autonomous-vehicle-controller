@@ -312,7 +312,6 @@ int main(void) {
                 /* Send the reference waypoint */
             case SENDING_REF_WP:
 
-                LATCbits.LATC1 ^= 1; // Toggle LED 5
                 // Transmit periodically, until the exit condition is met
                 if ((cur_time - transmit_time) >= TRANSMIT_PRD) {
                     transmit_time = cur_time;
@@ -331,6 +330,7 @@ int main(void) {
                 break;
 
             case WAITING_FOR_REF_WP:
+                LATCbits.LATC1 ^= 1; // Toggle LED 5
 
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
                     wp_a_lat_lon[0] = wp_received_ll[0];

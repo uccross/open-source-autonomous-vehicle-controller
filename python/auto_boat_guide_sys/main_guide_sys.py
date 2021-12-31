@@ -170,6 +170,7 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     t_transmit = time.time()
+    t_HIL_transmit = time.time()
     t_sim = time.time()
     t_uc = time.time()
     t_graph = time.time()
@@ -179,6 +180,7 @@ if __name__ == '__main__':
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
     dt_transmit = 0.5  # seconds
+    dt_HIL_transmit = 0.5  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
 
@@ -328,6 +330,42 @@ if __name__ == '__main__':
             x_pm = Slug3.get_vehicle_point_state()
             x_os = Slug3.get_vehicle_orientation_state()
 
+            
+            if (t_new - t_HIL_transmit) >= dt_HIL_transmit:
+                t_HIL_transmit = t_new
+
+                if i_tx == 0:
+                    logger.send_HIL_sensor(
+                        0.0,  # t_usec
+                        0.0,  # xacc
+                        0.0,  # yacc
+                        0.0,  # zacc
+                        x_os[0][0],  # xgyro --> actually sending roll angle
+                        x_os[1][0],  # ygyro --> actually sending pitch angle
+                        x_os[2][0],  # zgyro --> actually sending yaw angle
+                        0.0,  # xmag
+                        0.0,  # ymag
+                        0.0,  # zmag
+                    )
+
+                # Send the simulated GPS data
+                # Send new 'previous' waypoint
+                if i_tx == 1:
+                    logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
+
+                # Send new 'next' waypoint
+                if i_tx == 2:
+                    logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
+
+                # Send GPS position of vehicle to be echoed back
+                vehi_pt_en[0][0] = x_pm[0][0]
+                vehi_pt_en[0][1] = x_pm[1][0]
+                if i_tx == 3:
+                    logger.send_HIL_GPS(vehi_pt_en)
+                    i_tx = 0
+
+                i_tx += 1
+
         # Check messages to update the state machine
         if msg:
             msg_type = msg.get_type()
@@ -451,42 +489,6 @@ if __name__ == '__main__':
 
             ###################################################################
             elif state == 'WAITING_TO_UPDATE_WPS':
-
-                # if simulation_flag:
-                #     if (t_new - t_transmit) >= dt_transmit:
-                #         t_transmit = t_new
-
-                #         if i_tx == 0:
-                #             logger.send_HIL_sensor(
-                #                 0.0,  # t_usec
-                #                 0.0,  # xacc
-                #                 0.0,  # yacc
-                #                 0.0,  # zacc
-                #                 x_os[0][0],  # xgyro --> actually sending roll angle
-                #                 x_os[1][0],  # ygyro --> actually sending pitch angle
-                #                 x_os[2][0],  # zgyro --> actually sending yaw angle
-                #                 0.0,  # xmag
-                #                 0.0,  # ymag
-                #                 0.0,  # zmag
-                #             )
-
-                #         # Send the simulated GPS data
-                #         # Send new 'previous' waypoint
-                #         if i_tx == 1:
-                #             logger.send_mav_cmd_nav_waypoint(wp_prev_en, 0.0)
-
-                #         # Send new 'next' waypoint
-                #         if i_tx == 2:
-                #             logger.send_mav_cmd_nav_waypoint(wp_next_en, 0.0)
-
-                #         # Send GPS position of vehicle to be echoed back
-                #         vehi_pt_en[0][0] = x_pm[0][0]
-                #         vehi_pt_en[0][1] = x_pm[1][0]
-                #         if i_tx == 3:
-                #             logger.send_HIL_GPS(vehi_pt_en)
-                #             i_tx = 0
-
-                #         i_tx += 1
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()

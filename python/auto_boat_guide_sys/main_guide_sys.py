@@ -248,6 +248,8 @@ if __name__ == '__main__':
     wp_ref_lat_lon = np.array([[36.9836576, -122.0238656]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
+    
+    clst_pt_en = np.zeros((1,2))
 
     wp_prev_lla = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
@@ -559,7 +561,7 @@ if __name__ == '__main__':
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
-                if wpq.isNearNext(vehi_pt_en):
+                if wpq.isNearNext(clst_pt_en):
                     state = 'SENDING_NEXT_WP'
 
             ###################################################################

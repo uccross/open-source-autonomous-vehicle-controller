@@ -217,6 +217,7 @@ if __name__ == '__main__':
     path_angle_checked = 0.0
     angle_diff = 0.0
     servo4_raw = 0
+    input_angle = 0.0
 
     xacc = 0.0
     yacc = 0.0
@@ -620,25 +621,26 @@ if __name__ == '__main__':
                     current_base_mode = heartbeat_msg['base_mode']
 
                 print("**************************************************")
-                print("    mode:       {0:.6g}".format(current_base_mode))
-                print("    cog:        {0:.6g}".format(cog))
-                print("    CF heading: {0:.6g}".format(cf_heading_angle))
-                print("    path angle: {0:.6g}".format(path_angle))
-                print("    ^__checked: {0:.6g}".format(path_angle_checked))
-                print("    angle_diff: {0:.6g}".format(angle_diff))
-                print("    servo4_raw: {0:.6g}".format(servo4_raw))
-                print("    yaw:        {0:.6g}".format(yaw*rad2deg))
-                print("    pitch:      {0:.6g}".format(pitch*rad2deg))
-                print("    roll:       {0:.6g}".format(roll*rad2deg))
-                print("    xacc:       {0:.6g}".format(xacc))
-                print("    yacc:       {0:.6g}".format(yacc))
-                print("    zacc:       {0:.6g}".format(zacc))
-                print("    xmag:       {0:.6g}".format(xmag))
-                print("    ymag:       {0:.6g}".format(ymag))
-                print("    zmag:       {0:.6g}".format(zmag))
-                print("    xgyro:      {0:.6g}".format(xgyro*rad2deg))
-                print("    ygyro:      {0:.6g}".format(ygyro*rad2deg))
-                print("    zgyro:      {0:.6g}".format(zgyro*rad2deg))
+                print("    mode:            {0:.6g}".format(current_base_mode))
+                print("    cog:             {0:.6g}".format(cog))
+                print("    CF heading:      {0:.6g}".format(cf_heading_angle))
+                print("    path angle:      {0:.6g}".format(path_angle))
+                print("    ^__checked:      {0:.6g}".format(path_angle_checked))
+                print("    angle_diff:      {0:.6g}".format(angle_diff))
+                print("    servo4_raw:      {0:.6g}".format(servo4_raw))
+                print("    input_angle:     {0:.6g}".format(input_angle))
+                print("    yaw:             {0:.6g}".format(yaw*rad2deg))
+                print("    pitch:           {0:.6g}".format(pitch*rad2deg))
+                print("    roll:            {0:.6g}".format(roll*rad2deg))
+                print("    xacc:            {0:.6g}".format(xacc))
+                print("    yacc:            {0:.6g}".format(yacc))
+                print("    zacc:            {0:.6g}".format(zacc))
+                print("    xmag:            {0:.6g}".format(xmag))
+                print("    ymag:            {0:.6g}".format(ymag))
+                print("    zmag:            {0:.6g}".format(zmag))
+                print("    xgyro:           {0:.6g}".format(xgyro*rad2deg))
+                print("    ygyro:           {0:.6g}".format(ygyro*rad2deg))
+                print("    zgyro:           {0:.6g}".format(zgyro*rad2deg))
 
                 print("    wp_prev_lla_copy = {}".format(wp_prev_lla_copy))
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))

@@ -75,7 +75,7 @@ class DualModel():
         #######################################################################
         # Computation
         if np.mod(self.counter, self.dt_ratio) == 0:
-            self.tvc_angle = input_rudder_angle
+            self.tvc_angle = -input_rudder_angle
 
             # Limit angle
             if self.tvc_angle > self.max_angle:

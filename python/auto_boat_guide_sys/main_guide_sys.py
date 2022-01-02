@@ -124,12 +124,12 @@ if __name__ == '__main__':
                      'data', 'reason', 'base_mode', 'mavlink_version',
                      'custom_mode', 'autopilot', 'system_status', 'type',
                      'vy', 'y', 'vx', 'vz', 'z', 'x', 'command', 'result',
-                     'port', 'chan8_raw', 'chan7_raw', 'chan6_raw', 
-                     'chan5_raw', 'chan4_raw', 'chan3_raw', 'chan2_raw', 
-                     'chan1_raw', 'rssi', 'servo16_raw', 'servo15_raw', 
-                     'servo14_raw', 'servo13_raw', 'servo12_raw', 
-                     'servo11_raw', 'servo10_raw', 'servo9_raw', 'servo8_raw', 
-                     'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw', 
+                     'port', 'chan8_raw', 'chan7_raw', 'chan6_raw',
+                     'chan5_raw', 'chan4_raw', 'chan3_raw', 'chan2_raw',
+                     'chan1_raw', 'rssi', 'servo16_raw', 'servo15_raw',
+                     'servo14_raw', 'servo13_raw', 'servo12_raw',
+                     'servo11_raw', 'servo10_raw', 'servo9_raw', 'servo8_raw',
+                     'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw',
                      'servo3_raw', 'servo2_raw', 'servo1_raw']
 
     # Data logger
@@ -191,7 +191,7 @@ if __name__ == '__main__':
     dt_HIL_transmit = 1.0  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
-    dt_info = 1.0 # seconds
+    dt_info = 1.0  # seconds
 
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
@@ -249,8 +249,8 @@ if __name__ == '__main__':
     wp_ref_lat_lon = np.array([[36.9836576, -122.0238656]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
-    
-    clst_pt_en = np.zeros((1,2))
+
+    clst_pt_en = np.zeros((1, 2))
 
     wp_prev_lla = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
@@ -279,7 +279,7 @@ if __name__ == '__main__':
     # State Machine Transitions
     last_base_mode = -1
     state = 'WAITING_FOR_REF_POINT'
-    
+
     last_state = state
 
     found_ref_point = False
@@ -287,7 +287,7 @@ if __name__ == '__main__':
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
                   'SENDING_REF_WP': 2,
-                  'WAITING_FOR_REF_WP':3,
+                  'WAITING_FOR_REF_WP': 3,
                   'CHECKING_REF_WP': 4,
                   'WAITING_FOR_PREV_WP': 5,
                   'CHECKING_PREV_WP': 6,
@@ -350,7 +350,7 @@ if __name__ == '__main__':
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
-        
+
         # Simulation vehicle state
         if simulation_flag and (state == 'WAITING_TO_UPDATE_WPS'):
             x_pm = Slug3.get_vehicle_point_state()
@@ -435,7 +435,6 @@ if __name__ == '__main__':
                         found_ref_point = True
                         state = 'SENDING_PREV_WP'
 
-            
             ###################################################################
             elif state == 'SENDING_REF_POINT':
                 # Send the reference ponit for the linear trajectory tracking
@@ -452,8 +451,8 @@ if __name__ == '__main__':
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         wp_ref_lla = np.array([[wp_ref_lat_lon[0, 0],  # lat
-                                                 wp_ref_lat_lon[0, 1],  # lon
-                                                 0.0]])          # alt
+                                                wp_ref_lat_lon[0, 1],  # lon
+                                                0.0]])          # alt
                         print("    wp_ref_lla = {}".format(wp_ref_lla))
 
                         wp_prev = wpq.getNext()
@@ -626,7 +625,8 @@ if __name__ == '__main__':
                 print("    cog:             {0:.6g}".format(cog))
                 print("    CF heading:      {0:.6g}".format(cf_heading_angle))
                 print("    path angle:      {0:.6g}".format(path_angle))
-                print("    ^__checked:      {0:.6g}".format(path_angle_checked))
+                print("    ^__checked:      {0:.6g}".format(
+                    path_angle_checked))
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
                 print("    input_angle:     {0:.6g}".format(input_angle))
@@ -704,9 +704,9 @@ if __name__ == '__main__':
                 clst_pt_en = trajectory.getClosestPoint()
 
                 tracker.update(yaw, pitch, roll, wp_prev_en=wp_prev_en,
-                                wp_next_en=wp_next_en,
-                                position_en=vehi_pt_en,
-                                clst_pt_en=clst_pt_en)
+                               wp_next_en=wp_next_en,
+                               position_en=vehi_pt_en,
+                               clst_pt_en=clst_pt_en)
 
         #######################################################################
         # Log messages (at intervals)
@@ -749,4 +749,3 @@ if __name__ == '__main__':
         # If the microcontroller indicates that we are in autonomous mode then
         # depending on vehicle position, update the next waypoint to travel to.
         # Else, the guidance system is not engaged
-

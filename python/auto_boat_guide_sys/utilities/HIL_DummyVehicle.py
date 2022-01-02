@@ -22,8 +22,8 @@ class DualModel():
                  orientation_state=CONST.solid_sphere_state,
                  radius=CONST.sphere_radius,
                  reference_speed=CONST.reference_speed,
-                 min_thrust=CONST.min_thrust,
-                 max_thrust=CONST.max_thrust):
+                 max_angle=CONST.max_rudder_angle,
+                 min_angle=CONST.min_rudder_angle):
 
         # Computation timing
         self.dt_uc = dt_uc
@@ -58,6 +58,9 @@ class DualModel():
 
         self.is_mission_complete = False
 
+        self.min_angle = min_angle
+        self.max_angle = max_angle
+
         return
 
     def update(self, input_rudder_angle):
@@ -73,6 +76,13 @@ class DualModel():
         # Computation
         if np.mod(self.counter, self.dt_ratio) == 0:
             self.tvc_angle = input_rudder_angle
+
+            # Limit angle
+            if self.tvc_angle > self.max_angle:
+                self.tvc_angle = self.max_angle
+
+            if self.tvc_angle < self.min_angle:
+                self.tvc_angle = self.min_angle
 
         #######################################################################
         # Forces @TODO have controller for commanded angel vs measured

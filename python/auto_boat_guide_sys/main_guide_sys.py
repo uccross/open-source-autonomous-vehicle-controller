@@ -196,7 +196,7 @@ if __name__ == '__main__':
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
 
-    reference_speed = 1000.00
+    reference_speed = 2000.00
 
     mass = 20.0  # kg
     radius = 0.045  # meters

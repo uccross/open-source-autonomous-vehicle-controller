@@ -281,7 +281,7 @@ if __name__ == '__main__':
     
     last_state = state
 
-    is_entering_proximity = False
+    found_ref_point = False
 
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
@@ -321,26 +321,27 @@ if __name__ == '__main__':
         # Timing
         t_new = time.time()
 
-        wp_prev_lla_copy = copy.deepcopy(wp_prev_lla)
-        vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
-        wp_next_lla_copy = copy.deepcopy(wp_next_lla)
+        if simulation_flag or found_ref_point:
+            wp_prev_lla_copy = copy.deepcopy(wp_prev_lla)
+            vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
+            wp_next_lla_copy = copy.deepcopy(wp_next_lla)
 
-        wp_prev_lla_copy2 = copy.deepcopy(wp_prev_lla)
-        vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
-        wp_next_lla_copy2 = copy.deepcopy(wp_next_lla)
+            wp_prev_lla_copy2 = copy.deepcopy(wp_prev_lla)
+            vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
+            wp_next_lla_copy2 = copy.deepcopy(wp_next_lla)
 
-        wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
-        vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-        wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
+            wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
+            vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
+            wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
 
-        wp_prev_en = np.array([[wp_prev_ned[0, 1],
-                                wp_prev_ned[0, 0]]])
-        if not simulation_flag:
-            vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
-                                    vehi_pt_ned[0, 0]]])
+            wp_prev_en = np.array([[wp_prev_ned[0, 1],
+                                    wp_prev_ned[0, 0]]])
+            if not simulation_flag:
+                vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
+                                        vehi_pt_ned[0, 0]]])
 
-        wp_next_en = np.array([[wp_next_ned[0, 1],
-                                wp_next_ned[0, 0]]])
+            wp_next_en = np.array([[wp_next_ned[0, 1],
+                                    wp_next_ned[0, 0]]])
 
         # Read the state of the vehicle
         # Request MAVLINK_MSG_ID_RAW_IMU
@@ -428,6 +429,7 @@ if __name__ == '__main__':
                                                              type(lon)))
 
                         wp_prev = wpq.getNext()
+                        found_ref_point = True
                         state = 'SENDING_PREV_WP'
 
             
@@ -589,10 +591,8 @@ if __name__ == '__main__':
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
-                        if is_entering_proximity == False:
-                            wp_prev = wp_next
-                            is_entering_proximity = True
-                            state = 'SENDING_PREV_WP'
+                        wp_prev = wp_next
+                        state = 'SENDING_PREV_WP'
 
             ###################################################################
             # Print the state transition

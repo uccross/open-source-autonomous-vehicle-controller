@@ -168,7 +168,7 @@ class MAVCSVLogger():
             0,  # Hold
             0.0,  # Accept Radius
             0.0,  # Pass Radius
-            0.0,  # Yaw
+            yaw,  # Yaw
             wp_lat_lon[0, 0],  # Latitude
             wp_lat_lon[0, 1],  # Longitude
             wp_type,  # altitude being used as 'previous' if 0.0 or 'next' if 1.0

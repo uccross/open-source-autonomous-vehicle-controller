@@ -373,7 +373,7 @@ if __name__ == '__main__':
                 #         0.0,  # zmag
                 #     )
 
-                yaw = x_os[2][0]
+                yaw = x_os[2][0] - (np.pi/2.0)
                 yaw = (yaw + np.pi) % (2.0 * np.pi) - np.pi
 
                 # Send GPS position of vehicle to be echoed back

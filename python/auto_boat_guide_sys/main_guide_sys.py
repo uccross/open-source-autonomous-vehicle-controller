@@ -671,7 +671,7 @@ if __name__ == '__main__':
             if (t_new - t_sim) >= dt_sim:
                 t_sim = t_new
 
-                input_angle = yawspeed
+                input_angle = yawspeed-1500
                 Slug3.update(input_angle)
 
         #######################################################################

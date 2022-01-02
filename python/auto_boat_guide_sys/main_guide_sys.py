@@ -347,7 +347,7 @@ if __name__ == '__main__':
                 #         0.0,  # ymag
                 #         0.0,  # zmag
                 #     )
-                yaw = x_os[2][0]
+                # yaw = x_os[2][0]
 
                 # Send GPS position of vehicle to be echoed back
                 vehi_pt_en[0][0] = x_pm[0][0]

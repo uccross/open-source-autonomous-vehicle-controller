@@ -569,9 +569,9 @@ if __name__ == '__main__':
                         # if angle_diff < 0.0:
                         #     angle_diff = 360.0 + angle_diff
                     else:
-                        cf_heading_angle = yaw
-                        path_angle = rollspeed
-                        angle_diff = pitchspeed
+                        cf_heading_angle = yaw*rad2deg
+                        path_angle = rollspeed*rad2deg
+                        angle_diff = pitchspeed*rad2deg
 
                 if msg_type == 'GPS_RAW_INT':
 

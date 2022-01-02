@@ -196,7 +196,7 @@ if __name__ == '__main__':
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
 
-    reference_speed = 2000.00
+    reference_speed = 4000.00
 
     mass = 20.0  # kg
     radius = 0.045  # meters
@@ -334,19 +334,19 @@ if __name__ == '__main__':
             if (t_new - t_HIL_transmit) >= dt_HIL_transmit:
                 t_HIL_transmit = t_new
 
-                # if i_tx == 0:
-                #     logger.send_HIL_sensor(
-                #         0.0,  # t_usec
-                #         0.0,  # xacc
-                #         0.0,  # yacc
-                #         0.0,  # zacc
-                #         x_os[0][0],  # xgyro --> actually sending roll angle
-                #         x_os[1][0],  # ygyro --> actually sending pitch angle
-                #         x_os[2][0],  # zgyro --> actually sending yaw angle
-                #         0.0,  # xmag
-                #         0.0,  # ymag
-                #         0.0,  # zmag
-                #     )
+                if i_tx == 0:
+                    logger.send_HIL_sensor(
+                        0.0,  # t_usec
+                        0.0,  # xacc
+                        0.0,  # yacc
+                        0.0,  # zacc
+                        x_os[0][0],  # xgyro --> actually sending roll angle
+                        x_os[1][0],  # ygyro --> actually sending pitch angle
+                        x_os[2][0],  # zgyro --> actually sending yaw angle
+                        0.0,  # xmag
+                        0.0,  # ymag
+                        0.0,  # zmag
+                    )
 
                 # Send GPS position of vehicle to be echoed back
                 vehi_pt_en[0][0] = x_pm[0][0]
@@ -566,6 +566,7 @@ if __name__ == '__main__':
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
+                        wp_prev - wp_next_en
                         state = 'SENDING_PREV_WP'
 
             ###################################################################

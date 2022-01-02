@@ -564,6 +564,10 @@ if __name__ == '__main__':
                 if wpq.isNearNext(clst_pt_en):
                     state = 'SENDING_NEXT_WP'
 
+                if simulation_flag:
+                    if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
+                        state = 'SENDING_NEXT_WP'
+
             ###################################################################
             # Print the state transition
             if state != last_state:

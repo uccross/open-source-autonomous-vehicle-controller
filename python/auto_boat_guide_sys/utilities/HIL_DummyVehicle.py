@@ -72,7 +72,7 @@ class DualModel():
         #######################################################################
         # Computation
         if np.mod(self.counter, self.dt_ratio) == 0:
-            self.tvc_angle = -input_rudder_angle
+            self.tvc_angle = input_rudder_angle
 
         #######################################################################
         # Forces @TODO have controller for commanded angel vs measured

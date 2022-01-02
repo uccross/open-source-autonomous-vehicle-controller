@@ -309,8 +309,8 @@ if __name__ == '__main__':
                                            orientation_state_vec,
                                            radius,
                                            reference_speed=reference_speed,
-                                           min_angle=-30.0*np.pi/180,
-                                           max_angle=30.0*np.pi/180)
+                                           min_angle=-10.0*np.pi/180,
+                                           max_angle=10.0*np.pi/180)
 
         state = 'SENDING_REF_POINT'
         last_state = state

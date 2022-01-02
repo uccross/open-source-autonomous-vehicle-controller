@@ -456,7 +456,6 @@ if __name__ == '__main__':
                         print("    wp_prev_lla = {}".format(wp_prev_lla))
 
                         wp_next = wpq.getNext()
-                        is_entering_proximity = False
                         state = 'SENDING_NEXT_WP'
 
             ###################################################################
@@ -477,6 +476,7 @@ if __name__ == '__main__':
                                                  0.0]])          # alt
                         print("    wp_next_lla = {}".format(wp_next_lla))
 
+                        is_entering_proximity = False
                         state = 'WAITING_TO_UPDATE_WPS'
 
             ###################################################################

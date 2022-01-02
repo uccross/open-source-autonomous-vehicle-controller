@@ -567,7 +567,7 @@ if __name__ == '__main__':
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
-                        wp_prev - wp_next_en
+                        wp_prev = wp_next_en
                         state = 'SENDING_PREV_WP'
 
             ###################################################################

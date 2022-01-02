@@ -179,7 +179,7 @@ class MAVCSVLogger():
         :param vehi_pt_en: np.zeros((1, 2)) East, North
         :param yaw: A yaw angle associated with the waypoint
         """
-        self.send_mav_cmd_nav_waypoint(vehi_pt_en, wp_type=2.0, yaw)
+        self.send_mav_cmd_nav_waypoint(vehi_pt_en, wp_type=2.0, yaw=yaw)
 
     def send_HIL_sensor(self, t_usec, xacc, yacc, zacc, xmag, ymag, zmag,
                         xgyro, ygyro, zgyro):

@@ -75,7 +75,7 @@ class DualModel():
         #######################################################################
         # Computation
         if np.mod(self.counter, self.dt_ratio) == 0:
-            self.tvc_angle = -input_rudder_angle
+            self.tvc_angle = input_rudder_angle
 
             # Limit angle
             if self.tvc_angle > self.max_angle:
@@ -98,9 +98,9 @@ class DualModel():
         # rotate the thrust vector into the inertial frame from the body frame
         self.F_thrust_inertial.vec = QU.rotateVectorWithQuaternion(
             self.F_thrust_body.vec,
-            x_om[0][0],
+            x_om[2][0],
             x_om[1][0],
-            x_om[2][0])
+            x_om[0][0])
 
         # Drag
         self.F_drag_linear.update(x_pm[3:])

@@ -278,8 +278,10 @@ if __name__ == '__main__':
     # State Machine Transitions
     last_base_mode = -1
     state = 'WAITING_FOR_REF_POINT'
-
+    
     last_state = state
+
+    is_entering_proximity = False
 
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
@@ -318,27 +320,6 @@ if __name__ == '__main__':
 
         # Timing
         t_new = time.time()
-        
-        wp_prev_lla_copy = copy.deepcopy(wp_prev_lla)
-        vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
-        wp_next_lla_copy = copy.deepcopy(wp_next_lla)
-
-        wp_prev_lla_copy2 = copy.deepcopy(wp_prev_lla)
-        vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
-        wp_next_lla_copy2 = copy.deepcopy(wp_next_lla)
-
-        wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
-        vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-        wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
-
-        wp_prev_en = np.array([[wp_prev_ned[0, 1],
-                                wp_prev_ned[0, 0]]])
-        if not simulation_flag:
-            vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
-                                    vehi_pt_ned[0, 0]]])
-
-        wp_next_en = np.array([[wp_next_ned[0, 1],
-                                wp_next_ned[0, 0]]])
 
         # Read the state of the vehicle
         # Request MAVLINK_MSG_ID_RAW_IMU
@@ -475,6 +456,7 @@ if __name__ == '__main__':
                         print("    wp_prev_lla = {}".format(wp_prev_lla))
 
                         wp_next = wpq.getNext()
+                        is_entering_proximity = False
                         state = 'SENDING_NEXT_WP'
 
             ###################################################################
@@ -588,8 +570,10 @@ if __name__ == '__main__':
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
-                        wp_prev = wp_next
-                        state = 'SENDING_PREV_WP'
+                        if is_entering_proximity == False:
+                            wp_prev = wp_next
+                            is_entering_proximity = True
+                            state = 'SENDING_PREV_WP'
 
             ###################################################################
             # Print the state transition
@@ -610,6 +594,27 @@ if __name__ == '__main__':
             # Information
             if (t_new - t_info) >= dt_info:
                 t_info = t_new
+
+                wp_prev_lla_copy = copy.deepcopy(wp_prev_lla)
+                vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
+                wp_next_lla_copy = copy.deepcopy(wp_next_lla)
+
+                wp_prev_lla_copy2 = copy.deepcopy(wp_prev_lla)
+                vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
+                wp_next_lla_copy2 = copy.deepcopy(wp_next_lla)
+
+                wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
+                vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
+                wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
+
+                wp_prev_en = np.array([[wp_prev_ned[0, 1],
+                                        wp_prev_ned[0, 0]]])
+                if not simulation_flag:
+                    vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
+                                            vehi_pt_ned[0, 0]]])
+
+                wp_next_en = np.array([[wp_next_ned[0, 1],
+                                        wp_next_ned[0, 0]]])
 
                 if (msg_type == 'HEARTBEAT'):
                     heartbeat_msg = msg.to_dict()

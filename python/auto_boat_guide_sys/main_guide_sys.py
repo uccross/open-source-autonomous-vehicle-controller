@@ -711,10 +711,12 @@ if __name__ == '__main__':
 
                 clst_pt_en = trajectory.getClosestPoint()
 
-                if simulation_flag:
-                    yaw -= (np.pi / 2.0)
+                yaw_g = yaw
 
-                tracker.update(yaw, pitch, roll, wp_prev_en=wp_prev_en,
+                if simulation_flag:
+                    yaw_g -= (np.pi / 2.0)
+
+                tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
                                position_en=vehi_pt_en,
                                clst_pt_en=clst_pt_en)

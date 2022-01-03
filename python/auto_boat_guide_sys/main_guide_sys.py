@@ -304,7 +304,7 @@ if __name__ == '__main__':
     if simulation_flag:
         from utilities import HIL_DummyVehicle
 
-        angle_bound = 30 # angle bound for rudder in degrees
+        angle_bound = 30  # angle bound for rudder in degrees
 
         Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass,
                                            point_mass_state_vec,
@@ -377,7 +377,7 @@ if __name__ == '__main__':
                 #         0.0,  # zmag
                 #     )
 
-                yaw = x_os[2][0] - (np.pi / 2.0)
+                yaw = x_os[2][0]
                 yaw = (yaw + np.pi) % (2.0 * np.pi) - np.pi
 
                 # Send GPS position of vehicle to be echoed back
@@ -706,6 +706,9 @@ if __name__ == '__main__':
                 #     path_anlge_checked = 360.0 + path_anlge_checked
 
                 clst_pt_en = trajectory.getClosestPoint()
+
+                if simulation_flag:
+                    yaw -= (np.pi / 2.0)
 
                 tracker.update(yaw, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,

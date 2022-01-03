@@ -96,6 +96,7 @@ class DualModel():
                                   z=0.0)
         
         # Possible bug fix: did it work? [Yes/NO]
+        F_thrust_body_temporary = np.zeros((3,1))
         F_thrust_body_temporary[0] = -self.F_thrust_body.vec[0]
         F_thrust_body_temporary[1] = self.F_thrust_body.vec[1]
         F_thrust_body_temporary[2] = self.F_thrust_body.vec[2]

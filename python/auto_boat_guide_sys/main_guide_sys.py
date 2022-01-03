@@ -681,7 +681,7 @@ if __name__ == '__main__':
             if (t_new - t_sim) >= dt_sim:
                 t_sim = t_new
 
-                input_angle = servo4_raw-1500
+                input_angle = (servo4_raw-1500)*0.1
                 Slug3.update(input_angle)
                 tvc_angle = Slug3.get_tvc_angle()
 

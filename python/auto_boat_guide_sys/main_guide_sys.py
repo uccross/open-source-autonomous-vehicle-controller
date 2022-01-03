@@ -379,14 +379,14 @@ if __name__ == '__main__':
                 #         0.0,  # zmag
                 #     )
 
-                # yaw = x_os[2][0]
-                # yaw = (yaw + np.pi) % (2.0 * np.pi) - np.pi
+                wp_yaw = x_os[2][0]
+                wp_yaw = (wp_yaw + np.pi) % (2.0 * np.pi) - np.pi
 
                 # Send GPS position of vehicle to be echoed back
                 vehi_pt_en[0][0] = x_pm[0][0]
                 vehi_pt_en[0][1] = x_pm[1][0]
                 if i_tx == 1:
-                    logger.send_HIL_GPS(vehi_pt_en, yaw)
+                    logger.send_HIL_GPS(vehi_pt_en, wp_yaw)
                     i_tx = 0
 
                 i_tx += 1

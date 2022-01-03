@@ -412,7 +412,8 @@ if __name__ == '__main__':
             if (msg_type == 'HEARTBEAT'):
                 heartbeat_msg = msg.to_dict()
                 current_base_mode = heartbeat_msg['base_mode']
-            if msg_type == 'SERVO_OUTPUT_RAW':
+
+                if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()
                     servo4_raw = nav_msg['servo4_raw']
 

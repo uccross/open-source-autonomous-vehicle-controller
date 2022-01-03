@@ -218,6 +218,7 @@ if __name__ == '__main__':
     angle_diff = 0.0
     servo4_raw = 0
     input_angle = 0.0
+    tvc_angle = 0.0
 
     xacc = 0.0
     yacc = 0.0
@@ -635,6 +636,7 @@ if __name__ == '__main__':
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
                 print("    input_angle:     {0:.6g}".format(input_angle))
+                print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
                 print("    yaw:             {0:.6g}".format(yaw*rad2deg))
                 print("    pitch:           {0:.6g}".format(pitch*rad2deg))
                 print("    roll:            {0:.6g}".format(roll*rad2deg))
@@ -681,6 +683,7 @@ if __name__ == '__main__':
 
                 input_angle = servo4_raw-1500
                 Slug3.update(input_angle)
+                tvc_angle = Slug3.get_tvc_angle()
 
         #######################################################################
         # Graphing

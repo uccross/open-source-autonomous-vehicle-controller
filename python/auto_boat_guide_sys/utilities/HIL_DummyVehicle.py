@@ -96,8 +96,9 @@ class DualModel():
                                   z=0.0)
         
         # Possible bug fix: did it work? [Yes/NO]
-        F_thrust_body_temporary = self.F_thrust_body.vec
-        # F_thrust_body_temporary[0] = -F_thrust_body_temporary[0]
+        F_thrust_body_temporary[0] = -self.F_thrust_body.vec[0]
+        F_thrust_body_temporary[1] = self.F_thrust_body.vec[1]
+        F_thrust_body_temporary[2] = self.F_thrust_body.vec[2]
 
         # rotate the thrust vector into the inertial frame from the body frame
         self.F_thrust_inertial.vec = QU.rotateVectorWithQuaternion(

@@ -407,10 +407,79 @@ if __name__ == '__main__':
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 
+            ##################################################################
             # Messages to get info from first            
             if (msg_type == 'HEARTBEAT'):
                 heartbeat_msg = msg.to_dict()
                 current_base_mode = heartbeat_msg['base_mode']
+            if msg_type == 'SERVO_OUTPUT_RAW':
+                    nav_msg = msg.to_dict()
+                    servo4_raw = nav_msg['servo4_raw']
+
+                if msg_type == 'HIGHRES_IMU':
+                    nav_msg = msg.to_dict()
+                    xacc = nav_msg['xacc']
+                    yacc = nav_msg['yacc']
+                    zacc = nav_msg['zacc']
+                    xmag = nav_msg['xmag']
+                    ymag = nav_msg['ymag']
+                    zmag = nav_msg['zmag']
+                    xgyro = nav_msg['xgyro']
+                    ygyro = nav_msg['ygyro']
+                    zgyro = nav_msg['zgyro']
+
+                if msg_type == 'ATTITUDE':
+                    nav_msg = msg.to_dict()
+
+                    yaw = nav_msg['yaw']
+                    pitch = nav_msg['pitch']
+                    roll = nav_msg['roll']
+
+                    rollspeed = nav_msg['rollspeed']  # Using as path angle
+                    # Using as cross track error
+                    pitchspeed = nav_msg['pitchspeed']
+                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
+
+                    if int(yawspeed) == 0:
+                        pic32_wp_state = 'ERROR_WP'
+                    if int(yawspeed) == 1:
+                        pic32_wp_state = 'FINDING_REF_WP'
+                    if int(yawspeed) == 2:
+                        pic32_wp_state = 'SENDING_REF_WP'
+                    if int(yawspeed) == 3:
+                        pic32_wp_state = 'WAITING_FOR_REF_WP'
+                    if int(yawspeed) == 4:
+                        pic32_wp_state = 'CHECKING_REF_WP'
+                    if int(yawspeed) == 5:
+                        pic32_wp_state = 'WAITING_FOR_PREV_WP'
+                    if int(yawspeed) == 6:
+                        pic32_wp_state = 'CHECKING_PREV_WP'
+                    if int(yawspeed) == 7:
+                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                    if int(yawspeed) == 8:
+                        pic32_wp_state = 'CHECKING_NEXT_WP'
+                    if int(yawspeed) == 9:
+                        pic32_wp_state = 'TRACKING_WP'
+
+                    if not simulation_flag:
+                        cf_heading_angle = yaw*rad2deg
+                        # if cf_heading_angle < 0.0:
+                        #     cf_heading_angle = 360.0 + cf_heading_angle
+
+                        # if simulation_flag:
+                        #     cf_heading_angle = x_os[2][0]*rad2deg
+
+                        path_angle = rollspeed*rad2deg
+                        # if path_angle < 0.0:
+                        #     path_angle = 360.0 + path_angle
+
+                        angle_diff = pitchspeed*rad2deg
+                        # if angle_diff < 0.0:
+                        #     angle_diff = 360.0 + angle_diff
+                    else:
+                        cf_heading_angle = yaw*rad2deg
+                        path_angle = rollspeed*rad2deg
+                        angle_diff = pitchspeed*rad2deg
 
             ##################################################################
             # START OF STATE MACHINE
@@ -517,75 +586,6 @@ if __name__ == '__main__':
 
             ###################################################################
             elif state == 'WAITING_TO_UPDATE_WPS':
-
-                if msg_type == 'SERVO_OUTPUT_RAW':
-                    nav_msg = msg.to_dict()
-                    servo4_raw = nav_msg['servo4_raw']
-
-                if msg_type == 'HIGHRES_IMU':
-                    nav_msg = msg.to_dict()
-                    xacc = nav_msg['xacc']
-                    yacc = nav_msg['yacc']
-                    zacc = nav_msg['zacc']
-                    xmag = nav_msg['xmag']
-                    ymag = nav_msg['ymag']
-                    zmag = nav_msg['zmag']
-                    xgyro = nav_msg['xgyro']
-                    ygyro = nav_msg['ygyro']
-                    zgyro = nav_msg['zgyro']
-
-                if msg_type == 'ATTITUDE':
-                    nav_msg = msg.to_dict()
-
-                    yaw = nav_msg['yaw']
-                    pitch = nav_msg['pitch']
-                    roll = nav_msg['roll']
-
-                    rollspeed = nav_msg['rollspeed']  # Using as path angle
-                    # Using as cross track error
-                    pitchspeed = nav_msg['pitchspeed']
-                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
-
-                    if int(yawspeed) == 0:
-                        pic32_wp_state = 'ERROR_WP'
-                    if int(yawspeed) == 1:
-                        pic32_wp_state = 'FINDING_REF_WP'
-                    if int(yawspeed) == 2:
-                        pic32_wp_state = 'SENDING_REF_WP'
-                    if int(yawspeed) == 3:
-                        pic32_wp_state = 'WAITING_FOR_REF_WP'
-                    if int(yawspeed) == 4:
-                        pic32_wp_state = 'CHECKING_REF_WP'
-                    if int(yawspeed) == 5:
-                        pic32_wp_state = 'WAITING_FOR_PREV_WP'
-                    if int(yawspeed) == 6:
-                        pic32_wp_state = 'CHECKING_PREV_WP'
-                    if int(yawspeed) == 7:
-                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
-                    if int(yawspeed) == 8:
-                        pic32_wp_state = 'CHECKING_NEXT_WP'
-                    if int(yawspeed) == 9:
-                        pic32_wp_state = 'TRACKING_WP'
-
-                    if not simulation_flag:
-                        cf_heading_angle = yaw*rad2deg
-                        # if cf_heading_angle < 0.0:
-                        #     cf_heading_angle = 360.0 + cf_heading_angle
-
-                        # if simulation_flag:
-                        #     cf_heading_angle = x_os[2][0]*rad2deg
-
-                        path_angle = rollspeed*rad2deg
-                        # if path_angle < 0.0:
-                        #     path_angle = 360.0 + path_angle
-
-                        angle_diff = pitchspeed*rad2deg
-                        # if angle_diff < 0.0:
-                        #     angle_diff = 360.0 + angle_diff
-                    else:
-                        cf_heading_angle = yaw*rad2deg
-                        path_angle = rollspeed*rad2deg
-                        angle_diff = pitchspeed*rad2deg
 
                 if msg_type == 'GPS_RAW_INT':
 

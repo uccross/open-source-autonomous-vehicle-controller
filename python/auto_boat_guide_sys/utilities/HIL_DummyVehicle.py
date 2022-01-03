@@ -95,7 +95,7 @@ class DualModel():
                                   y=-self.thrust_mag_cmd*np.cos(self.tvc_angle),
                                   z=0.0)
         
-        # Possible bug fix: did it work? [Yes/NO]
+        # Possible bug fix: did it work? [Yes]
         F_thrust_body_temporary = np.zeros((3,1))
         F_thrust_body_temporary[0] = -self.F_thrust_body.vec[0]
         F_thrust_body_temporary[1] = self.F_thrust_body.vec[1]

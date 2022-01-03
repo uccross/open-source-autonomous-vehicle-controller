@@ -130,7 +130,9 @@ if __name__ == '__main__':
                      'servo14_raw', 'servo13_raw', 'servo12_raw',
                      'servo11_raw', 'servo10_raw', 'servo9_raw', 'servo8_raw',
                      'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw',
-                     'servo3_raw', 'servo2_raw', 'servo1_raw']
+                     'servo3_raw', 'servo2_raw', 'servo1_raw',
+                     'roll', 'yaw', 'pitch', 'rollspeed', 'pitchspeed', 
+                     'yawspeed']
 
     # Data logger
     logger = MCL.MAVCSVLogger(

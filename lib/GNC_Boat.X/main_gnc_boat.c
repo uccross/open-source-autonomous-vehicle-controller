@@ -43,7 +43,7 @@
 
 #define TRANSMIT_PRD 500 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
-#define TOL 0.00001
+#define TOL 0.0001
 
 #define GYRO_SCALE ((M_PI / 180.0) * 0.6)
 #define GYRO_BUF_LEN 1000
@@ -112,6 +112,13 @@ int main(void) {
     float vehi_pt_lla[DIM + 1]; // [lat, lon, alt]
     float wp_next_lla[DIM + 1]; // [lat, lon, alt]
 
+    float wp_prev_ll[DIM]; // [lat, lon]
+    float wp_next_ll[DIM]; // [lat, lon]
+
+    float wp_received_lla[DIM + 1]; // [lat, lon, alt]
+    float wp_received_enu[DIM + 1]; // [EAST (meters), NORTH (meters), UP (meters)]
+    float wp_received_en[DIM]; // [EAST (meters), NORTH (meters)]
+
     float wp_prev_enu[DIM + 1]; // [EAST (meters), NORTH (meters), UP (meters)]
     float vehi_pt_enu[DIM + 1]; // [EAST (meters), NORTH (meters), UP (meters)]
     float wp_next_enu[DIM + 1]; // [EAST (meters), NORTH (meters), UP (meters)]
@@ -129,6 +136,10 @@ int main(void) {
                                 * (LTP) */
     float heading_angle_diff = 0.0;
     float u = 0.0; // Resulting control effort
+    float u_sign = 1.0;
+    float acc_cmd = 0.0;
+    float rtemp = 0.0;
+    float speed = 1.0; /* 'measured' speed in meters per second */
     uint16_t u_pulse = 0; // Pulse from converted control effort
 
     // Attitude
@@ -162,7 +173,7 @@ int main(void) {
             SAMPLE_TIME, // dt The sample time
             1.0, // kp The initial proportional gain
             0.0, // ki The initial integral gain
-            1.0, // kd The initial derivative gain
+            0.01, // kd The initial derivative gain [HIL:0.1]
             UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
             LOWER_ACT_BOUND); // The minimum rudder actuator limit in radians
 
@@ -176,6 +187,7 @@ int main(void) {
     uint32_t msg_id = 0;
     uint16_t cmd = 0;
     float wp_type = -1.0;
+    float wp_yaw = 0.0;
 
     enum waypoints_state {
         ERROR_WP = 0,
@@ -233,10 +245,15 @@ int main(void) {
 #ifdef HIL
             /* Hardware in the loop (HIL, or sometimes HITL)*/
             is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id,
-                    &cmd, &wp_type);
+                    &cmd, &wp_type, &wp_yaw);
 
             if ((last_wp_received_ll[0] != wp_received_ll[0]) &&
                     (last_wp_received_ll[1] != wp_received_ll[1])) {
+
+                wp_received_lla[0] = last_wp_received_ll[0]; /* Lat */
+                wp_received_lla[1] = last_wp_received_ll[1]; /* Lon */
+                wp_received_lla[2] = 0; /* Alt */
+
                 is_new_wp = TRUE;
             }
 
@@ -251,8 +268,8 @@ int main(void) {
             }
 #else
             is_new_imu = check_IMU_events(SCALED, &imu);
-            is_new_msg = check_mavlink_serial_events(wp_received_ll, &cmd,
-                    &wp_type);
+            is_new_msg = check_mavlink_serial_events(wp_received_ll, &msg_id,
+                    &cmd, &wp_type, &wp_yaw);
             check_RC_events(); //check incoming RC commands
             is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
@@ -325,6 +342,7 @@ int main(void) {
 
                 /* Send the reference waypoint */
             case SENDING_REF_WP:
+                LATCbits.LATC1 ^= 1; // Toggle LED 5
 
                 // Transmit periodically, until the exit condition is met
                 if ((cur_time - transmit_time) >= TRANSMIT_PRD) {
@@ -429,6 +447,7 @@ int main(void) {
                         /* The next waypoint becomes the previous waypoint*/
                         wp_prev_en[0] = wp_prev_enu[1];
                         wp_prev_en[1] = wp_prev_enu[0]; /* @TODO: FIX ENU->NED*/
+
                         lin_tra_set_prev_wp(wp_prev_en);
 
                         publish_ack(CHECKING_PREV_WP);
@@ -476,12 +495,16 @@ int main(void) {
                         wp_next_lla[1] = wp_b_lat_lon[1]; /* longitude */
                         wp_next_lla[2] = 0.0; /* altitude */
 
+                        wp_next_ll[0] = wp_next_lla[0];
+                        wp_next_ll[1] = wp_next_lla[1];
+
                         /* Convert to ENU */
                         lin_tra_lla_to_enu(wp_next_lla, ref_lla, wp_next_enu);
 
                         /* Get a new next waypoint */
                         wp_next_en[0] = wp_next_enu[1];
                         wp_next_en[1] = wp_next_enu[0];
+
                         lin_tra_set_next_wp(wp_next_en);
 
                         /* Now we can initialize the linear trajectory */
@@ -503,13 +526,15 @@ int main(void) {
                 // State exit case
                 if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
                         (is_new_wp == TRUE)) {
+                    wp_a_lat_lon[0] = wp_received_ll[0];
+                    wp_a_lat_lon[1] = wp_received_ll[1];
 
                     /* If the newest received waypoint is the 'next' waypoint
                      * then the Companion computer has indicated that 'prev' 
                      * and 'next' waypoints are being updated. */
-                    if (lin_tra_calc_dist(wp_received_ll, wp_next_en) < TOL) {
+                    if (lin_tra_calc_dist(wp_received_ll, wp_next_ll) < TOL) {
 
-                        current_wp_state = WAITING_FOR_PREV_WP;
+                        current_wp_state = CHECKING_PREV_WP;
                     }
 
                 }
@@ -553,9 +578,7 @@ int main(void) {
              *****************************************************************/
             /* Update */
 #ifdef HIL
-            yaw = imu.gyro.z; /* Using gyro z as yaw angle for HIL */
-            pitch = imu.gyro.y; /* Using gyro y as pitch angle for HIL */
-            roll = imu.gyro.x; /* Using gyro x as roll angle for HIL */
+            yaw = wp_yaw;
 #else
             cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 #endif
@@ -572,7 +595,11 @@ int main(void) {
 
                     /* Path Angle with angle offset for now */
                     heading_angle = yaw;
+#ifdef HIL
+                    heading_angle += M_PI;
+#else
                     heading_angle += (M_PI / 2.0);
+#endif
                     heading_angle = fmod(
                             (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
 
@@ -582,12 +609,30 @@ int main(void) {
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
 
-
-                u = pid_controller_update(
+                /* Trajectory tracking controller */
+                acc_cmd = pid_controller_update(
                         &trajectory_tracker,
                         0.0, // Commanded reference
                         0.0, //cross_track_error,
                         heading_angle_diff); // Change in heading angle over time
+
+                //                /* Convert acceleration command to rudder angle */
+                //                if (acc_cmd != 0.0) {
+                //                    if (acc_cmd < 0.0) {
+                //                        u_sign = -1.0;
+                //                    }
+                //                    if (acc_cmd >= 0.0) {
+                //                        u_sign = 1.0;
+                //                    }
+                //                    
+                //                    rtemp = (speed*speed)/fabs(acc_cmd);
+                //                    
+                //                    if (rtemp != 0.0) {
+                //                        u
+                //                    }
+                //                }
+
+                u = acc_cmd;
 
                 // Scale resulting control input
                 u /= UPPER_ACT_BOUND;
@@ -612,7 +657,7 @@ int main(void) {
                     pitch,
                     heading_angle, /* Using differently on purpose */
                     path_angle, // roll-rate, /* Using differently on purpose */
-                    wp_type, // pitch-rate, /* Using differently on purpose */
+                    heading_angle_diff, // pitch-rate, /* Using differently on purpose */
                     (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
 #ifndef HIL

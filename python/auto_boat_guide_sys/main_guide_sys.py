@@ -132,7 +132,7 @@ if __name__ == '__main__':
                      'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw',
                      'servo3_raw', 'servo2_raw', 'servo1_raw',
                      'roll', 'yaw', 'pitch', 'rollspeed', 'pitchspeed', 
-                     'yawspeed']
+                     'yawspeed', 'cog', 'fix_type', 'lat']
 
     # Data logger
     logger = MCL.MAVCSVLogger(
@@ -358,7 +358,7 @@ if __name__ == '__main__':
         # Request LOCAL_POSITION_NED
         # Log the vehicle data
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
-
+        
         # Simulation vehicle state
         if simulation_flag and (state == 'WAITING_TO_UPDATE_WPS'):
             x_pm = Slug3.get_vehicle_point_state()
@@ -406,6 +406,11 @@ if __name__ == '__main__':
                     (msg_type != 'SERVO_OUTPUT_RAW') and
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
+
+            # Messages to get info from first            
+            if (msg_type == 'HEARTBEAT'):
+                heartbeat_msg = msg.to_dict()
+                current_base_mode = heartbeat_msg['base_mode']
 
             ##################################################################
             # START OF STATE MACHINE
@@ -623,10 +628,6 @@ if __name__ == '__main__':
             # Information
             if (t_new - t_info) >= dt_info:
                 t_info = t_new
-
-                if (msg_type == 'HEARTBEAT'):
-                    heartbeat_msg = msg.to_dict()
-                    current_base_mode = heartbeat_msg['base_mode']
 
                 print("**************************************************")
                 print("    mode:            {0:.6g}".format(current_base_mode))

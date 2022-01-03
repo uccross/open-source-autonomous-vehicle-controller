@@ -304,13 +304,15 @@ if __name__ == '__main__':
     if simulation_flag:
         from utilities import HIL_DummyVehicle
 
+        angle_bound = 30 # angle bound for rudder in degrees
+
         Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass,
                                            point_mass_state_vec,
                                            orientation_state_vec,
                                            radius,
                                            reference_speed=reference_speed,
-                                           min_angle=-10.0*np.pi/180,
-                                           max_angle=10.0*np.pi/180)
+                                           min_angle=-angle_bound*np.pi/180,
+                                           max_angle=angle_bound*np.pi/180)
 
         state = 'SENDING_REF_POINT'
         last_state = state

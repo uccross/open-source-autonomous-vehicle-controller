@@ -110,9 +110,6 @@ int main(void) {
 
     // Trajectory 
     float wp_a[DIM]; // [lat, lon]
-    wp_a[0] = 0.0;
-    wp_a[1] = 0.0;
-    wp_a[2] = 0.0;
     float wp_b[DIM];
 
     float wp_prev_lla[DIM + 1]; // [lat, lon, alt]
@@ -254,9 +251,7 @@ int main(void) {
                 vehi_pt_en[1] = wp_received_en[1];
 
                 is_new_gps = TRUE;
-            } else {
-                is_new_gps = FALSE;
-            }
+            } 
 #else
             is_new_imu = check_IMU_events(SCALED, &imu);
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
@@ -319,7 +314,12 @@ int main(void) {
                     // State exit case
                     if ((is_new_gps == TRUE) &&
                             (current_mode == MAV_MODE_AUTO_ARMED)) {
+#ifdef HIL
+                        wp_a[0] = 0.0;
+                        wp_a[1] = 0.0;
+#else
                         publisher_get_gps_rmc_position(wp_a);
+#endif
 
                         /* Complementary Filter Attitude and Heading Reference 
                          * System (AHRS) Initialization. For now use the starting 
@@ -333,6 +333,8 @@ int main(void) {
                         cf_ahrs_init(SAMPLE_TIME, gyro_bias);
 
                         current_wp_state = SENDING_REF_WP;
+                        
+                        is_new_gps = FALSE;
                     }
                     break;
 

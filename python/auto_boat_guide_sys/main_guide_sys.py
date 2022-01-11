@@ -380,6 +380,29 @@ if __name__ == '__main__':
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 
+            if msg_type == 'ATTITUDE':
+                    nav_msg = msg.to_dict()
+
+                    yaw = nav_msg['yaw']
+                    pitch = nav_msg['pitch']
+                    roll = nav_msg['roll']
+
+                    rollspeed = nav_msg['rollspeed']  # Using as path angle
+                    # Using as cross track error
+                    pitchspeed = nav_msg['pitchspeed']
+                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
+
+                    if int(yawspeed) == 0:
+                        pic32_wp_state = 'ERROR_WP'
+                    if int(yawspeed) == 1:
+                        pic32_wp_state = 'FINDING_REF_WP'
+                    if int(yawspeed) == 2:
+                        pic32_wp_state = 'SENDING_REF_WP'
+                    if int(yawspeed) == 3:
+                        pic32_wp_state = 'CHECKING_REF_WP'
+                    if int(yawspeed) == 4:
+                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+
             ##################################################################
             # START OF STATE MACHINE
 
@@ -446,29 +469,6 @@ if __name__ == '__main__':
                     xgyro = nav_msg['xgyro']
                     ygyro = nav_msg['ygyro']
                     zgyro = nav_msg['zgyro']
-
-                if msg_type == 'ATTITUDE':
-                    nav_msg = msg.to_dict()
-
-                    yaw = nav_msg['yaw']
-                    pitch = nav_msg['pitch']
-                    roll = nav_msg['roll']
-
-                    rollspeed = nav_msg['rollspeed']  # Using as path angle
-                    # Using as cross track error
-                    pitchspeed = nav_msg['pitchspeed']
-                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
-
-                    if int(yawspeed) == 0:
-                        pic32_wp_state = 'ERROR_WP'
-                    if int(yawspeed) == 1:
-                        pic32_wp_state = 'FINDING_REF_WP'
-                    if int(yawspeed) == 2:
-                        pic32_wp_state = 'SENDING_REF_WP'
-                    if int(yawspeed) == 3:
-                        pic32_wp_state = 'CHECKING_REF_WP'
-                    if int(yawspeed) == 4:
-                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
 
                     if not simulation_flag:
                         cf_heading_angle = yaw*rad2deg

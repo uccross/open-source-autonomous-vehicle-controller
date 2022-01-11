@@ -1768,14 +1768,14 @@ Connection ~ 3500 5250
 Wire Wire Line
 	3500 5250 3950 5250
 $Comp
-L Mechanical:MountingHole H1
+L Mechanical:MountingHole_Pad H1
 U 1 1 61DEDB75
-P 9250 950
-F 0 "H1" H 9350 996 50  0000 L CNN
-F 1 "MountingHole" H 9350 905 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 950 50  0001 C CNN
-F 3 "~" H 9250 950 50  0001 C CNN
-	1    9250 950 
+P 9250 1100
+F 0 "H1" H 9350 1149 50  0000 L CNN
+F 1 "MountingHole" H 9350 1058 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 1100 50  0001 C CNN
+F 3 "~" H 9250 1100 50  0001 C CNN
+	1    9250 1100
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1789,17 +1789,15 @@ F 3 "" H 9250 1200 50  0001 C CNN
 	1    9250 1200
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9250 950  9250 1200
 $Comp
-L Mechanical:MountingHole H2
+L Mechanical:MountingHole_Pad H2
 U 1 1 61DFC487
-P 9950 950
-F 0 "H2" H 10050 996 50  0000 L CNN
-F 1 "MountingHole" H 10050 905 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 950 50  0001 C CNN
-F 3 "~" H 9950 950 50  0001 C CNN
-	1    9950 950 
+P 9950 1100
+F 0 "H2" H 10050 1149 50  0000 L CNN
+F 1 "MountingHole" H 10050 1058 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 1100 50  0001 C CNN
+F 3 "~" H 9950 1100 50  0001 C CNN
+	1    9950 1100
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1813,17 +1811,15 @@ F 3 "" H 9950 1200 50  0001 C CNN
 	1    9950 1200
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9950 950  9950 1200
 $Comp
-L Mechanical:MountingHole H3
+L Mechanical:MountingHole_Pad H3
 U 1 1 61E0870C
-P 9250 1550
-F 0 "H3" H 9350 1596 50  0000 L CNN
-F 1 "MountingHole" H 9350 1505 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 1550 50  0001 C CNN
-F 3 "~" H 9250 1550 50  0001 C CNN
-	1    9250 1550
+P 9250 1700
+F 0 "H3" H 9350 1749 50  0000 L CNN
+F 1 "MountingHole" H 9350 1658 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 1700 50  0001 C CNN
+F 3 "~" H 9250 1700 50  0001 C CNN
+	1    9250 1700
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1837,17 +1833,15 @@ F 3 "" H 9250 1800 50  0001 C CNN
 	1    9250 1800
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9250 1550 9250 1800
 $Comp
-L Mechanical:MountingHole H4
+L Mechanical:MountingHole_Pad H4
 U 1 1 61E13D53
-P 9950 1550
-F 0 "H4" H 10050 1596 50  0000 L CNN
-F 1 "MountingHole" H 10050 1505 50  0000 L CNN
-F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 1550 50  0001 C CNN
-F 3 "~" H 9950 1550 50  0001 C CNN
-	1    9950 1550
+P 9950 1700
+F 0 "H4" H 10050 1749 50  0000 L CNN
+F 1 "MountingHole" H 10050 1658 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 1700 50  0001 C CNN
+F 3 "~" H 9950 1700 50  0001 C CNN
+	1    9950 1700
 	1    0    0    -1  
 $EndComp
 $Comp
@@ -1861,6 +1855,4 @@ F 3 "" H 9950 1800 50  0001 C CNN
 	1    9950 1800
 	1    0    0    -1  
 $EndComp
-Wire Wire Line
-	9950 1550 9950 1800
 $EndSCHEMATC

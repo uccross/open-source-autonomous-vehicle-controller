@@ -332,7 +332,7 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
         # Simulation vehicle state
-        if simulation_flag and (state == 'TRACKING'):
+        if simulation_flag:
             x_pm = Slug3.get_vehicle_point_state()
             x_os = Slug3.get_vehicle_orientation_state()
 

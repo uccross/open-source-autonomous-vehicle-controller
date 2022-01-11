@@ -376,6 +376,7 @@ if __name__ == '__main__':
                     (msg_type != 'ATTITUDE') and
                     (msg_type != 'COMMAND_ACK') and
                     (msg_type != 'SERVO_OUTPUT_RAW') and
+                    (msg_type != 'LOCAL_POSITION_NED') and
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 

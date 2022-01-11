@@ -317,11 +317,6 @@ if __name__ == '__main__':
                                            min_angle=-angle_bound*np.pi/180,
                                            max_angle=angle_bound*np.pi/180)
 
-        state = 'SENDING_REF_POINT'
-        last_state = state
-
-        pic32_wp_state = 'WAITING_FOR_REF_WP'
-
     ###########################################################################
     # Main Loop
     while True:

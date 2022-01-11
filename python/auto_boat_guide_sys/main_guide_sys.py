@@ -189,7 +189,7 @@ if __name__ == '__main__':
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
-    dt_transmit = 0.250  # seconds
+    dt_transmit = 0.500  # seconds
     dt_HIL_transmit = 1.0  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds

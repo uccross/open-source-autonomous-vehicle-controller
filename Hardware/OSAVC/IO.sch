@@ -1767,4 +1767,100 @@ Wire Wire Line
 Connection ~ 3500 5250
 Wire Wire Line
 	3500 5250 3950 5250
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 61DEDB75
+P 9250 950
+F 0 "H1" H 9350 996 50  0000 L CNN
+F 1 "MountingHole" H 9350 905 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 950 50  0001 C CNN
+F 3 "~" H 9250 950 50  0001 C CNN
+	1    9250 950 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR012
+U 1 1 61DEF7B2
+P 9250 1200
+F 0 "#PWR012" H 9250 950 50  0001 C CNN
+F 1 "GND" H 9255 1027 50  0000 C CNN
+F 2 "" H 9250 1200 50  0001 C CNN
+F 3 "" H 9250 1200 50  0001 C CNN
+	1    9250 1200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9250 950  9250 1200
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 61DFC487
+P 9950 950
+F 0 "H2" H 10050 996 50  0000 L CNN
+F 1 "MountingHole" H 10050 905 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 950 50  0001 C CNN
+F 3 "~" H 9950 950 50  0001 C CNN
+	1    9950 950 
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR013
+U 1 1 61DFC48D
+P 9950 1200
+F 0 "#PWR013" H 9950 950 50  0001 C CNN
+F 1 "GND" H 9955 1027 50  0000 C CNN
+F 2 "" H 9950 1200 50  0001 C CNN
+F 3 "" H 9950 1200 50  0001 C CNN
+	1    9950 1200
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9950 950  9950 1200
+$Comp
+L Mechanical:MountingHole H3
+U 1 1 61E0870C
+P 9250 1550
+F 0 "H3" H 9350 1596 50  0000 L CNN
+F 1 "MountingHole" H 9350 1505 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9250 1550 50  0001 C CNN
+F 3 "~" H 9250 1550 50  0001 C CNN
+	1    9250 1550
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR014
+U 1 1 61E08712
+P 9250 1800
+F 0 "#PWR014" H 9250 1550 50  0001 C CNN
+F 1 "GND" H 9255 1627 50  0000 C CNN
+F 2 "" H 9250 1800 50  0001 C CNN
+F 3 "" H 9250 1800 50  0001 C CNN
+	1    9250 1800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9250 1550 9250 1800
+$Comp
+L Mechanical:MountingHole H4
+U 1 1 61E13D53
+P 9950 1550
+F 0 "H4" H 10050 1596 50  0000 L CNN
+F 1 "MountingHole" H 10050 1505 50  0000 L CNN
+F 2 "MountingHole:MountingHole_2.7mm_Pad" H 9950 1550 50  0001 C CNN
+F 3 "~" H 9950 1550 50  0001 C CNN
+	1    9950 1550
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR015
+U 1 1 61E13D59
+P 9950 1800
+F 0 "#PWR015" H 9950 1550 50  0001 C CNN
+F 1 "GND" H 9955 1627 50  0000 C CNN
+F 2 "" H 9950 1800 50  0001 C CNN
+F 3 "" H 9950 1800 50  0001 C CNN
+	1    9950 1800
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	9950 1550 9950 1800
 $EndSCHEMATC

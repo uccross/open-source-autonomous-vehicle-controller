@@ -1,0 +1,108 @@
+Source:,C:\Users\Aaron\MPLABXProjects\open-source-autonomous-vehicle-controller\Hardware\OSAVC\OSAVC.sch,,,,,
+Date:,10/9/2021 17:12,,,,,
+Tool:,Eeschema (5.1.9)-1,,,,,
+Component Count:,103,,,,,
+Ref,Value,Footprint,Datasheet,Manufacturer,Vendor,Part Number
+C1,2.2uF,Capacitor_SMD:C_0805,~,Samsung,Digikey,CL21A225KBFNNNE
+C2,330uF,Capacitor_SMD:C_1210_3225Metric_Pad1.33x2.70mm_HandSolder,~,Panasonic,Digikey,EEE-FNA331XUL
+C3,10uF,Capacitor_SMD:C_1206_3216Metric_Pad1.33x1.80mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C4,10uF,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C5,10uF,Capacitor_SMD:C_1206_3216Metric_Pad1.33x1.80mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C6,10uF,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C7,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C8,10uF,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C9,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C10,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C11,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C12,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C13,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C14,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C15,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C16,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C17,1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10A105KP8NNWC
+C18,10uF,Capacitor_SMD:C_0805_2012Metric_Pad1.18x1.45mm_HandSolder,~,Samsung,Digikey,CL10A106MP8NNNC
+C19,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C20,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C21,30pF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,https://datasheets.avx.com/C0GNP0-Dielectric.pdf,Kyocera,Digikey,06031A300FAT2A
+C22,30pF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,https://datasheets.avx.com/C0GNP0-Dielectric.pdf,Kyocera,Digikey,06031A300FAT2A
+C23,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C24,680uF,Capacitor_Tantalum_SMD:CP_EIA-7343-30_AVX-N_Pad2.25x2.55mm_HandSolder,~,Kyocera,Digikey,TLJY687M006RNJ
+C25,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C26,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+C27,0.1uF,Capacitor_SMD:C_0603_1608Metric_Pad1.08x0.95mm_HandSolder,~,Samsung,Digikey,CL10B104KA8NNNC
+D2,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D3,BAV99W,Package_TO_SOT_SMD:SOT-323_SC-70,~,Nexperia,Digikey,"BAV99W,135"
+D4,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D5,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D6,SDM40E20LC,Package_TO_SOT_SMD:SOT-23,~,dioded inc,Digikey,SDM40E20LC-7
+D7,SDM40E20LC,Package_TO_SOT_SMD:SOT-23,~,dioded inc,Digikey,SDM40E20LC-8
+D8,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D9,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D10,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D11,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D12,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+D13,LED,LED_SMD:LED_0603_1608Metric_Pad1.05x0.95mm_HandSolder,~,OSRAM,Digikey,LS Q976-NR-1
+J1,Barrel_Jack_Switch,Connector_BarrelJack:BarrelJack_Wuerth_6941xx301002,~,,,
+J2,ICSP,Connector_PinHeader_2.54mm:PinHeader_1x06_P2.54mm_Vertical,~,,,
+J3,USB_B_Micro,Connector_USB:USB_Micro-B_Amphenol_10118194_Horizontal,~,,,
+J4,GPIO4,OSAVC interface shield:PWM_HDR,,,,
+J5,Conn_01x02,,~,,,
+J13,Telemetry,Connector_Molex:Molex_PicoBlade_53048-0410_1x04_P1.25mm_Horizontal,~,Molex,,
+J14,RC RX,Connector_Molex:Molex_PicoBlade_53048-0310_1x03_P1.25mm_Horizontal,~,Molex,,
+J15,GPS,Connector_Molex:Molex_PicoBlade_53048-0610_1x06_P1.25mm_Horizontal,~,Molex,,
+J16,SPI2-1,Connector_Molex:Molex_PicoBlade_53048-0610_1x06_P1.25mm_Horizontal,~,Molex,,
+J17,SPI2-2,Connector_Molex:Molex_PicoBlade_53048-0610_1x06_P1.25mm_Horizontal,~,Molex,,
+J18,SPI2-3,Connector_Molex:Molex_PicoBlade_53048-0610_1x06_P1.25mm_Horizontal,~,Molex,,
+J19,SPI2-4,Connector_Molex:Molex_PicoBlade_53048-0610_1x06_P1.25mm_Horizontal,~,Molex,,
+J20,I2C2 LIDAR,Connector_Molex:Molex_PicoBlade_53048-0510_1x05_P1.25mm_Horizontal,~,Molex,,
+J21,I2C1,Connector_Molex:Molex_PicoBlade_53048-0410_1x04_P1.25mm_Horizontal,~,Molex,,
+J22,CAN,Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical,~,,,
+J23,2171750001,ul_2171750001:2171750001,,Molex,,
+Q1,AO3423,Package_TO_SOT_SMD:SOT-23,http://aosmd.com/res/data_sheets/AO3423.pdf,AO Semi,Digikey,AO3423
+R1,8.76K ,Resistor_SMD:R_0603_1608Metric,~,,,RN73R1JTTD8761B25
+R2,22K,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-PA3J223V
+R3,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+R4,2K,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-3GEYJ202V
+R5,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+R7,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R8,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+R9,51,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-3GEYJ510V
+R10,51,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-3GEYJ510V
+R11,51,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-3GEYJ510V
+R12,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R13,0,Resistor_SMD:R_0603_1608Metric,~,Stackpole,,RMCF0603ZT0R00
+R14,1K,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-PA3J102V
+R15,1K,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-PA3J102V
+R16,470,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-PA3J471V
+R17,470,Resistor_SMD:R_0603_1608Metric,~,Panasonic,,ERJ-PA3J471V
+R18,4.7K,Resistor_SMD:R_0603_1608Metric,~,,,RMCF0603JT4K70
+R19,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+R20,820,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-3GEYJ821V
+R21,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R22,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R23,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R24,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R25,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R26,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R27,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R28,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R29,470,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J471V
+R30,4.7K,Resistor_SMD:R_0603_1608Metric,~,,,RMCF0603JT4K70
+R31,4.7K,Resistor_SMD:R_0603_1608Metric,~,,,RMCF0603JT4K70
+R32,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R33,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R34,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R35,200,Resistor_SMD:R_0603_1608Metric,~,,,ERJ-PA3J201V
+R36,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+R37,10K,Resistor_SMD:R_0603_1608Metric,~,Yageo,,RC0603JR-0710KL
+SW1,SW_Push_Dual,Button_Switch_THT:SW_PUSH_6mm_H4.3mm,~,,,
+U1,PTN78060W_EUW-7,Module:Texas_EUW_R-PDSS-T7_THT,https://www.ti.com/lit/ds/symlink/ptn78060w.pdf,,,
+U2,LP38690DTX-5.0_NOPB,LPC38690DT:LP38690DTX-5.0&slash_NOPB,,,,
+U3,LP38690DT-3.3_NOPB,LPC38690DT:LP38690DT-3.3&slash_NOPB,,,,
+U4,MCP6001-OT,Package_TO_SOT_SMD:SOT-23-5,http://ww1.microchip.com/downloads/en/DeviceDoc/21733j.pdf,,,MCP6001UT-I/OT
+U5,MIC29300-5.0WU,TO-263-3_MCL,,,,
+U6,PIC32MX795F512L-80x-PF,Package_QFP:TQFP-100_14x14mm_P0.5mm,http://ww1.microchip.com/downloads/en/DeviceDoc/60001156J.pdf,,,
+U7,FT232RL,Package_SO:SSOP-28_5.3x10.2mm_P0.65mm,https://www.ftdichip.com/Support/Documents/DataSheets/ICs/DS_FT232R.pdf,,,
+U8,Sparkfun_ICM-20948_breakout,OSAVC interface shield:SPARKFUN_ICM20948_BREAKOUT,https://www.sparkfun.com/products/15335,,,
+U9,24LC256,Package_SO:SOIC-8_7.5x5.85mm_P1.27mm,http://ww1.microchip.com/downloads/en/devicedoc/21203m.pdf,,,
+Y1,WE 830059082,Crystal:Crystal_SMD_7050-4Pin_7.0x5.0mm,~,,,

@@ -158,8 +158,7 @@ class MAVCSVLogger():
         :param wp_lat_lon: A waypoint with the following structure: 
         np.array([[0.0, 0.1]]) with lattitude as the first element and 
         longitude as the second element
-        :param wp_type: 0.0 if previous wayopint, 1.0 if next waypoint, and 2.0
-        for vehicle position 
+        :param wp_type: 0.0 if lla wayopint, 1.0 if en waypoint, 2.0 if HIL GPS
         """
         self.mav_conn.mav.command_long_send(
             self.mav_conn.target_system,
@@ -174,7 +173,14 @@ class MAVCSVLogger():
             wp_type,  # altitude being used as 'previous' if 0.0 or 'next' if 1.0
             0.0)
 
-    def send_HIL_GPS(self, vehi_pt_en, yaw):
+    def send_mav_ltp_en_waypoint(self, wp_en):
+        """
+        :param wp_en: np.zeros((1, 2)) East, North
+        :param yaw: A yaw angle associated with the waypoint
+        """
+        self.send_mav_cmd_nav_waypoint(wp_en, wp_type=1.0)
+
+    def send_mav_ltp_HIL_en(self, vehi_pt_en, yaw):
         """
         :param vehi_pt_en: np.zeros((1, 2)) East, North
         :param yaw: A yaw angle associated with the waypoint

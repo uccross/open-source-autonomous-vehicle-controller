@@ -189,7 +189,7 @@ if __name__ == '__main__':
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
-    dt_transmit = 1.0  # seconds
+    dt_transmit = 0.250  # seconds
     dt_HIL_transmit = 1.0  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
@@ -243,38 +243,42 @@ if __name__ == '__main__':
     #                       [36.9556638, -122.0606960],
     #                       [36.9554362, -122.0607348],
     #                       [36.9556224, -122.0604107]])
-    waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
-                          [36.9835265, -122.0241790],
-                          [36.9834655, -122.0241469],
-                          [36.9833655, -122.0238656]])
+    # waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
+    #                       [36.9835265, -122.0241790],
+    #                       [36.9834655, -122.0241469],
+    #                       [36.9833655, -122.0238656]])
+    
+    ltp_width = 60.0 # meters
+    ltp_length = 80.0 # meters
+    x0_b = ltp_width/2.0 # meters
+    y0_b = 10.0
+                            # x, y 
+    waypoints = np.array([[x0_b, -y0_b], 
+                          [0.0, 0.0]])
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
-    wp_ref_lla = np.array([[36.9836576, -122.0241886, 0.0]])
-    wp_ref_lat_lon = np.array([[36.9836576, -122.0238656]])
+    wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
+    wp_ref_lat_lon = np.array([[0.0, 0.0]])
 
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
 
     clst_pt_en = np.zeros((1, 2))
 
-    wp_prev_lla = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
     wp_next_lla = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_lla_copy = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]])
     wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
     wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
 
-    wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
     wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
 
-    wp_prev_en = np.array([[wp_prev_ned[0, 1], wp_prev_ned[0, 0]]])
-    vehi_pt_en = np.array([[vehi_pt_ned[0, 1], vehi_pt_ned[0, 0]]])
-    wp_next_en = np.array([[wp_next_ned[0, 1], wp_next_ned[0, 0]]])
+    wp_prev_en = wpq.getNext()
+    vehi_pt_en = wp_prev_en
+    wp_next_en = wpq.getNext()
 
     msg_type = None
     current_base_mode = -1
@@ -291,13 +295,8 @@ if __name__ == '__main__':
     ack_result = {'ERROR_WP': 0,
                   'FINDING_REF_WP': 1,
                   'SENDING_REF_WP': 2,
-                  'WAITING_FOR_REF_WP': 3,
-                  'CHECKING_REF_WP': 4,
-                  'WAITING_FOR_PREV_WP': 5,
-                  'CHECKING_PREV_WP': 6,
-                  'WAITING_FOR_NEXT_WP': 7,
-                  'CHECKING_NEXT_WP': 8,
-                  'TRACKING_WP': 9}
+                  'CHECKING_REF_WP': 3,
+                  'WAITING_FOR_NEXT_WP': 4}
 
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
@@ -330,28 +329,6 @@ if __name__ == '__main__':
         # Timing
         t_new = time.time()
 
-        if simulation_flag or found_ref_point:
-            wp_prev_lla_copy = copy.deepcopy(wp_prev_lla)
-            vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
-            wp_next_lla_copy = copy.deepcopy(wp_next_lla)
-
-            wp_prev_lla_copy2 = copy.deepcopy(wp_prev_lla)
-            vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
-            wp_next_lla_copy2 = copy.deepcopy(wp_next_lla)
-
-            wp_prev_ned = LTP.lla2ned2(wp_prev_lla_copy, wp_ref_lla)
-            vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-            wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
-
-            wp_prev_en = np.array([[wp_prev_ned[0, 1],
-                                    wp_prev_ned[0, 0]]])
-            if not simulation_flag:
-                vehi_pt_en = np.array([[vehi_pt_ned[0, 1],
-                                        vehi_pt_ned[0, 0]]])
-
-            wp_next_en = np.array([[wp_next_ned[0, 1],
-                                    wp_next_ned[0, 0]]])
-
         # Read the state of the vehicle
         # Request MAVLINK_MSG_ID_RAW_IMU
         # Request MAVLINK_MSG_ID_ATTITUDE
@@ -360,7 +337,7 @@ if __name__ == '__main__':
         msg = logger.mav_conn.recv_match()  # TODO: Make a getter() for this
 
         # Simulation vehicle state
-        if simulation_flag and (state == 'WAITING_TO_UPDATE_WPS'):
+        if simulation_flag and (state == 'TRACKING'):
             x_pm = Slug3.get_vehicle_point_state()
             x_os = Slug3.get_vehicle_orientation_state()
 
@@ -388,7 +365,7 @@ if __name__ == '__main__':
                 vehi_pt_en[0][0] = x_pm[0][0]
                 vehi_pt_en[0][1] = x_pm[1][0]
                 if i_tx == 1:
-                    logger.send_HIL_GPS(vehi_pt_en, wp_yaw)
+                    logger.send_mav_ltp_HIL_en(vehi_pt_en, wp_yaw)
                     i_tx = 0
 
                 i_tx += 1
@@ -424,9 +401,9 @@ if __name__ == '__main__':
                     wp_ref_lat_lon = np.array([[lat, lon]])
                     wp_ref_lla = np.array([[lat, lon, 0.0]])
 
-                    if (t_new - t_transmit) >= dt_transmit:
-                        t_transmit = t_new
-                        logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
+                    # if (t_new - t_transmit) >= dt_transmit:
+                    #     t_transmit = t_new
+                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
@@ -434,60 +411,10 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
-                        print("    lat: {}, type: {}".format(lat,
-                                                             type(lat)))
-                        print("    lon: {}, type: {}".format(lon,
-                                                             type(lon)))
+                        print("    lat: {}, type: {}".format(lat, type(lat)))
+                        print("    lon: {}, type: {}".format(lon, type(lon)))
 
-                        wp_prev = wpq.getNext()
                         found_ref_point = True
-                        state = 'SENDING_PREV_WP'
-
-            ###################################################################
-            elif state == 'SENDING_REF_POINT':
-                # Send the reference ponit for the linear trajectory tracking
-
-                if (t_new - t_transmit) >= dt_transmit:
-                    t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
-
-                # Exit this state after getting an acknowledgment with a result
-                # equal to 1
-                if msg.get_type() == 'COMMAND_ACK':
-
-                    nav_msg = msg.to_dict()
-
-                    if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
-                        wp_ref_lla = np.array([[wp_ref_lat_lon[0, 0],  # lat
-                                                wp_ref_lat_lon[0, 1],  # lon
-                                                0.0]])          # alt
-                        print("    wp_ref_lla = {}".format(wp_ref_lla))
-
-                        wp_prev = wpq.getNext()
-                        state = 'SENDING_PREV_WP'
-
-            ###################################################################
-            elif state == 'SENDING_PREV_WP':
-                # Send the previous waypoint (not the reference) for the
-                # linear trajectory tracking
-
-                if (t_new - t_transmit) >= dt_transmit:
-                    t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_prev)
-
-                # Exit this state after getting an acknowledgment with a result
-                # equal to 1
-                if msg.get_type() == 'COMMAND_ACK':
-
-                    nav_msg = msg.to_dict()
-
-                    if nav_msg['result'] == ack_result['CHECKING_PREV_WP']:
-                        wp_prev_lla = np.array([[wp_prev[0, 0],  # lat
-                                                 wp_prev[0, 1],  # lon
-                                                 0.0]])          # alt
-                        print("    wp_prev_lla = {}".format(wp_prev_lla))
-
-                        wp_next = wpq.getNext()
                         state = 'SENDING_NEXT_WP'
 
             ###################################################################
@@ -496,22 +423,17 @@ if __name__ == '__main__':
 
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_next)
+                    logger.send_mav_ltp_en_waypoint(wp_next_en)
 
                 if msg.get_type() == 'COMMAND_ACK':
-
                     nav_msg = msg.to_dict()
-
                     if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
-                        wp_next_lla = np.array([[wp_next[0, 0],  # lat
-                                                 wp_next[0, 1],  # lon
-                                                 0.0]])          # alt
                         print("    wp_next_lla = {}".format(wp_next_lla))
 
-                        state = 'WAITING_TO_UPDATE_WPS'
+                        state = 'TRACKING'
 
             ###################################################################
-            elif state == 'WAITING_TO_UPDATE_WPS':
+            elif state == 'TRACKING':
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()
@@ -596,12 +518,18 @@ if __name__ == '__main__':
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
+                    vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla_copy)
+
+                    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
+                    vehi_pt_en[0] = vehi_pt_ned[1] # East
+                    vehi_pt_en[1] = vehi_pt_ned[0] # North
+
                 if wpq.isNearNext(clst_pt_en):
                     state = 'SENDING_PREV_WP'
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
-                        wp_prev = wp_next
+                        wp_prev = wp_next_en
                         state = 'SENDING_PREV_WP'
 
             ###################################################################
@@ -652,13 +580,11 @@ if __name__ == '__main__':
                 print("    ygyro:           {0:.6g}".format(ygyro*rad2deg))
                 print("    zgyro:           {0:.6g}".format(zgyro*rad2deg))
 
-                print("    wp_prev_lla_copy = {}".format(wp_prev_lla_copy))
+                print("    vehi_pt_lla = {}".format(vehi_pt_lla))
+                print("    wp_next_lla = {}".format(wp_next_lla))
+
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
-
-                print("    wp_prev_lla_copy2 = {}".format(wp_prev_lla_copy2))
-                print("    vehi_pt_lla_copy2 = {}".format(vehi_pt_lla_copy2))
-                print("    wp_next_lla_copy2 = {}".format(wp_next_lla_copy2))
 
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))

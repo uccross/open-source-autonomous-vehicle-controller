@@ -486,18 +486,31 @@ if __name__ == '__main__':
                         wp_prev_en[0][0] = wp_ref_ned[0][1]  # East
                         wp_prev_en[0][1] = wp_ref_ned[0][0]  # North
 
+                        Grid.set_points_offset(wp_prev_en)
+
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'
 
             ###################################################################
             elif state == 'SENDING_NEXT_WP':
                 # Send the next waypoint for the linear trajectory tracking
-
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
                     logger.send_mav_ltp_en_waypoint(wp_next_en)
 
-                if msg.get_type() == 'COMMAND_ACK':
+                # If we get the following message type while sending, it is
+                # the 'next' waypoint as calculated by the microcontroller
+                if msg_type == 'LOCAL_POSITION_NED':
+                    nav_msg = msg.to_dict()
+
+                    e = nav_msg['x']  # East
+                    n = nav_msg['y']  # North
+
+                    uc_next_en = np.array([[e, n]])
+
+                if ((msg.get_type() == 'COMMAND_ACK') and np.linalg.norm(
+                        uc_next_en-wp_next_en)):
+
                     nav_msg = msg.to_dict()
                     if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
                         print("    wp_next_lla = {}".format(wp_next_lla))
@@ -510,7 +523,7 @@ if __name__ == '__main__':
             ###################################################################
             elif state == 'TRACKING':
 
-                # If we get the following message type while tracking, it is 
+                # If we get the following message type while tracking, it is
                 # the 'next' waypoint as calculated by the microcontroller
                 if msg_type == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
@@ -576,7 +589,7 @@ if __name__ == '__main__':
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
-                if wpq.isNearNext(clst_pt_en):# or is_beyond_next_wp:
+                if wpq.isNearNext(clst_pt_en):  # or is_beyond_next_wp:
                     wp_prev_en = wp_next_en
                     wp_next_en = wpq.getNext()
                     is_beyond_next_wp = False
@@ -683,7 +696,8 @@ if __name__ == '__main__':
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
                                position_en=vehi_pt_en,
-                               clst_pt_en=clst_pt_en)
+                               clst_pt_en=clst_pt_en, 
+                               grid_points=Grid.get_points())
 
         #######################################################################
         # Log messages (at intervals)

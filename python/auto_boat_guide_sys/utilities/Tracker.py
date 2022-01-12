@@ -119,7 +119,7 @@ class Tracker():
                                          markeredgecolor='black',
                                          markerfacecolor='black',
                                          color='None',
-                                         markersize=5,
+                                         markersize=2,
                                          label='Grid Points')[0]
 
         # Vector tangent to the current linear trajectory segment vector
@@ -167,7 +167,8 @@ class Tracker():
 
     def update(self, yaw, pitch, roll, wp_prev_en=np.zeros((1, 2)),
                wp_next_en=np.zeros((1, 2)), clst_pt_en=np.zeros((1, 2)),
-               position_en=np.zeros((1, 2)), h_scale=5):
+               position_en=np.zeros((1, 2)), new_grid_pts=np.zeros((1, 2)),
+               h_scale=5):
         """
         :param yaw:
         :param pitch:
@@ -177,6 +178,7 @@ class Tracker():
         :param clst_pt_en: The closest point (meters) 1x2 vector: East, North
         :param position_en: The vehicle position (meters) 1x2 vector: East, 
         North
+        :param new_grid_pts: New grid points
         :param h_scale: Scalar to scale the heading vector
         :return: None
         """
@@ -251,6 +253,8 @@ class Tracker():
                                                       attQuatZ[2, 0]]))
             ###################################################################
             # Trajectory, Position, etc.
+            self.grid_points.set_data(new_grid_pts[:,0], new_grid_pts[:,1])
+
             self.norm.set_data(
                 np.array([position_en[0, 0], clst_pt_en[0, 0]]),
                 np.array([position_en[0, 1], clst_pt_en[0, 1]]))
@@ -299,6 +303,7 @@ class Tracker():
             ###################################################################
             # ax1
             self.fig.canvas.restore_region(self.background1)
+            self.ax1.draw_artist(self.grid_points)
             self.ax1.draw_artist(self.norm)
             self.ax1.draw_artist(self.lin_tra)
             self.ax1.draw_artist(self.lin_prev)

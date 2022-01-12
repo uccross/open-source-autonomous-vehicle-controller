@@ -70,6 +70,14 @@ class Grid():
         """
         return self.points
 
+    def set_points_offset(self, point_en):
+        """
+        :return: an 1 by 2 East-North point in the local tangent plane
+        """
+        for i in range(self.N):
+            self.points[i][0] += point_en[0][0]
+            self.points[i][1] += point_en[0][1]
+
 
 ###############################################################################
 # MODULE TEST EXAMPLE

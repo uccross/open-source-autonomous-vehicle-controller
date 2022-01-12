@@ -466,17 +466,22 @@ if __name__ == '__main__':
                 if msg_type == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
 
-                    lon = nav_msg['x']  # longitude
-                    lat = nav_msg['y']  # latitude
+                    e = nav_msg['x']  # East
+                    n = nav_msg['y']  # North
 
-                    wp_ref_lat_lon = np.array([[lat, lon]])
-                    wp_ref_lla = np.array([[lat, lon, 0.0]])
-                    wp_ref_lla_copy = copy.deepcopy(wp_ref_lla)
+                    wp_prev_en = np.array([[e, n]])
+
+                    # lon = nav_msg['x']  # longitude
+                    # lat = nav_msg['y']  # latitude
+
+                    # wp_ref_lat_lon = np.array([[lat, lon]])
+                    # wp_ref_lla = np.array([[lat, lon, 0.0]])
+                    # wp_ref_lla_copy = copy.deepcopy(wp_ref_lla)
 
                     # if (t_new - t_transmit) >= dt_transmit:
                     #     t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon,
-                                                     wp_type=0.0)
+                    # logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, wp_type=0.0)
+                    logger.send_mav_ltp_en_waypoint(wp_next_en)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1

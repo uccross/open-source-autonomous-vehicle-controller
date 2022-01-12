@@ -60,12 +60,9 @@ class Grid():
         self.points = self.points @ R  
 
         # Shift in x and y
-        i = 0
-        for y in ys:
-            for x in xs:
-                self.points[i][0] += self.x0
-                self.points[i][1] += self.y0
-                i += 1
+        for i in range(self.N):
+            self.points[i][0] += self.x0
+            self.points[i][1] += self.y0
 
     def get_points(self):
         """

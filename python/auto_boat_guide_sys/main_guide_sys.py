@@ -75,7 +75,7 @@ parser.add_argument('--grid_angle', type=float, dest='grid_angle',
                     help='The orientation of the grid on the LTP in radians')
 
 parser.add_argument('--grid_separation', type=float, dest='grid_separation',
-                    default=5.0,
+                    default=15.0,
                     help='The distance between grid points in meters')
 
 parser.add_argument('--w_threshold', type=float, dest='threshold',
@@ -554,7 +554,7 @@ if __name__ == '__main__':
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
-                if wpq.isNearNext(clst_pt_en) or is_beyond_next_wp:
+                if wpq.isNearNext(clst_pt_en):# or is_beyond_next_wp:
                     wp_prev_en = wp_next_en
                     wp_next_en = wpq.getNext()
                     is_beyond_next_wp = False

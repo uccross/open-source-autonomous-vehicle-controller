@@ -118,7 +118,8 @@ class Tracker():
                                          marker='o',
                                          markeredgecolor='black',
                                          markerfacecolor='black',
-                                         markersize=10,
+                                         color='None',
+                                         markersize=5,
                                          label='Grid Points')[0]
 
         # Vector tangent to the current linear trajectory segment vector

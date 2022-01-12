@@ -527,12 +527,12 @@ if __name__ == '__main__':
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0] # North
 
                 if wpq.isNearNext(clst_pt_en):
-                    state = 'SENDING_PREV_WP'
+                    state = 'SENDING_NEXT_WP'
 
                 if simulation_flag:
                     if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
                         wp_prev = wp_next_en
-                        state = 'SENDING_PREV_WP'
+                        state = 'SENDING_NEXT_WP'
 
             ###################################################################
             # Print the state transition

@@ -433,7 +433,8 @@ if __name__ == '__main__':
 
                     # if (t_new - t_transmit) >= dt_transmit:
                     #     t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon)
+                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, 
+                                                     wp_type=0.0)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1

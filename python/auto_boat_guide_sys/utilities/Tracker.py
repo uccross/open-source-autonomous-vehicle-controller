@@ -119,7 +119,7 @@ class Tracker():
                                          markeredgecolor='black',
                                          markerfacecolor='black',
                                          markersize=10,
-                                         label='Grid Points')
+                                         label='Grid Points')[0]
 
         # Vector tangent to the current linear trajectory segment vector
         self.norm = self.ax1.plot([], [], lw=2, color='lime',

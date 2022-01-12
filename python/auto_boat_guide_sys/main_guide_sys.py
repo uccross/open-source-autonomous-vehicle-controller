@@ -70,6 +70,14 @@ parser.add_argument('--y0', type=float, dest='y0',
                     default=10.0,
                     help='Grid shift in meters in the body-y axis')
 
+parser.add_argument('--grid_angle', type=float, dest='grid_angle',
+                    default=30.0*np.pi/180.0,
+                    help='The orientation of the grid on the LTP in radians')
+
+parser.add_argument('--grid_separation', type=float, dest='grid_separation',
+                    default=5.0,
+                    help='The distance between grid points in meters')
+
 arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
@@ -86,6 +94,8 @@ tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
 x0_b = arguments.x0
 y0_b = arguments.y0
+grid_angle = arguments.grid_angle
+grid_separation = arguments.grid_separation
 
 ###############################################################################
 if __name__ == '__main__':
@@ -131,6 +141,7 @@ if __name__ == '__main__':
 
     # Grid
     Grid = Grid.Grid()
+    Grid.form_grid(grid_separation, grid_angle)
 
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',

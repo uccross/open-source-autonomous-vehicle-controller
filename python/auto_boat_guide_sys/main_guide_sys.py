@@ -328,15 +328,13 @@ if __name__ == '__main__':
     if simulation_flag:
         from utilities import HIL_DummyVehicle
 
-        angle_bound = 30  # angle bound for rudder in degrees
-
         Slug3 = HIL_DummyVehicle.DualModel(dt_sim, dt_uc, mass,
                                            point_mass_state_vec,
                                            orientation_state_vec,
                                            radius,
                                            reference_speed=0.0,
-                                           min_angle=-angle_bound*np.pi/180,
-                                           max_angle=angle_bound*np.pi/180)
+                                           min_angle=-0.8,
+                                           max_angle=0.8)
 
     ###########################################################################
     # Main Loop
@@ -696,8 +694,8 @@ if __name__ == '__main__':
 
                 yaw_g = yaw
 
-                # if simulation_flag:
-                    # yaw_g -= (np.pi / 2.0)
+                if simulation_flag:
+                    yaw_g -= (np.pi / 2.0)
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,

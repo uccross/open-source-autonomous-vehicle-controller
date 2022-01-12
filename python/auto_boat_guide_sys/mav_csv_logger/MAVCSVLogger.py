@@ -178,7 +178,18 @@ class MAVCSVLogger():
         :param wp_en: np.zeros((1, 2)) East, North
         :param yaw: A yaw angle associated with the waypoint
         """
-        self.send_mav_cmd_nav_waypoint(wp_en, wp_type=1.0)
+        self.mav_conn.mav.command_long_send(
+            self.mav_conn.target_system,
+            self.mav_conn.target_component,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0,  # Hold
+            0.0,  # Accept Radius
+            0.0,  # Pass Radius
+            0.0,  # Yaw
+            wp_en[0, 0],  # East
+            wp_en[0, 1],  # North
+            1.0,  # altitude being used as 'previous' if 0.0 or 'next' if 1.0
+            0.0)
 
     def send_mav_ltp_HIL_en(self, vehi_pt_en, yaw):
         """

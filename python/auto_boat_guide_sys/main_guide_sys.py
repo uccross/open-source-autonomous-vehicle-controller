@@ -298,6 +298,7 @@ if __name__ == '__main__':
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
     wp_next_en = wpq.getNext()
+    uc_next_en = np.zeros((1, 2))
 
     msg_type = None
     current_base_mode = -1
@@ -506,6 +507,16 @@ if __name__ == '__main__':
             ###################################################################
             elif state == 'TRACKING':
 
+                # If we get the following message type while tracking, it is 
+                # the 'next' waypoint as calculated by the microcontroller
+                if msg_type == 'LOCAL_POSITION_NED':
+                    nav_msg = msg.to_dict()
+
+                    e = nav_msg['x']  # East
+                    n = nav_msg['y']  # North
+
+                    uc_next_en = np.array([[e, n]])
+
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()
                     servo4_raw = nav_msg['servo4_raw']
@@ -625,6 +636,7 @@ if __name__ == '__main__':
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
                 print("    wp_next_en = {}".format(wp_next_en))
+                print("    uc_next_en = {}".format(uc_next_en))
 
                 print("    state:          {}".format(state))
                 print("    pic32_wp_state: {}".format(pic32_wp_state))

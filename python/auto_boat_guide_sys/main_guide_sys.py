@@ -129,6 +129,9 @@ if __name__ == '__main__':
     else:
         msg_list = []
 
+    # Grid
+    Grid = Grid.Grid()
+
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',
                      'horizontal_fov', 'quaternion',
@@ -157,7 +160,7 @@ if __name__ == '__main__':
 
     # Tracker
     if tracker_flag:
-        tracker = TR.Tracker(graphInterval=1)
+        tracker = TR.Tracker(graphInterval=1, wp_grid=Grid.get_points())
         trajectory = LN.Linear()
 
     ###########################################################################
@@ -248,8 +251,6 @@ if __name__ == '__main__':
     cog = 0.0
 
     rad2deg = 180.0/np.pi
-
-    Grid = Grid.Grid()
 
     waypoints = Grid.get_points()
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)

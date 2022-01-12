@@ -631,6 +631,7 @@ if __name__ == '__main__':
                 print("    ^__checked:      {0:.6g}".format(
                     path_angle_checked))
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
+                print("    cte:      {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
                 print("    delta_angle:     {0:.6g}".format(delta_angle))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
@@ -694,8 +695,8 @@ if __name__ == '__main__':
 
                 yaw_g = yaw
 
-                if simulation_flag:
-                    yaw_g -= (np.pi / 2.0)
+                # if simulation_flag:
+                    # yaw_g -= (np.pi / 2.0)
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,

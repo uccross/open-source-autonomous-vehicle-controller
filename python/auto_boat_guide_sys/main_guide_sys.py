@@ -450,6 +450,8 @@ if __name__ == '__main__':
                         pic32_wp_state = 'CHECKING_REF_WP'
                     if int(yawspeed) == 4:
                         pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                    if int(yawspeed) == 4:
+                        pic32_wp_state = 'TRACKING'
 
                     delta_angle = pitchspeed
 
@@ -482,15 +484,6 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
 
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
-                        print("    lat: {}, type: {}".format(lat, type(lat)))
-                        print("    lon: {}, type: {}".format(lon, type(lon)))
-
-                        wp_ref_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
-                        wp_prev_en[0][0] = wp_ref_ned[0][1]  # East
-                        wp_prev_en[0][1] = wp_ref_ned[0][0]  # North
-
-                        Grid.set_points_offset(wp_prev_en)
-
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'
 
@@ -634,7 +627,7 @@ if __name__ == '__main__':
                 print("    ^__checked:      {0:.6g}".format(
                     path_angle_checked))
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
-                print("    cte:      {0:.6g}".format(cte))
+                print("    cte:             {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
                 print("    delta_angle:     {0:.6g}".format(delta_angle))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))

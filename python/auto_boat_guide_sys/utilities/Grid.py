@@ -12,7 +12,7 @@ import numpy as np
 
 
 class Grid():
-    def __init__(self, ds=5.0, width=60.0, length=80.0, x0=-30.0, y0=20.0):
+    def __init__(self, ds=5.0, width=60.0, length=80.0, x0=-30.0, y0=10.0):
         """
         Note that note grid points will reside on the perimeter of the grid
         :param ds: Spatial separation distance between grid points in meters

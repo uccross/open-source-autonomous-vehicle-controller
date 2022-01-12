@@ -67,7 +67,7 @@ parser.add_argument('--x0', type=float, dest='x0',
                     help='Grid shift in meters in the body-x axis')
 
 parser.add_argument('--y0', type=float, dest='y0',
-                    default=10.0,
+                    default=-10.0,
                     help='Grid shift in meters in the body-y axis')
 
 parser.add_argument('--grid_angle', type=float, dest='grid_angle',

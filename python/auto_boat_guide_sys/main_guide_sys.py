@@ -253,7 +253,7 @@ if __name__ == '__main__':
     path_angle_checked = 0.0
     angle_diff = 0.0
     servo4_raw = 0
-    input_angle = 0.0
+    delta_angle = 0.0
     tvc_angle = 0.0
 
     xacc = 0.0
@@ -430,16 +430,19 @@ if __name__ == '__main__':
                 pitchspeed = nav_msg['pitchspeed']
                 yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
-                if int(yawspeed) == 0:
-                    pic32_wp_state = 'ERROR_WP'
-                if int(yawspeed) == 1:
-                    pic32_wp_state = 'FINDING_REF_WP'
-                if int(yawspeed) == 2:
-                    pic32_wp_state = 'SENDING_REF_WP'
-                if int(yawspeed) == 3:
-                    pic32_wp_state = 'CHECKING_REF_WP'
-                if int(yawspeed) == 4:
-                    pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                if simulation_flag:
+                    if int(yawspeed) == 0:
+                        pic32_wp_state = 'ERROR_WP'
+                    if int(yawspeed) == 1:
+                        pic32_wp_state = 'FINDING_REF_WP'
+                    if int(yawspeed) == 2:
+                        pic32_wp_state = 'SENDING_REF_WP'
+                    if int(yawspeed) == 3:
+                        pic32_wp_state = 'CHECKING_REF_WP'
+                    if int(yawspeed) == 4:
+                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+
+                    delta_angle = pitchspeed
 
             ##################################################################
             # START OF STATE MACHINE
@@ -593,7 +596,7 @@ if __name__ == '__main__':
                     path_angle_checked))
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
-                print("    input_angle:     {0:.6g}".format(input_angle))
+                print("    delta_angle:     {0:.6g}".format(delta_angle))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
                 print("    yaw:             {0:.6g}".format(yaw*rad2deg))
                 print("    pitch:           {0:.6g}".format(pitch*rad2deg))
@@ -637,8 +640,7 @@ if __name__ == '__main__':
             if (t_new - t_sim) >= dt_sim:
                 t_sim = t_new
 
-                input_angle = (servo4_raw-1500)*0.1
-                Slug3.update(input_angle)
+                Slug3.update(delta_angle)
                 tvc_angle = Slug3.get_tvc_angle()
 
         #######################################################################

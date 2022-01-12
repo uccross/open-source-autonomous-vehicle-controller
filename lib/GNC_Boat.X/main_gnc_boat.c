@@ -122,7 +122,6 @@ int main(void) {
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float last_wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
     float ref_lla[DIM + 1]; // [latitude, longitude, altitude]
 
     float cross_track_error = 0.0;
@@ -132,6 +131,7 @@ int main(void) {
                                 * (LTP) */
     float heading_angle_diff = 0.0;
     float u = 0.0; // Resulting control effort
+    float delta_angle = 0.0; // Resulting control effort
     float u_sign = 1.0;
     float acc_cmd = 0.0;
     float rtemp = 0.0;
@@ -167,7 +167,7 @@ int main(void) {
     pid_controller_t trajectory_tracker;
     pid_controller_init(&trajectory_tracker,
             SAMPLE_TIME, // dt The sample time
-            1.0, // kp The initial proportional gain
+            0.01, // kp The initial proportional gain
             0.0, // ki The initial integral gain
             0.01, // kd The initial derivative gain [HIL:0.1]
             UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
@@ -233,7 +233,7 @@ int main(void) {
             if (wp_type == 0.0) {
                 is_new_lla = TRUE;
             }
-            
+
             if (wp_type == 1.0) {
                 is_new_wp = TRUE;
             }
@@ -251,7 +251,7 @@ int main(void) {
                 yaw = wp_yaw;
 
                 is_new_gps = TRUE;
-            } 
+            }
 #else
             is_new_imu = check_IMU_events(SCALED, &imu);
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
@@ -333,7 +333,7 @@ int main(void) {
                         cf_ahrs_init(SAMPLE_TIME, gyro_bias);
 
                         current_wp_state = SENDING_REF_WP;
-                        
+
                         is_new_gps = FALSE;
                     }
                     break;
@@ -358,14 +358,14 @@ int main(void) {
                         wp_a[1] = wp_received_en[1];
 
                         current_wp_state = CHECKING_REF_WP;
-                        
+
                         /* Set the new message as FALSE after the state machine 
                          * has run */
-                        is_new_msg = FALSE; 
-                        
+                        is_new_msg = FALSE;
+
                         /* Reset new LLA waypoint flag after using newest */
                         is_new_lla = FALSE;
-                        
+
                         /* Reset command after reacting to it */
                         cmd = 0;
                     }
@@ -406,14 +406,14 @@ int main(void) {
                             publish_ack(ERROR_WP);
                             current_wp_state = FINDING_REF_WP;
                         }
-                        
+
                         /* Set the new message as FALSE after the state machine 
                          * has run */
-                        is_new_msg = FALSE; 
-                        
+                        is_new_msg = FALSE;
+
                         /* Reset new LLA waypoint flag after using newest */
                         is_new_lla = FALSE;
-                        
+
                         /* Reset command after reacting to it */
                         cmd = 0;
                     }
@@ -423,29 +423,31 @@ int main(void) {
                     /**********************************************************/
                     if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
                             (is_new_wp == TRUE)) {
-                        last_wp_next_en[0] = wp_next_en[0];
-                        last_wp_next_en[1] = wp_next_en[1];
-                        
-                        wp_next_en[0] = wp_received_en[0];
-                        wp_next_en[1] = wp_received_en[1];
 
-                        if (lin_tra_calc_dist(wp_next_en, last_wp_next_en) > TOL) {
-                            wp_prev_en[0] = last_wp_next_en[0];
-                            wp_prev_en[1] = last_wp_next_en[1];
+                        if (lin_tra_calc_dist(wp_received_en, wp_next_en) > TOL) {
+
+                            /* Make the old 'next' waypoint in to the new
+                             * 'previous' waypoint */
+                            wp_prev_en[0] = wp_next_en[0];
+                            wp_prev_en[1] = wp_next_en[1];
+
+                            /* Update the new 'next' waypoint */
+                            wp_next_en[0] = wp_received_en[0];
+                            wp_next_en[1] = wp_received_en[1];
+
+                            lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
+
+                            /* The ack result is the current state */
+                            publish_ack(WAITING_FOR_NEXT_WP);
                         }
-
-                        lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
-                        
-                        /* The ack result is the current state */
-                        publish_ack(WAITING_FOR_NEXT_WP);
 
                         /* Set the new message as FALSE after the state machine 
                          * has run */
-                        is_new_msg = FALSE; 
-                        
+                        is_new_msg = FALSE;
+
                         /* Reset NED waypoint flag after using the newest */
                         is_new_wp = FALSE;
-                        
+
                         /* Reset command after reacting to it */
                         cmd = 0;
                     }
@@ -514,24 +516,25 @@ int main(void) {
                 acc_cmd = pid_controller_update(
                         &trajectory_tracker,
                         0.0, // Commanded reference
-                        0.0, //cross_track_error,
+                        cross_track_error,
                         heading_angle_diff); // Change in heading angle over time
 
-                //                /* Convert acceleration command to rudder angle */
-                //                if (acc_cmd != 0.0) {
-                //                    if (acc_cmd < 0.0) {
-                //                        u_sign = -1.0;
-                //                    }
-                //                    if (acc_cmd >= 0.0) {
-                //                        u_sign = 1.0;
-                //                    }
-                //                    
-                //                    rtemp = (speed*speed)/fabs(acc_cmd);
-                //                    
-                //                    if (rtemp != 0.0) {
-                //                        u
-                //                    }
-                //                }
+                /* Convert acceleration command to rudder angle */
+                if (acc_cmd != 0.0) {
+                    if (acc_cmd < 0.0) {
+                        u_sign = -1.0;
+                    }
+                    if (acc_cmd >= 0.0) {
+                        u_sign = 1.0;
+                    }
+
+                    rtemp = (speed * speed) / fabs(acc_cmd);
+
+                    if (rtemp != 0.0) {
+                        delta_angle = u_sign * (sqrt(fabs(acc_cmd) / rtemp) *
+                                SAMPLE_TIME);
+                    }
+                }
 
                 u = acc_cmd;
 
@@ -558,7 +561,7 @@ int main(void) {
                     pitch,
                     heading_angle, /* Using differently on purpose */
                     path_angle, // roll-rate, /* Using differently on purpose */
-                    heading_angle_diff, // pitch-rate, /* Using differently on purpose */
+                    delta_angle, // pitch-rate, /* Using differently on purpose */
                     (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
             publisher_set_mode(current_mode); // Sets mode in heartbeat
 #ifndef HIL

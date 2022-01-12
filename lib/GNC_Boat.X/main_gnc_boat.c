@@ -249,6 +249,7 @@ int main(void) {
             if (wp_type == 2.0) {
                 vehi_pt_en[0] = wp_received_en[0];
                 vehi_pt_en[1] = wp_received_en[1];
+                yaw = wp_yaw;
 
                 is_new_gps = TRUE;
             } 
@@ -477,9 +478,7 @@ int main(void) {
              * Complementary filter attitude and heading reference system     *
              *****************************************************************/
             /* Update */
-#ifdef HIL
-            yaw = wp_yaw;
-#else
+#ifndef HIL
             cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 #endif
 

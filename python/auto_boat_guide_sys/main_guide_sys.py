@@ -12,6 +12,7 @@ from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
 from utilities import AttitudeVisualization as AV
 from utilities import Tracker as TR
+from utilities import Grid
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
@@ -61,6 +62,14 @@ parser.add_argument('-t', '--tracker', dest='tracker_flag',
 parser.add_argument('-v', '--vizualize', dest='vizualize_attitude_flag',
                     action='store_true', help='Flag to print mode changes')
 
+parser.add_argument('--x0', type=float, dest='x0',
+                    default=30.0,
+                    help='Grid shift in meters in the body-x axis')
+
+parser.add_argument('--y0', type=float, dest='y0',
+                    default=10.0,
+                    help='Grid shift in meters in the body-y axis')
+
 arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
@@ -75,6 +84,8 @@ mode_print_flag = arguments.mode_print_flag
 simulation_flag = arguments.simulation_flag
 tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
+x0_b = arguments.x0
+y0_b = arguments.y0
 
 ###############################################################################
 if __name__ == '__main__':
@@ -238,23 +249,9 @@ if __name__ == '__main__':
 
     rad2deg = 180.0/np.pi
 
-    # Waypoint Queue       N/S Lat   , E/W Long
-    # waypoints = np.array([[36.9557439, -122.0604691], # Bad pond
-    #                       [36.9556638, -122.0606960],
-    #                       [36.9554362, -122.0607348],
-    #                       [36.9556224, -122.0604107]])
-    # waypoints = np.array([[36.9836576, -122.0238656],  # Franklin street
-    #                       [36.9835265, -122.0241790],
-    #                       [36.9834655, -122.0241469],
-    #                       [36.9833655, -122.0238656]])
-    
-    ltp_width = 60.0 # meters
-    ltp_length = 80.0 # meters
-    x0_b = ltp_width/2.0 # meters
-    y0_b = 10.0
-                            # x, y 
-    waypoints = np.array([[x0_b, -y0_b], 
-                          [0.0, 0.0]])
+    Grid = Grid.Grid()
+
+    waypoints = Grid.get_points()
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
 
     wp_ref_lla = np.array([[0.0, 0.0, 0.0]])

@@ -108,6 +108,21 @@ void publisher_get_gps_rmc_position(float position[DIM]) {
     position[1] = rmc_position[1];
 }
 
+char check_HIL_IMU_events(struct IMU_output *data) {
+    data->acc.x = IMU_scaled.acc.x;
+    data->acc.y = IMU_scaled.acc.y;
+    data->acc.z = IMU_scaled.acc.z;
+
+    data->mag.x = IMU_scaled.mag.x;
+    data->mag.y = IMU_scaled.mag.y;
+    data->mag.z = IMU_scaled.mag.z;
+
+    data->gyro.x = IMU_scaled.gyro.x;
+    data->gyro.y = IMU_scaled.gyro.y;
+    data->gyro.z = IMU_scaled.gyro.z;
+    return TRUE;
+}
+
 char check_IMU_events(uint8_t data_type, struct IMU_output *data) {
     char status = FALSE;
     status = IMU_is_data_ready();
@@ -293,6 +308,35 @@ void publish_RC_signals(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
+void publish_HIL_servo_output_raw(uint16_t servo4_raw) {
+    mavlink_message_t msg_tx;
+
+    mavlink_msg_servo_output_raw_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            0, /* Port */
+            0, /* uint16_t servo1_raw*/
+            0, /* uint16_t servo2_raw*/
+            0, /* uint16_t servo3_raw*/
+            servo4_raw, /* uint16_t servo4_raw*/
+            0, /* uint16_t servo5_raw*/
+            0, /* uint16_t servo6_raw*/
+            0, /* uint16_t servo7_raw*/
+            0, /* uint16_t servo8_raw*/
+            0, /* uint16_t servo9_raw*/
+            0, /* uint16_t servo10_raw*/
+            0, /* uint16_t servo11_raw*/
+            0, /* uint16_t servo12_raw*/
+            0, /* uint16_t servo13_raw*/
+            0, /* uint16_t servo14_raw*/
+            0, /* uint16_t servo15_raw*/
+            0 /* uint16_t servo16_raw*/
+            );
+
+    MavSerial_sendMavPacket(&msg_tx);
+}
+
 void publish_RC_signals_raw(void) {
     mavlink_message_t msg_tx;
     uint8_t RC_port = 0; //first 8 channels 
@@ -316,7 +360,8 @@ void publish_RC_signals_raw(void) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-char check_mavlink_serial_events(float wp[DIM], uint16_t *command) {
+char check_mavlink_serial_events(float wp[DIM], uint32_t *msgid,
+        uint16_t *command, float *wp_type, float *yaw) {
     char status = FALSE;
 
     wp[0] = 0.0; // latitude
@@ -325,15 +370,49 @@ char check_mavlink_serial_events(float wp[DIM], uint16_t *command) {
     status = MavSerial_getMavMsg(&rec_msg);
 
     if (status == TRUE) {
-        *command = mavlink_msg_command_long_get_command(&rec_msg);
-        switch (*command) {
-            case MAV_CMD_COMPONENT_ARM_DISARM:
+
+        *msgid = rec_msg.msgid;
+
+        switch (*msgid) {
+            case MAVLINK_MSG_ID_COMMAND_LONG:
+                *command = mavlink_msg_command_long_get_command(&rec_msg);
+
+                /* Sub switch statment for the commands, because there are a 
+                 * lot of commands that can be added and dealt with 
+                 * individually*/
+                switch (*command) {
+                        //                    case MAV_CMD_COMPONENT_ARM_DISARM:
+                        //                        break;
+
+                    case MAV_CMD_NAV_WAYPOINT:
+                        *yaw = mavlink_msg_command_long_get_param3(&rec_msg);
+                        
+                        wp[0] = mavlink_msg_command_long_get_param4(&rec_msg);
+                        wp[1] = mavlink_msg_command_long_get_param5(&rec_msg);
+
+                        /* Using Altitude parameter for dictating if waypoint is 
+                         * previous or next (TEMPORARY)*/
+                        *wp_type = mavlink_msg_command_long_get_param6(&rec_msg);
+                        break;
+                }
                 break;
-            case MAV_CMD_NAV_WAYPOINT:
-                wp[0] = mavlink_msg_command_long_get_param4(&rec_msg);
-                wp[1] = mavlink_msg_command_long_get_param5(&rec_msg);
+
+            case MAVLINK_MSG_ID_HIL_SENSOR:
+                /* Only implmented scaled IMU thus far */
+                IMU_scaled.acc.x = mavlink_msg_hil_sensor_get_xacc(&rec_msg);
+                IMU_scaled.acc.y = mavlink_msg_hil_sensor_get_yacc(&rec_msg);
+                IMU_scaled.acc.z = mavlink_msg_hil_sensor_get_zacc(&rec_msg);
+
+                IMU_scaled.mag.x = mavlink_msg_hil_sensor_get_xmag(&rec_msg);
+                IMU_scaled.mag.y = mavlink_msg_hil_sensor_get_ymag(&rec_msg);
+                IMU_scaled.mag.z = mavlink_msg_hil_sensor_get_zmag(&rec_msg);
+
+                IMU_scaled.gyro.x = mavlink_msg_hil_sensor_get_xgyro(&rec_msg);
+                IMU_scaled.gyro.y = mavlink_msg_hil_sensor_get_ygyro(&rec_msg);
+                IMU_scaled.gyro.z = mavlink_msg_hil_sensor_get_zgyro(&rec_msg);
                 break;
         }
+
     }
     return status;
 }
@@ -383,7 +462,7 @@ void publish_GPS(void) {
             GPS_FIX_TYPE_3D_FIX,
             rmc_lat_int,
             rmc_long_int,
-            0, 
+            0,
             (uint16_t) (gsa_hdop * 1000000.0),
             0, // epv/VDOP velocity
             (uint16_t) (rmc_vel * 1000),

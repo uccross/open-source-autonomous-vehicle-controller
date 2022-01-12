@@ -25,6 +25,11 @@
  *****************************************************************************/
 #define LLA_DIM 3 // DO NOT CHANGE THIS
 
+#define WP_PREV ((float) 0.0)
+#define WP_NEXT ((float) 1.0)
+#define VEHI_PT ((float) 2.0)
+
+
 /******************************************************************************
  * PUBLIC DATATYPES                                                           *
  *****************************************************************************/
@@ -88,7 +93,15 @@ uint8_t check_mavlink_mode(void);
 void publisher_get_gps_rmc_position(float position[DIM]);
 
 /**
- * @function check_IMU_events(void)
+ * @function check_HIL_IMU_events(struct IMU_output *data)
+ * @param data An IMU_output struct pointer
+ * @return TRUE or FALSE if a new IMU event received from the Companion 
+ * Computer
+ */
+char check_HIL_IMU_events(struct IMU_output *data);
+
+/**
+ * @function check_IMU_events(uint8_t data_type, struct IMU_output *data)
  * @brief detects when IMU SPI transaction completes and then publishes data 
  * over Mavlink
  * @param data_type RAW or SCALED
@@ -148,6 +161,13 @@ void publish_attitude(float roll, float pitch, float yaw, float roll_rate,
         float pitch_rate, float yaw_rate);
 
 /**
+ * @function publish_HIL_servo_output_raw(uint16_t servo4_raw)
+ * @param servo4_raw
+ * @author Pavlo Vlastos
+ */
+void publish_HIL_servo_output_raw(uint16_t servo4_raw);
+
+/**
  * @function publish_RC_signals_raw(void)
  * @param none
  * @brief scales raw RC signals
@@ -160,11 +180,17 @@ void publish_RC_signals_raw(void);
  * @brief Check mavlink serial events/messages and populate the waypoint 
  * parameter as necessary
  * @param wp A waypoint with longitude and latitude in that order
+ * @param *msgid A pointer for getting the MAVLink message ID
  * @param *command A pointer for getting the MAVLink command
+ * @param *wp_type A pointer for getting what type of waypoint: previous or 
+ * next? (0.0 is previous, 1.0 is next) This is a temporary use of the altitude 
+ * @param *yaw A pointer for getting a yaw angle associated with the waypoint
+ * parameter for the MAV_CMD_NAV_WAYPOINT message.
  * @return TRUE or FALSE if an message was received
  * @author Pavlo Vlastos
  */
-char check_mavlink_serial_events(float wp[DIM], uint16_t *command);
+char check_mavlink_serial_events(float wp[DIM], uint32_t *msgid,
+        uint16_t *command, float *wp_type, float *yaw);
 
 /**
  * @function publish_GPS(void)

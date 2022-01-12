@@ -28,7 +28,7 @@
  *****************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define MAV_SERIAL_READ_PERIOD 10 
-#define WP_STATE_MACHINE_PERIOD 250
+#define WP_STATE_MACHINE_PERIOD 50
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
@@ -115,7 +115,6 @@ int main(void) {
     float wp_prev_lla[DIM + 1]; // [lat, lon, alt]
 
     float wp_received_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float last_wp_received_en[DIM]; // [EAST (meters), NORTH (meters)]
 
     float wp_prev_ned[DIM + 1]; // [EAST (meters), NORTH (meters), UP (meters)]
 
@@ -200,6 +199,7 @@ int main(void) {
     waypoints_state_t current_wp_state;
     char is_new_imu = FALSE;
     char is_new_msg = FALSE;
+    char is_new_lla = FALSE;
     char is_new_wp = FALSE;
     char is_new_gps = FALSE;
     char found_ref_point = FALSE;
@@ -230,12 +230,11 @@ int main(void) {
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
 
-            if ((last_wp_received_en[0] != wp_received_en[0]) &&
-                    (last_wp_received_en[1] != wp_received_en[1])) {
-
-                wp_received_en[0] = last_wp_received_en[0]; /* Lat */
-                wp_received_en[1] = last_wp_received_en[1]; /* Lon */
-
+            if (wp_type == 0.0) {
+                is_new_lla = TRUE;
+            }
+            
+            if (wp_type == 1.0) {
                 is_new_wp = TRUE;
             }
 
@@ -354,7 +353,7 @@ int main(void) {
 
                     // State exit case
                     if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
-                            (is_new_wp == TRUE)) {
+                            (is_new_lla == TRUE)) {
                         wp_a[0] = wp_received_en[0];
                         wp_a[1] = wp_received_en[1];
 
@@ -364,8 +363,8 @@ int main(void) {
                          * has run */
                         is_new_msg = FALSE; 
                         
-                        /* Reset new waypoint flag after using the newest */
-                        is_new_wp = FALSE;
+                        /* Reset new LLA waypoint flag after using newest */
+                        is_new_lla = FALSE;
                         
                         /* Reset command after reacting to it */
                         cmd = 0;
@@ -377,7 +376,7 @@ int main(void) {
 
                     // State exit case
                     if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
-                            (is_new_wp == TRUE)) {
+                            (is_new_lla == TRUE)) {
                         wp_b[0] = wp_received_en[0];
                         wp_b[1] = wp_received_en[1];
 
@@ -412,8 +411,8 @@ int main(void) {
                          * has run */
                         is_new_msg = FALSE; 
                         
-                        /* Reset new waypoint flag after using the newest */
-                        is_new_wp = FALSE;
+                        /* Reset new LLA waypoint flag after using newest */
+                        is_new_lla = FALSE;
                         
                         /* Reset command after reacting to it */
                         cmd = 0;
@@ -424,6 +423,9 @@ int main(void) {
                     /**********************************************************/
                     if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)&&
                             (is_new_wp == TRUE)) {
+                        last_wp_next_en[0] = wp_next_en[0];
+                        last_wp_next_en[1] = wp_next_en[1];
+                        
                         wp_next_en[0] = wp_received_en[0];
                         wp_next_en[1] = wp_received_en[1];
 
@@ -433,12 +435,15 @@ int main(void) {
                         }
 
                         lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
+                        
+                        /* The ack result is the current state */
+                        publish_ack(WAITING_FOR_NEXT_WP);
 
                         /* Set the new message as FALSE after the state machine 
                          * has run */
                         is_new_msg = FALSE; 
                         
-                        /* Reset new waypoint flag after using the newest */
+                        /* Reset NED waypoint flag after using the newest */
                         is_new_wp = FALSE;
                         
                         /* Reset command after reacting to it */
@@ -446,9 +451,6 @@ int main(void) {
                     }
                     break;
             }
-
-            last_wp_received_en[0] = wp_received_en[0];
-            last_wp_received_en[1] = wp_received_en[1];
         }
 
 

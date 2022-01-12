@@ -530,8 +530,12 @@ if __name__ == '__main__':
 
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
+                    check0 = nav_msg['vx']  # using vx as a check value
+                    check1 = nav_msg['vy']  # using vy as a check value
+                    check2 = nav_msg['vz']  # using vz as a check value
 
-                    uc_next_en = np.array([[e, n]])
+                    if (check0 == 0.2) and (check0 == 0.4) and (check0 == 0.6):
+                        uc_next_en = np.array([[e, n]])
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()

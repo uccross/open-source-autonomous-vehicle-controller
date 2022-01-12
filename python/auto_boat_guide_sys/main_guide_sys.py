@@ -444,9 +444,9 @@ if __name__ == '__main__':
                         print("    lat: {}, type: {}".format(lat, type(lat)))
                         print("    lon: {}, type: {}".format(lon, type(lon)))
 
-                        wp_ref_lla_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
-                        wp_prev_en[0] = wp_ref_lla_ned[1] # East
-                        wp_prev_en[1] = wp_ref_lla_ned[0] # North
+                        wp_ref_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
+                        wp_prev_en[0] = wp_ref_ned[1] # East
+                        wp_prev_en[1] = wp_ref_ned[0] # North
 
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'

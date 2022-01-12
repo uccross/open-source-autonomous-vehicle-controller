@@ -15,13 +15,15 @@ from utilities import Linear as LN
 
 
 class Tracker():
-    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15):
+    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15,
+                 wp_grid=np.zeros((1, 2))):
         """
         :param graphInterval: number of main loop cycles before next dynamic
         graph evaluation
         :param x_bound: The x bound for the position subplot
         :param y_bound: The y bound for the position subplot
         :param z_bound: The z bound for the position subplot
+        :param wp_grid: A grid of waypoints points to visit
         :return: None
         """
 
@@ -30,6 +32,8 @@ class Tracker():
         self.yaw = 0.0
         self.pitch = 0.0
         self.roll = 0.0
+
+        self.wp_grid = wp_grid
 
         #######################################################################
         # Setup Dynamic Graphing
@@ -109,6 +113,14 @@ class Tracker():
         self.ax1.set_ylabel("North (meters)")
         self.ax1.set_zlabel("Up (meters)")
 
+        # Grid points
+        self.grid_points = self.ax1.plot(self.wp_grid[:, 0], self.wp_grid[:, 1],
+                                         marker='o',
+                                         markeredgecolor='black',
+                                         markerfacecolor='black',
+                                         markersize=10,
+                                         label='Grid Points')
+
         # Vector tangent to the current linear trajectory segment vector
         self.norm = self.ax1.plot([], [], lw=2, color='lime',
                                   label='Cross-Track Error')[0]
@@ -177,9 +189,9 @@ class Tracker():
             self.roll = roll
 
             # Minor fix for yaw constant orientation offset done here AND
-            # on micro @TODO: find root cause to avoid doing this patch 
-            # (below). Spent a while searching for cause, couldn't find, 
-            # but simplest fix was chosen to save time time. 
+            # on micro @TODO: find root cause to avoid doing this patch
+            # (below). Spent a while searching for cause, couldn't find,
+            # but simplest fix was chosen to save time time.
             # self.yaw -= (np.pi/2.0)
             # self.yaw = ((self.yaw + np.pi) % (2.0 * np.pi)) - np.pi
 
@@ -259,10 +271,11 @@ class Tracker():
 
             self.heading_vec.set_data(
                 np.array([position_en[0, 0],                            # x_0
-                          position_en[0, 0] + h_scale*attQuatX[0, 0]]), # x_1
+                          position_en[0, 0] + h_scale*attQuatX[0, 0]]),  # x_1
                 np.array([position_en[0, 1],                            # y_0
-                          position_en[0, 1] + h_scale*attQuatX[1, 0]])) # y_1
-            self.heading_vec.set_3d_properties(np.array([0.0, 0.0]))    # z_0, z_1
+                          position_en[0, 1] + h_scale*attQuatX[1, 0]]))  # y_1
+            self.heading_vec.set_3d_properties(
+                np.array([0.0, 0.0]))    # z_0, z_1
 
             ###################################################################
             # Draw

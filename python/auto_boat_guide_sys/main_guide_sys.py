@@ -13,12 +13,12 @@ from utilities import LTPconvert as LTP
 from utilities import AttitudeVisualization as AV
 from utilities import Tracker as TR
 from utilities import Grid
+from utilities import Linear as LN
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
 from sys import exit
 import copy
-from utilities import Linear as LN
 
 ###############################################################################
 # Parse Arguments
@@ -78,6 +78,11 @@ parser.add_argument('--grid_separation', type=float, dest='grid_separation',
                     default=5.0,
                     help='The distance between grid points in meters')
 
+parser.add_argument('--w_threshold', type=float, dest='threshold',
+                    default=2.5,
+                    help='The threshold distance that qualifies a waypoint\
+                        transition')
+
 arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
@@ -96,6 +101,8 @@ x0_b = arguments.x0
 y0_b = arguments.y0
 grid_angle = arguments.grid_angle
 grid_separation = arguments.grid_separation
+threshold = arguments.threshold
+
 
 ###############################################################################
 if __name__ == '__main__':
@@ -142,6 +149,7 @@ if __name__ == '__main__':
     # Grid
     Grid = Grid.Grid()
     Grid.form_grid(grid_separation, grid_angle)
+    trajectory = LN.Linear()
 
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',
@@ -156,7 +164,7 @@ if __name__ == '__main__':
                      'servo11_raw', 'servo10_raw', 'servo9_raw', 'servo8_raw',
                      'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw',
                      'servo3_raw', 'servo2_raw', 'servo1_raw',
-                     'roll', 'yaw', 'pitch', 'rollspeed', 'pitchspeed', 
+                     'roll', 'yaw', 'pitch', 'rollspeed', 'pitchspeed',
                      'yawspeed', 'cog', 'fix_type', 'lat']
 
     # Data logger
@@ -172,7 +180,6 @@ if __name__ == '__main__':
     # Tracker
     if tracker_flag:
         tracker = TR.Tracker(graphInterval=1, wp_grid=Grid.get_points())
-        trajectory = LN.Linear()
 
     ###########################################################################
     # Helper method, based on
@@ -205,6 +212,7 @@ if __name__ == '__main__':
     t_old = time.time()
     t_transmit = time.time()
     t_HIL_transmit = time.time()
+    t_trajectory = time.time()
     t_sim = time.time()
     t_uc = time.time()
     t_graph = time.time()
@@ -216,6 +224,7 @@ if __name__ == '__main__':
     dt_log = 0.05  # seconds
     dt_transmit = 0.500  # seconds
     dt_HIL_transmit = 1.0  # seconds
+    dt_trajectory = 0.5  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
     dt_info = 1.0  # seconds
@@ -264,7 +273,7 @@ if __name__ == '__main__':
     rad2deg = 180.0/np.pi
 
     waypoints = Grid.get_points()
-    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=2.5)
+    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=threshold)
 
     wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
     wp_ref_lat_lon = np.array([[0.0, 0.0]])
@@ -286,8 +295,8 @@ if __name__ == '__main__':
     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
     wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
 
-    wp_prev_en = np.zeros((1,2))
-    vehi_pt_en = np.zeros((1,2))
+    wp_prev_en = np.zeros((1, 2))
+    vehi_pt_en = np.zeros((1, 2))
     wp_next_en = wpq.getNext()
 
     msg_type = None
@@ -333,6 +342,25 @@ if __name__ == '__main__':
 
         # Timing
         t_new = time.time()
+
+        # Trajectory
+        if (t_new - t_trajectory) >= dt_trajectory:
+            t_trajectory = t_new
+
+            trajectory.setPreviousWaypoint(wp_prev_en)
+            trajectory.setNextWaypoint(wp_next_en)
+
+            trajectory.udpate(vehi_pt_en)
+
+            path_angle_checked = trajectory.getPathAngle()
+            path_angle_checked *= 180.0/np.pi
+            # if path_anlge_checked < 0.0:
+            #     path_anlge_checked = 360.0 + path_anlge_checked
+
+            clst_pt_en = trajectory.getClosestPoint()
+
+            is_beyond_next_wp = trajectory.is_closest_point_beyond_next(
+                threshold)
 
         # Read the state of the vehicle
         # Request MAVLINK_MSG_ID_RAW_IMU
@@ -391,27 +419,27 @@ if __name__ == '__main__':
                 print("    msg.get_type() = {}".format(msg_type))
 
             if msg_type == 'ATTITUDE':
-                    nav_msg = msg.to_dict()
+                nav_msg = msg.to_dict()
 
-                    yaw = nav_msg['yaw']
-                    pitch = nav_msg['pitch']
-                    roll = nav_msg['roll']
+                yaw = nav_msg['yaw']
+                pitch = nav_msg['pitch']
+                roll = nav_msg['roll']
 
-                    rollspeed = nav_msg['rollspeed']  # Using as path angle
-                    # Using as cross track error
-                    pitchspeed = nav_msg['pitchspeed']
-                    yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
+                rollspeed = nav_msg['rollspeed']  # Using as path angle
+                # Using as cross track error
+                pitchspeed = nav_msg['pitchspeed']
+                yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
-                    if int(yawspeed) == 0:
-                        pic32_wp_state = 'ERROR_WP'
-                    if int(yawspeed) == 1:
-                        pic32_wp_state = 'FINDING_REF_WP'
-                    if int(yawspeed) == 2:
-                        pic32_wp_state = 'SENDING_REF_WP'
-                    if int(yawspeed) == 3:
-                        pic32_wp_state = 'CHECKING_REF_WP'
-                    if int(yawspeed) == 4:
-                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                if int(yawspeed) == 0:
+                    pic32_wp_state = 'ERROR_WP'
+                if int(yawspeed) == 1:
+                    pic32_wp_state = 'FINDING_REF_WP'
+                if int(yawspeed) == 2:
+                    pic32_wp_state = 'SENDING_REF_WP'
+                if int(yawspeed) == 3:
+                    pic32_wp_state = 'CHECKING_REF_WP'
+                if int(yawspeed) == 4:
+                    pic32_wp_state = 'WAITING_FOR_NEXT_WP'
 
             ##################################################################
             # START OF STATE MACHINE
@@ -433,7 +461,7 @@ if __name__ == '__main__':
 
                     # if (t_new - t_transmit) >= dt_transmit:
                     #     t_transmit = t_new
-                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, 
+                    logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon,
                                                      wp_type=0.0)
 
                 # Exit this state after getting an acknowledgment with a result
@@ -446,8 +474,8 @@ if __name__ == '__main__':
                         print("    lon: {}, type: {}".format(lon, type(lon)))
 
                         wp_ref_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
-                        wp_prev_en[0][0] = wp_ref_ned[0][1] # East
-                        wp_prev_en[0][1] = wp_ref_ned[0][0] # North
+                        wp_prev_en[0][0] = wp_ref_ned[0][1]  # East
+                        wp_prev_en[0][1] = wp_ref_ned[0][0]  # North
 
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'
@@ -523,16 +551,13 @@ if __name__ == '__main__':
                     vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla_copy)
 
                     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-                    vehi_pt_en[0][0] = vehi_pt_ned[0][1] # East
-                    vehi_pt_en[0][1] = vehi_pt_ned[0][0] # North
+                    vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
+                    vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
-                if wpq.isNearNext(clst_pt_en):
+                if wpq.isNearNext(clst_pt_en) or is_beyond_next_wp:
+                    wp_prev_en = wp_next_en
+                    wp_next_en = wpq.getNext()
                     state = 'SENDING_NEXT_WP'
-
-                if simulation_flag:
-                    if np.linalg.norm(clst_pt_en - wp_next_en) < wpq.threshold:
-                        wp_prev = wp_next_en
-                        state = 'SENDING_NEXT_WP'
 
             ###################################################################
             # Print the state transition
@@ -626,20 +651,6 @@ if __name__ == '__main__':
                         av.update(msg)
 
             if tracker_flag:
-                ###############################################################
-                # @TODO: Add closest point from micro?
-                # Trajectory (might get rid of this)
-                trajectory.setPreviousWaypoint(wp_prev_en)
-                trajectory.setNextWaypoint(wp_next_en)
-
-                trajectory.udpate(vehi_pt_en)
-
-                path_angle_checked = trajectory.getPathAngle()
-                path_angle_checked *= 180.0/np.pi
-                # if path_anlge_checked < 0.0:
-                #     path_anlge_checked = 360.0 + path_anlge_checked
-
-                clst_pt_en = trajectory.getClosestPoint()
 
                 yaw_g = yaw
 

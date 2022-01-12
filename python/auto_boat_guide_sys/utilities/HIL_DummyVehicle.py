@@ -196,6 +196,9 @@ class DualModel():
     def get_speed(self):
         return self.speed
 
+    def set_reference_speed(self, desired_speed):
+        self.reference_speed = desired_speed
+
     def get_reference_speed(self):
         return self.reference_speed
 

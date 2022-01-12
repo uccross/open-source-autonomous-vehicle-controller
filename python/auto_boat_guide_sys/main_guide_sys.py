@@ -333,7 +333,7 @@ if __name__ == '__main__':
                                            point_mass_state_vec,
                                            orientation_state_vec,
                                            radius,
-                                           reference_speed=reference_speed,
+                                           reference_speed=0.0,
                                            min_angle=-angle_bound*np.pi/180,
                                            max_angle=angle_bound*np.pi/180)
 
@@ -501,6 +501,9 @@ if __name__ == '__main__':
                     nav_msg = msg.to_dict()
                     if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
                         print("    wp_next_lla = {}".format(wp_next_lla))
+
+                        if simulation_flag:
+                            Slug3.set_reference_speed(reference_speed)
 
                         state = 'TRACKING'
 

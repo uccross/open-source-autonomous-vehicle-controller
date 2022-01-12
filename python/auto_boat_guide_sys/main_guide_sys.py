@@ -697,7 +697,7 @@ if __name__ == '__main__':
                                wp_next_en=wp_next_en,
                                position_en=vehi_pt_en,
                                clst_pt_en=clst_pt_en, 
-                               grid_points=Grid.get_points())
+                               new_grid_pts=Grid.get_points())
 
         #######################################################################
         # Log messages (at intervals)

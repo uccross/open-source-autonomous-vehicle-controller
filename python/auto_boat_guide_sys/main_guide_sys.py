@@ -72,7 +72,7 @@ parser.add_argument('--y0', type=float, dest='y0',
 
 parser.add_argument('--grid_angle', type=float, dest='grid_angle',
                     default=30.0*np.pi/180.0,
-                    help='The orientation of the grid on the LTP in radians')
+                    help='The orientation of the grid on the LTP in degrees')
 
 parser.add_argument('--grid_separation', type=float, dest='grid_separation',
                     default=15.0,
@@ -99,7 +99,7 @@ tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
 x0_b = arguments.x0
 y0_b = arguments.y0
-grid_angle = arguments.grid_angle
+grid_angle = arguments.grid_angle*np.pi/180.0
 grid_separation = arguments.grid_separation
 threshold = arguments.threshold
 

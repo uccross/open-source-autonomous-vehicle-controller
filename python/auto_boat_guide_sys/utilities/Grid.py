@@ -53,16 +53,16 @@ class Grid():
                 self.points[i][1] = y
                 i += 1
 
+        # Shift in x and y
+        for i in range(self.N):
+            self.points[i][0] += self.x0
+            self.points[i][1] += self.y0
+
         # Rotate grid
         R = np.array([[np.cos(angle), -np.sin(angle)],
                       [np.sin(angle), np.cos(angle)]])
 
         self.points = self.points @ R  
-
-        # Shift in x and y
-        for i in range(self.N):
-            self.points[i][0] += self.x0
-            self.points[i][1] += self.y0
 
     def get_points(self):
         """

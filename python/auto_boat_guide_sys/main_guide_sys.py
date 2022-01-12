@@ -461,7 +461,7 @@ if __name__ == '__main__':
 
                 if msg.get_type() == 'COMMAND_ACK':
                     nav_msg = msg.to_dict()
-                    if nav_msg['result'] == ack_result['CHECKING_NEXT_WP']:
+                    if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
                         print("    wp_next_lla = {}".format(wp_next_lla))
 
                         state = 'TRACKING'

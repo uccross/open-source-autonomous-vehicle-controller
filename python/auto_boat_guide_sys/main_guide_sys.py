@@ -276,6 +276,7 @@ if __name__ == '__main__':
     vehi_pt_lla = np.array([[0.0, 0.0, 0.0]])
     wp_next_lla = np.array([[0.0, 0.0, 0.0]])
 
+    wp_ref_lla_copy = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]])
     wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]])
 
@@ -285,8 +286,8 @@ if __name__ == '__main__':
     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
     wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
 
-    wp_prev_en = wpq.getNext()
-    vehi_pt_en = wp_prev_en
+    wp_prev_en = np.zeros((1,2))
+    vehi_pt_en = np.zeros((1,2))
     wp_next_en = wpq.getNext()
 
     msg_type = None
@@ -428,6 +429,7 @@ if __name__ == '__main__':
 
                     wp_ref_lat_lon = np.array([[lat, lon]])
                     wp_ref_lla = np.array([[lat, lon, 0.0]])
+                    wp_ref_lla_copy = copy.deepcopy(wp_ref_lla)
 
                     # if (t_new - t_transmit) >= dt_transmit:
                     #     t_transmit = t_new
@@ -441,6 +443,10 @@ if __name__ == '__main__':
                     if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
                         print("    lat: {}, type: {}".format(lat, type(lat)))
                         print("    lon: {}, type: {}".format(lon, type(lon)))
+
+                        wp_ref_lla_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
+                        wp_prev_en[0] = wp_ref_lla_ned[1] # East
+                        wp_prev_en[1] = wp_ref_lla_ned[0] # North
 
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'

@@ -371,6 +371,7 @@ if __name__ == '__main__':
 
         # Simulation vehicle state
         if simulation_flag:
+
             x_pm = Slug3.get_vehicle_point_state()
             x_os = Slug3.get_vehicle_orientation_state()
 
@@ -402,6 +403,10 @@ if __name__ == '__main__':
                     i_tx = 0
 
                 i_tx += 1
+
+            if (state != 'TRACKING') and (state != 'SENDING_NEXT_WP'):
+                wp_yaw = 0.0
+                vehi_pt_en = np.zeros((1, 2))
 
         # Check messages to update the state machine
         if msg:

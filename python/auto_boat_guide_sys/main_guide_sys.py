@@ -445,8 +445,8 @@ if __name__ == '__main__':
                         print("    lon: {}, type: {}".format(lon, type(lon)))
 
                         wp_ref_ned = LTP.lla2ned2(wp_ref_lla_copy, wp_ref_lla)
-                        wp_prev_en[0] = wp_ref_ned[1] # East
-                        wp_prev_en[1] = wp_ref_ned[0] # North
+                        wp_prev_en[0][0] = wp_ref_ned[0][1] # East
+                        wp_prev_en[0][1] = wp_ref_ned[0][0] # North
 
                         found_ref_point = True
                         state = 'SENDING_NEXT_WP'
@@ -522,8 +522,8 @@ if __name__ == '__main__':
                     vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla_copy)
 
                     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-                    vehi_pt_en[0] = vehi_pt_ned[1] # East
-                    vehi_pt_en[1] = vehi_pt_ned[0] # North
+                    vehi_pt_en[0][0] = vehi_pt_ned[0][1] # East
+                    vehi_pt_en[0][1] = vehi_pt_ned[0][0] # North
 
                 if wpq.isNearNext(clst_pt_en):
                     state = 'SENDING_PREV_WP'

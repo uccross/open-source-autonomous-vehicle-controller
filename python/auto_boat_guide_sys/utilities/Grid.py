@@ -9,7 +9,7 @@
 """
 
 import numpy as np
-# from ..utilities import Quaternions as QU
+
 
 class Grid():
     def __init__(self, ds=5.0, width=60.0, length=80.0, x0=30.0, y0=-10.0):
@@ -35,10 +35,11 @@ class Grid():
 
         return None
 
-    def form_grid(self, ds, heading_angle):
+    def form_grid(self, ds, angle):
         """
         Note that note grid points will reside on the perimeter of the grid
         :param ds: Spatial separation distance between grid points in meters
+        :param angle: The orientation of the grid with respect to the LTP
         """
 
         xs = np.arange(0, self.width, ds)
@@ -52,16 +53,26 @@ class Grid():
                 self.points[i][1] = y
                 i += 1
 
-
         # Rotate grid
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                      [np.sin(angle), np.cos(angle)]])
+
+        self.points = self.points @ R  
 
         # Shift in x and y
+        i = 0
+        for y in ys:
+            for x in xs:
+                self.points[i][0] += self.x0
+                self.points[i][1] += self.y0
+                i += 1
 
     def get_points(self):
         """
         :return: an 'm' by 2 matrix of grid points
         """
         return self.points
+
 
 ###############################################################################
 # MODULE TEST EXAMPLE

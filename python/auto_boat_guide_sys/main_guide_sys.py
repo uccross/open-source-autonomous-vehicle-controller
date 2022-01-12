@@ -508,8 +508,8 @@ if __name__ == '__main__':
 
                     uc_next_en = np.array([[e, n]])
 
-                if ((msg.get_type() == 'COMMAND_ACK') and np.linalg.norm(
-                        uc_next_en-wp_next_en)):
+                if ((msg.get_type() == 'COMMAND_ACK') and (np.linalg.norm(
+                        uc_next_en-wp_next_en) <= 0.00001)):
 
                     nav_msg = msg.to_dict()
                     if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:

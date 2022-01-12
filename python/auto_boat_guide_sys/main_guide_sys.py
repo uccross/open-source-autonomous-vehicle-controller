@@ -255,6 +255,7 @@ if __name__ == '__main__':
     servo4_raw = 0
     delta_angle = 0.0
     tvc_angle = 0.0
+    cte = 0.0
 
     xacc = 0.0
     yacc = 0.0
@@ -362,6 +363,8 @@ if __name__ == '__main__':
 
             is_beyond_next_wp = trajectory.is_closest_point_beyond_next(
                 threshold)
+
+            cte = trajectory.getCte()
 
         # Read the state of the vehicle
         # Request MAVLINK_MSG_ID_RAW_IMU

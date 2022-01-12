@@ -62,7 +62,7 @@ class Grid():
         R = np.array([[np.cos(angle), -np.sin(angle)],
                       [np.sin(angle), np.cos(angle)]])
 
-        self.points = self.points @ R.T  
+        self.points = self.points @ R  
 
     def get_points(self):
         """

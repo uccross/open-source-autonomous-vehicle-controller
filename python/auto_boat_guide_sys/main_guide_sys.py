@@ -557,6 +557,7 @@ if __name__ == '__main__':
                 if wpq.isNearNext(clst_pt_en) or is_beyond_next_wp:
                     wp_prev_en = wp_next_en
                     wp_next_en = wpq.getNext()
+                    is_beyond_next_wp = False
                     state = 'SENDING_NEXT_WP'
 
             ###################################################################

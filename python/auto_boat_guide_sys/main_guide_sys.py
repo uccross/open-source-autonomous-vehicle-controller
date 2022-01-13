@@ -482,9 +482,8 @@ if __name__ == '__main__':
                     # wp_ref_lla = np.array([[lat, lon, 0.0]])
                     # wp_ref_lla_copy = copy.deepcopy(wp_ref_lla)
 
-                    # if (t_new - t_transmit) >= dt_transmit:
-                    #     t_transmit = t_new
-                    # logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, wp_type=0.0)
+                if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
                     prev_or_next_tx = 1.0
                     logger.send_mav_ltp_en_waypoint(wp_prev_en, prev_or_next_tx)
 

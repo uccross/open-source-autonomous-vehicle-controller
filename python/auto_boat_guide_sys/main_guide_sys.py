@@ -679,11 +679,18 @@ if __name__ == '__main__':
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
+                print("    check0 =     {}".format(check0))
+                print("    check1 =     {}".format(check1))
+                print("    check2 =     {}".format(check2))
+
                 print("    prevNextTx = {}".format(prev_or_next_tx))
                 print("    prevNextRx = {}".format(prev_or_next_rx))
+
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    uc_prev_en = {}".format(uc_prev_en))
+
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
+
                 print("    wp_next_en = {}".format(wp_next_en))
                 print("    uc_next_en = {}".format(uc_next_en))
 

@@ -322,6 +322,7 @@ if __name__ == '__main__':
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     i_tx = 0
+    wp_tx = 0
 
     ###########################################################################
     # Simulation
@@ -479,7 +480,7 @@ if __name__ == '__main__':
                     # if (t_new - t_transmit) >= dt_transmit:
                     #     t_transmit = t_new
                     # logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, wp_type=0.0)
-                    logger.send_mav_ltp_en_waypoint(wp_prev_en)
+                    logger.send_mav_ltp_en_waypoint(wp_prev_en, 0.0)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1
@@ -495,7 +496,14 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
-                    logger.send_mav_ltp_en_waypoint(wp_next_en)
+
+                    if wp_tx == 0:
+                        logger.send_mav_ltp_en_waypoint(wp_prev_en, 1.0)
+                        wp_tx += 1
+
+                    if wp_tx == 1:
+                        logger.send_mav_ltp_en_waypoint(wp_next_en, 1.5)
+                        wp_tx = 0
 
                 # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller
@@ -504,10 +512,16 @@ if __name__ == '__main__':
 
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
+                    prev_or_next = nav_msg['z']  #
 
-                    uc_next_en = np.array([[e, n]])
+                    if prev_or_next == 1.0:
+                        uc_prev_en = np.array([[e, n]])
+
+                    if prev_or_next == 1.5:
+                        uc_next_en = np.array([[e, n]])
 
                 if ((msg.get_type() == 'COMMAND_ACK') and (np.linalg.norm(
+                    uc_prev_en-wp_prev_en) <= 0.00001) and (np.linalg.norm(
                         uc_next_en-wp_next_en) <= 0.00001)):
 
                     nav_msg = msg.to_dict()
@@ -654,6 +668,7 @@ if __name__ == '__main__':
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
                 print("    wp_prev_en = {}".format(wp_prev_en))
+                print("    uc_prev_en = {}".format(uc_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))
                 print("    wp_next_en = {}".format(wp_next_en))
                 print("    uc_next_en = {}".format(uc_next_en))
@@ -700,7 +715,7 @@ if __name__ == '__main__':
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
                                position_en=vehi_pt_en,
-                               clst_pt_en=clst_pt_en, 
+                               clst_pt_en=clst_pt_en,
                                new_grid_pts=Grid.get_points())
 
         #######################################################################

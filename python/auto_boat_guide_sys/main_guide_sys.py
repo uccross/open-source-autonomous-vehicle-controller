@@ -461,7 +461,7 @@ if __name__ == '__main__':
 
                 if ((np.abs(check0 - 0.2) <= tolerance) and
                     (np.abs(check1 - 0.4) <= tolerance) and
-                    (np.abs(check2 - 0.6) <= tolerance)):
+                        (np.abs(check2 - 0.6) <= tolerance)):
 
                     if prev_or_next_rx == 1.0:
                         uc_prev_en = np.array([[e, n]])
@@ -475,11 +475,10 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
+                    logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                    prev_or_next_tx)
 
                     if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
-                        prev_or_next_tx = 1.0
-                        logger.send_mav_ltp_en_waypoint(wp_prev_en,
-                                                        prev_or_next_tx)
                         state = 'TRACKING'
 
             ##################################################################
@@ -487,11 +486,10 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
+                    logger.send_mav_ltp_en_waypoint(wp_next_en,
+                                                    prev_or_next_tx)
 
                     if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
-                        prev_or_next_tx = 1.5
-                        logger.send_mav_ltp_en_waypoint(wp_next_en,
-                                                        prev_or_next_tx)
                         state = 'TRACKING'
 
             ##################################################################
@@ -500,17 +498,17 @@ if __name__ == '__main__':
                 # Exit cases:
                 # PREVIOUS
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
-                        prev_or_next_tx = 1.0
-                        logger.send_mav_ltp_en_waypoint(wp_prev_en,
-                                                        prev_or_next_tx)
-                        state = 'UPDATING_PREV'
+                    prev_or_next_tx = 1.0
+                    logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                    prev_or_next_tx)
+                    state = 'UPDATING_PREV'
 
                 # NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
-                        prev_or_next_tx = 1.0
-                        logger.send_mav_ltp_en_waypoint(wp_next_en,
-                                                        prev_or_next_tx)
-                        state = 'UPDATING_NEXT'
+                    prev_or_next_tx = 1.0
+                    logger.send_mav_ltp_en_waypoint(wp_next_en,
+                                                    prev_or_next_tx)
+                    state = 'UPDATING_NEXT'
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()

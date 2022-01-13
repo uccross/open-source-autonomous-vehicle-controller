@@ -507,7 +507,7 @@ if __name__ == '__main__':
 
                 if (t_new - t_prev_update) >= dt_update:
                     t_prev_update = t_new
-                    state = 'UPDATING_NEXT'
+                    state = 'UPDATING_PREV'
 
                 ##############################################################
                 # EXIT CASE: NEXT

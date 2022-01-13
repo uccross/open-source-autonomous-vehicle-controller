@@ -524,8 +524,9 @@ if __name__ == '__main__':
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
-                    if ((check0 - 0.2 <= 0.00001) and (check1 - 0.4 <= 0.00001)
-                            and (check2 - 0.6 <= 0.00001)):
+                    if ((np.abs(check0 - 0.2) <= 0.00001) and
+                        (np.abs(check1 - 0.4) <= 0.00001)
+                            and (np.abs(check2 - 0.6) <= 0.00001)):
                         if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 
@@ -546,7 +547,20 @@ if __name__ == '__main__':
 
             ###################################################################
             elif state == 'TRACKING':
+                # Send the next waypoint for the linear trajectory tracking
+                if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
 
+                    if (np.linalg.norm(uc_prev_en-wp_prev_en) > 0.00001):
+                        prev_or_next_tx = 1.0
+                        logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                        prev_or_next_tx)
+
+                    if (np.linalg.norm(uc_next_en-wp_next_en) > 0.00001):
+                        prev_or_next_tx = 1.5
+                        logger.send_mav_ltp_en_waypoint(wp_next_en,
+                                                        prev_or_next_tx)
+                                                        
                 # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller
                 if msg_type == 'LOCAL_POSITION_NED':
@@ -559,8 +573,9 @@ if __name__ == '__main__':
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
-                    if ((check0 - 0.2 <= 0.00001) and (check1 - 0.4 <= 0.00001)
-                            and (check2 - 0.6 <= 0.00001)):
+                    if ((np.abs(check0 - 0.2) <= 0.00001) and
+                        (np.abs(check1 - 0.4) <= 0.00001)
+                            and (np.abs(check2 - 0.6) <= 0.00001)):
                         if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 
@@ -684,9 +699,9 @@ if __name__ == '__main__':
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
-                print("    check0 =     {}".format(check0))
-                print("    check1 =     {}".format(check1))
-                print("    check2 =     {}".format(check2))
+                # print("    check0 =     {}".format(check0))
+                # print("    check1 =     {}".format(check1))
+                # print("    check2 =     {}".format(check2))
 
                 print("    prevNextTx = {}".format(prev_or_next_tx))
                 print("    prevNextRx = {}".format(prev_or_next_rx))

@@ -642,7 +642,7 @@ if __name__ == '__main__':
                     wp_prev_en = wp_next_en
                     wp_next_en = wpq.getNext()
                     is_beyond_next_wp = False
-                    state = 'SENDING_NEXT_WP'
+                    # state = 'SENDING_NEXT_WP'
 
             ###################################################################
             # Print the state transition

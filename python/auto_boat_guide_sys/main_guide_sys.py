@@ -475,6 +475,7 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
+                    prev_or_next_tx = 1.0
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     prev_or_next_tx)
 
@@ -486,6 +487,7 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
+                    prev_or_next_tx = 1.5
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     prev_or_next_tx)
 
@@ -505,7 +507,7 @@ if __name__ == '__main__':
 
                 # NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
-                    prev_or_next_tx = 1.0
+                    prev_or_next_tx = 1.5
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     prev_or_next_tx)
                     state = 'UPDATING_NEXT'

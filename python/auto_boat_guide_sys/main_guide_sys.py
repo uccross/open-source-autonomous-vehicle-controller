@@ -234,7 +234,7 @@ if __name__ == '__main__':
 
     reference_speed = 4000.00
 
-    mass = 5.0  # kg
+    mass = 15.0  # kg
     radius = 0.5  # meters
 
     xacc = 0.0
@@ -500,16 +500,10 @@ if __name__ == '__main__':
                 # Exit cases:
                 # PREVIOUS
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
-                    prev_or_next_tx = 1.0
-                    logger.send_mav_ltp_en_waypoint(wp_prev_en,
-                                                    prev_or_next_tx)
                     state = 'UPDATING_PREV'
 
                 # NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
-                    prev_or_next_tx = 1.5
-                    logger.send_mav_ltp_en_waypoint(wp_next_en,
-                                                    prev_or_next_tx)
                     state = 'UPDATING_NEXT'
 
                 if msg_type == 'SERVO_OUTPUT_RAW':

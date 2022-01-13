@@ -323,8 +323,8 @@ if __name__ == '__main__':
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     i_tx = 0
-    wp_tx = 0
-    prev_or_next = 0.0
+    prev_or_next_tx = 0.0
+    prev_or_next_rx = 0.0
 
     ###########################################################################
     # Simulation
@@ -500,10 +500,14 @@ if __name__ == '__main__':
                     t_transmit = t_new
 
                     if (np.linalg.norm(uc_prev_en-wp_prev_en) > 0.00001):
-                        logger.send_mav_ltp_en_waypoint(wp_prev_en, 1.0)
+                        prev_or_next_tx = 1.0
+                        logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                        prev_or_next_tx)
 
                     if (np.linalg.norm(uc_next_en-wp_next_en) > 0.00001):
-                        logger.send_mav_ltp_en_waypoint(wp_next_en, 1.5)
+                        prev_or_next_tx = 1.5
+                        logger.send_mav_ltp_en_waypoint(wp_next_en,
+                                                        prev_or_next_tx)
 
                 # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller
@@ -512,16 +516,16 @@ if __name__ == '__main__':
 
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
-                    prev_or_next = nav_msg['z']  #
+                    prev_or_next_rx = nav_msg['z']  #
                     check0 = nav_msg['vx']  # using vx as a check value
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
                     if (check0 == 0.2) and (check1 == 0.4) and (check2 == 0.6):
-                        if prev_or_next == 1.0:
+                        if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 
-                        if prev_or_next == 1.5:
+                        if prev_or_next_rx == 1.5:
                             uc_next_en = np.array([[e, n]])
 
                 if ((np.linalg.norm(uc_prev_en-wp_prev_en) <= 0.00001) and
@@ -546,16 +550,16 @@ if __name__ == '__main__':
 
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
-                    prev_or_next = nav_msg['z']  #
+                    prev_or_next_rx = nav_msg['z']  #
                     check0 = nav_msg['vx']  # using vx as a check value
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
                     if (check0 == 0.2) and (check1 == 0.4) and (check2 == 0.6):
-                        if prev_or_next == 1.0:
+                        if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 
-                        if prev_or_next == 1.5:
+                        if prev_or_next_rx == 1.5:
                             uc_next_en = np.array([[e, n]])
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
@@ -675,7 +679,8 @@ if __name__ == '__main__':
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
-                print("    prev/next  = {}".format(prev_or_next))
+                print("    prevNextTx = {}".format(prev_or_next_tx))
+                print("    prevNextRx = {}".format(prev_or_next_rx))
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    uc_prev_en = {}".format(uc_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))

@@ -299,6 +299,7 @@ if __name__ == '__main__':
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
     wp_next_en = wpq.getNext()
+    uc_prev_en = np.zeros((1, 2))
     uc_next_en = np.zeros((1, 2))
 
     msg_type = None

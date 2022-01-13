@@ -499,13 +499,11 @@ if __name__ == '__main__':
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
 
-                    if wp_tx == 0:
+                    if (np.linalg.norm(uc_prev_en-wp_prev_en) > 0.00001):
                         logger.send_mav_ltp_en_waypoint(wp_prev_en, 1.0)
-                        wp_tx = 1
 
-                    elif wp_tx == 1:
+                    if (np.linalg.norm(uc_next_en-wp_next_en) > 0.00001):
                         logger.send_mav_ltp_en_waypoint(wp_next_en, 1.5)
-                        wp_tx = 0
 
                 # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller

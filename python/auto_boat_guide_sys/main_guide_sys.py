@@ -308,7 +308,7 @@ if __name__ == '__main__':
     ###########################################################################
     # State Machine Transitions
     last_base_mode = -1
-    state = 'WAITING_FOR_REF_POINT'
+    state = 'TRACKING'
 
     last_state = state
 
@@ -328,6 +328,7 @@ if __name__ == '__main__':
     check0 = 0.0
     check1 = 0.0
     check2 = 0.0
+    tolerance = 0.00001
 
     ###########################################################################
     # Simulation
@@ -386,20 +387,6 @@ if __name__ == '__main__':
             if (t_new - t_HIL_transmit) >= dt_HIL_transmit:
                 t_HIL_transmit = t_new
 
-                # if i_tx == 0:
-                #     logger.send_HIL_sensor(
-                #         0.0,  # t_usec
-                #         0.0,  # xacc
-                #         0.0,  # yacc
-                #         0.0,  # zacc
-                #         x_os[0][0],  # xgyro --> actually sending roll angle
-                #         x_os[1][0],  # ygyro --> actually sending pitch angle
-                #         x_os[2][0],  # zgyro --> actually sending yaw angle
-                #         0.0,  # xmag
-                #         0.0,  # ymag
-                #         0.0,  # zmag
-                #     )
-
                 wp_yaw = x_os[2][0]
                 wp_yaw = (wp_yaw + np.pi) % (2.0 * np.pi) - np.pi
 
@@ -431,6 +418,7 @@ if __name__ == '__main__':
                     (msg_type != 'BAD_DATA')):
                 print("    msg.get_type() = {}".format(msg_type))
 
+            ###################################################################
             if msg_type == 'ATTITUDE':
                 nav_msg = msg.to_dict()
 
@@ -449,138 +437,80 @@ if __name__ == '__main__':
                     if int(yawspeed) == 1:
                         pic32_wp_state = 'FINDING_REF_WP'
                     if int(yawspeed) == 2:
-                        pic32_wp_state = 'SENDING_REF_WP'
+                        pic32_wp_state = 'SENDING_PREV'
                     if int(yawspeed) == 3:
-                        pic32_wp_state = 'CHECKING_REF_WP'
+                        pic32_wp_state = 'SENDING_NEXT'
                     if int(yawspeed) == 4:
                         pic32_wp_state = 'WAITING_FOR_NEXT_WP'
-                    if int(yawspeed) == 4:
+                    if int(yawspeed) == 5:
                         pic32_wp_state = 'TRACKING'
 
                     delta_angle = pitchspeed
 
+            ###################################################################
+            if msg_type == 'LOCAL_POSITION_NED':
+                nav_msg = msg.to_dict()
+
+                e = nav_msg['x']  # East
+                n = nav_msg['y']  # North
+                prev_or_next_rx = nav_msg['z']  #
+
+                check0 = nav_msg['vx']  # using vx as a check value
+                check1 = nav_msg['vy']  # using vy as a check value
+                check2 = nav_msg['vz']  # using vz as a check value
+
+                if ((np.abs(check0 - 0.2) <= tolerance) and
+                    (np.abs(check1 - 0.4) <= tolerance) and
+                    (np.abs(check2 - 0.6) <= tolerance)):
+
+                    if prev_or_next_rx == 1.0:
+                        uc_prev_en = np.array([[e, n]])
+
+                    if prev_or_next_rx == 1.5:
+                        uc_next_en = np.array([[e, n]])
+
             ##################################################################
             # START OF STATE MACHINE
-
-            ###################################################################
-            if state == 'WAITING_FOR_REF_POINT':
-
-                # If we get the following message type, echo back the reference
-                # waypoint
-                if msg_type == 'LOCAL_POSITION_NED':
-                    nav_msg = msg.to_dict()
-
-                    e = nav_msg['x']  # East
-                    n = nav_msg['y']  # North
-
-                    wp_prev_en = np.array([[e, n]])
-
-                    # lon = nav_msg['x']  # longitude
-                    # lat = nav_msg['y']  # latitude
-
-                    # wp_ref_lat_lon = np.array([[lat, lon]])
-                    # wp_ref_lla = np.array([[lat, lon, 0.0]])
-                    # wp_ref_lla_copy = copy.deepcopy(wp_ref_lla)
-
-                if (t_new - t_transmit) >= dt_transmit:
-                    t_transmit = t_new
-                    prev_or_next_tx = 1.0
-                    logger.send_mav_ltp_en_waypoint(wp_prev_en, prev_or_next_tx)
-
-                # Exit this state after getting an acknowledgment with a result
-                # equal to 1
-                if msg_type == 'COMMAND_ACK':
-                    nav_msg = msg.to_dict()
-
-                    if nav_msg['result'] == ack_result['CHECKING_REF_WP']:
-                        found_ref_point = True
-                        state = 'SENDING_NEXT_WP'
-
-            ###################################################################
-            elif state == 'SENDING_NEXT_WP':
+            if state == 'UPDATING_PREV':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
 
-                    if (np.linalg.norm(uc_prev_en-wp_prev_en) > 0.00001):
+                    if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
                         prev_or_next_tx = 1.0
                         logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                         prev_or_next_tx)
+                        state = 'TRACKING'
 
-                    if (np.linalg.norm(uc_next_en-wp_next_en) > 0.00001):
+            ##################################################################
+            elif state == 'UPDATING_NEXT':
+                # Send the next waypoint for the linear trajectory tracking
+                if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
+
+                    if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
                         prev_or_next_tx = 1.5
                         logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                         prev_or_next_tx)
+                        state = 'TRACKING'
 
-                # If we get the following message type while sending, it is
-                # the 'next' waypoint as calculated by the microcontroller
-                if msg_type == 'LOCAL_POSITION_NED':
-                    nav_msg = msg.to_dict()
-
-                    e = nav_msg['x']  # East
-                    n = nav_msg['y']  # North
-                    prev_or_next_rx = nav_msg['z']  #
-                    check0 = nav_msg['vx']  # using vx as a check value
-                    check1 = nav_msg['vy']  # using vy as a check value
-                    check2 = nav_msg['vz']  # using vz as a check value
-
-                    if ((np.abs(check0 - 0.2) <= 0.00001) and
-                        (np.abs(check1 - 0.4) <= 0.00001)
-                            and (np.abs(check2 - 0.6) <= 0.00001)):
-                        if prev_or_next_rx == 1.0:
-                            uc_prev_en = np.array([[e, n]])
-
-                        if prev_or_next_rx == 1.5:
-                            uc_next_en = np.array([[e, n]])
-
-                if ((np.linalg.norm(uc_prev_en-wp_prev_en) <= 0.00001) and
-                        (np.linalg.norm(uc_next_en-wp_next_en) <= 0.00001)):
-
-                    # nav_msg = msg.to_dict()
-                    # if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
-                    #     print("    wp_next_lla = {}".format(wp_next_lla))
-
-                    if simulation_flag:
-                        Slug3.set_reference_speed(reference_speed)
-
-                    state = 'TRACKING'
-
-            ###################################################################
+            ##################################################################
             elif state == 'TRACKING':
-                # Send the next waypoint for the linear trajectory tracking
-                if (t_new - t_transmit) >= dt_transmit:
-                    t_transmit = t_new
 
-                    if (np.linalg.norm(uc_prev_en-wp_prev_en) > 0.00001):
+                # Exit cases:
+                # PREVIOUS
+                if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
                         prev_or_next_tx = 1.0
                         logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                         prev_or_next_tx)
+                        state = 'UPDATING_PREV'
 
-                    if (np.linalg.norm(uc_next_en-wp_next_en) > 0.00001):
-                        prev_or_next_tx = 1.5
+                # NEXT
+                if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
+                        prev_or_next_tx = 1.0
                         logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                         prev_or_next_tx)
-
-                # If we get the following message type while sending, it is
-                # the 'next' waypoint as calculated by the microcontroller
-                if msg_type == 'LOCAL_POSITION_NED':
-                    nav_msg = msg.to_dict()
-
-                    e = nav_msg['x']  # East
-                    n = nav_msg['y']  # North
-                    prev_or_next_rx = nav_msg['z']  #
-                    check0 = nav_msg['vx']  # using vx as a check value
-                    check1 = nav_msg['vy']  # using vy as a check value
-                    check2 = nav_msg['vz']  # using vz as a check value
-
-                    if ((np.abs(check0 - 0.2) <= 0.00001) and
-                        (np.abs(check1 - 0.4) <= 0.00001)
-                            and (np.abs(check2 - 0.6) <= 0.00001)):
-                        if prev_or_next_rx == 1.0:
-                            uc_prev_en = np.array([[e, n]])
-
-                        if prev_or_next_rx == 1.5:
-                            uc_next_en = np.array([[e, n]])
+                        state = 'UPDATING_NEXT'
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()

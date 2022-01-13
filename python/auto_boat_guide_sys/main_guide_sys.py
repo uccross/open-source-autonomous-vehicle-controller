@@ -211,6 +211,8 @@ if __name__ == '__main__':
     t_new = 0
     t_old = time.time()
     t_transmit = time.time()
+    t_prev_update = time.time()
+    t_next_update = time.time()
     t_HIL_transmit = time.time()
     t_trajectory = time.time()
     t_sim = time.time()
@@ -223,6 +225,7 @@ if __name__ == '__main__':
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
     dt_transmit = 0.500  # seconds
+    dt_update = 1.500  # seconds
     dt_HIL_transmit = 0.5  # seconds
     dt_trajectory = 0.5  # seconds
     dt_graph = 0.5
@@ -497,19 +500,30 @@ if __name__ == '__main__':
             ##################################################################
             elif state == 'TRACKING':
 
-                # Exit cases:
-                # PREVIOUS
+                ##############################################################
+                # EXIT CASE: PREVIOUS
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
                     state = 'UPDATING_PREV'
 
-                # NEXT
+                if (t_new - t_prev_update) >= dt_update:
+                    t_prev_update = t_new
+                    state = 'UPDATING_NEXT'
+
+                ##############################################################
+                # EXIT CASE: NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
                     state = 'UPDATING_NEXT'
 
+                if (t_new - t_next_update) >= dt_update:
+                    t_next_update = t_new
+                    state = 'UPDATING_NEXT'
+
+                ##############################################################
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()
                     servo4_raw = nav_msg['servo4_raw']
 
+                ##############################################################
                 if msg_type == 'HIGHRES_IMU':
                     nav_msg = msg.to_dict()
                     xacc = nav_msg['xacc']
@@ -542,6 +556,7 @@ if __name__ == '__main__':
                         path_angle = rollspeed*rad2deg
                         angle_diff = pitchspeed*rad2deg
 
+                ##############################################################
                 if msg_type == 'GPS_RAW_INT':
 
                     nav_msg = msg.to_dict()

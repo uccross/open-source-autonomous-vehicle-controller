@@ -515,12 +515,16 @@ if __name__ == '__main__':
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
                     prev_or_next = nav_msg['z']  #
+                    check0 = nav_msg['vx']  # using vx as a check value
+                    check1 = nav_msg['vy']  # using vy as a check value
+                    check2 = nav_msg['vz']  # using vz as a check value
 
-                    if prev_or_next == 1.0:
-                        uc_prev_en = np.array([[e, n]])
+                    if (check0 == 0.2) and (check0 == 0.4) and (check0 == 0.6):
+                        if prev_or_next == 1.0:
+                            uc_prev_en = np.array([[e, n]])
 
-                    if prev_or_next == 1.5:
-                        uc_next_en = np.array([[e, n]])
+                        if prev_or_next == 1.5:
+                            uc_next_en = np.array([[e, n]])
 
                 if ((msg.get_type() == 'COMMAND_ACK') and (np.linalg.norm(
                     uc_prev_en-wp_prev_en) <= 0.00001) and (np.linalg.norm(
@@ -538,19 +542,24 @@ if __name__ == '__main__':
             ###################################################################
             elif state == 'TRACKING':
 
-                # If we get the following message type while tracking, it is
+                # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller
                 if msg_type == 'LOCAL_POSITION_NED':
                     nav_msg = msg.to_dict()
 
                     e = nav_msg['x']  # East
                     n = nav_msg['y']  # North
+                    prev_or_next = nav_msg['z']  #
                     check0 = nav_msg['vx']  # using vx as a check value
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
                     if (check0 == 0.2) and (check0 == 0.4) and (check0 == 0.6):
-                        uc_next_en = np.array([[e, n]])
+                        if prev_or_next == 1.0:
+                            uc_prev_en = np.array([[e, n]])
+
+                        if prev_or_next == 1.5:
+                            uc_next_en = np.array([[e, n]])
 
                 if msg_type == 'SERVO_OUTPUT_RAW':
                     nav_msg = msg.to_dict()

@@ -668,6 +668,7 @@ if __name__ == '__main__':
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
+                print("    prev_or_next={}".format(prev_or_next))prev_or_next
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    uc_prev_en = {}".format(uc_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))

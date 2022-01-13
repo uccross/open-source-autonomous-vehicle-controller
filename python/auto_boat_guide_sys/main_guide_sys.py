@@ -501,9 +501,9 @@ if __name__ == '__main__':
 
                     if wp_tx == 0:
                         logger.send_mav_ltp_en_waypoint(wp_prev_en, 1.0)
-                        wp_tx += 1
+                        wp_tx = 1
 
-                    if wp_tx == 1:
+                    elif wp_tx == 1:
                         logger.send_mav_ltp_en_waypoint(wp_next_en, 1.5)
                         wp_tx = 0
 
@@ -526,18 +526,17 @@ if __name__ == '__main__':
                         if prev_or_next == 1.5:
                             uc_next_en = np.array([[e, n]])
 
-                if ((msg.get_type() == 'COMMAND_ACK') and (np.linalg.norm(
-                    uc_prev_en-wp_prev_en) <= 0.00001) and (np.linalg.norm(
-                        uc_next_en-wp_next_en) <= 0.00001)):
+                if ((np.linalg.norm(uc_prev_en-wp_prev_en) <= 0.00001) and
+                        (np.linalg.norm(uc_next_en-wp_next_en) <= 0.00001)):
 
-                    nav_msg = msg.to_dict()
-                    if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
-                        print("    wp_next_lla = {}".format(wp_next_lla))
+                    # nav_msg = msg.to_dict()
+                    # if nav_msg['result'] == ack_result['WAITING_FOR_NEXT_WP']:
+                    #     print("    wp_next_lla = {}".format(wp_next_lla))
 
-                        if simulation_flag:
-                            Slug3.set_reference_speed(reference_speed)
+                    if simulation_flag:
+                        Slug3.set_reference_speed(reference_speed)
 
-                        state = 'TRACKING'
+                    state = 'TRACKING'
 
             ###################################################################
             elif state == 'TRACKING':
@@ -678,7 +677,7 @@ if __name__ == '__main__':
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
                 print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
-                print("    prev_or_next={}".format(prev_or_next))
+                print("    prev/next  = {}".format(prev_or_next))
                 print("    wp_prev_en = {}".format(wp_prev_en))
                 print("    uc_prev_en = {}".format(uc_prev_en))
                 print("    vehi_pt_en = {}".format(vehi_pt_en))

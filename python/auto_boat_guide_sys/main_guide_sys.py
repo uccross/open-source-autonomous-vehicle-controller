@@ -325,6 +325,9 @@ if __name__ == '__main__':
     i_tx = 0
     prev_or_next_tx = 0.0
     prev_or_next_rx = 0.0
+    check0 = 0.0
+    check1 = 0.0
+    check2 = 0.0
 
     ###########################################################################
     # Simulation

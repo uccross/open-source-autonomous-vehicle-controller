@@ -223,7 +223,7 @@ if __name__ == '__main__':
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
     dt_transmit = 0.500  # seconds
-    dt_HIL_transmit = 1.0  # seconds
+    dt_HIL_transmit = 0.5  # seconds
     dt_trajectory = 0.5  # seconds
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
@@ -560,7 +560,7 @@ if __name__ == '__main__':
                         prev_or_next_tx = 1.5
                         logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                         prev_or_next_tx)
-                                                        
+
                 # If we get the following message type while sending, it is
                 # the 'next' waypoint as calculated by the microcontroller
                 if msg_type == 'LOCAL_POSITION_NED':

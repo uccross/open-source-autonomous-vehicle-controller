@@ -524,7 +524,8 @@ if __name__ == '__main__':
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
-                    if (check0 == 0.2) and (check1 == 0.4) and (check2 == 0.6):
+                    if ((check0 - 0.2 <= 0.00001) and (check1 - 0.4 <= 0.00001)
+                            and (check2 - 0.6 <= 0.00001)):
                         if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 
@@ -558,7 +559,8 @@ if __name__ == '__main__':
                     check1 = nav_msg['vy']  # using vy as a check value
                     check2 = nav_msg['vz']  # using vz as a check value
 
-                    if (check0 == 0.2) and (check1 == 0.4) and (check2 == 0.6):
+                    if ((check0 - 0.2 <= 0.00001) and (check1 - 0.4 <= 0.00001)
+                            and (check2 - 0.6 <= 0.00001)):
                         if prev_or_next_rx == 1.0:
                             uc_prev_en = np.array([[e, n]])
 

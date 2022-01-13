@@ -486,7 +486,7 @@ if __name__ == '__main__':
                     #     t_transmit = t_new
                     # logger.send_mav_cmd_nav_waypoint(wp_ref_lat_lon, wp_type=0.0)
                     prev_or_next_tx = 1.0
-                    logger.send_mav_ltp_en_waypoint(wp_prev_en, wp_prev_en)
+                    logger.send_mav_ltp_en_waypoint(wp_prev_en, prev_or_next_tx)
 
                 # Exit this state after getting an acknowledgment with a result
                 # equal to 1

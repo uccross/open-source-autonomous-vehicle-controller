@@ -225,7 +225,7 @@ if __name__ == '__main__':
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
     dt_transmit = 0.500  # seconds
-    dt_update = 5.000  # seconds
+    dt_update = 2.000  # seconds
     dt_HIL_transmit = 0.5  # seconds
     dt_trajectory = 0.5  # seconds
     dt_graph = 0.5
@@ -476,8 +476,10 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     prev_or_next_tx)
 
-                if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
-                    state = 'TRACKING'
+                if (t_new - t_prev_update) >= dt_update:
+                    t_prev_update = t_new
+                    if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
+                        state = 'TRACKING'
 
             ##################################################################
             elif state == 'UPDATING_NEXT':
@@ -488,8 +490,10 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     prev_or_next_tx)
 
-                if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
-                    state = 'TRACKING'
+                if (t_new - t_next_update) >= dt_update:
+                    t_next_update = t_new
+                    if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
+                        state = 'TRACKING'
 
             ##################################################################
             elif state == 'TRACKING':

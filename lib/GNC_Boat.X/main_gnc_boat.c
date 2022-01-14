@@ -121,8 +121,13 @@ int main(void) {
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
     float ref_lla[DIM + 1]; // [latitude, longitude, altitude]
+    float vehi_pt_ll[DIM]; // [latitude, longitude]
+    float vehi_pt_lla[DIM + 1]; // [latitude, longitude, altitude]
+    float vehi_pt_ned[DIM + 1]; // [NORTH, EAST, DOWN] (METERS)
+    
 
     float cross_track_error = 0.0;
+    float cross_track_error_last = 0.0;
     float path_angle = 0.0;
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
                                 * heading vector within the local tangent plane
@@ -196,11 +201,10 @@ int main(void) {
     waypoints_state_t current_wp_state;
     char is_new_imu = FALSE;
     char is_new_msg = FALSE;
-    char is_new_wp = FALSE;
     char is_new_prev_wp = FALSE;
     char is_new_next_wp = FALSE;
+    char is_far_out = FALSE;
     char is_new_gps = FALSE;
-    char found_ref_point = FALSE;
 
     current_wp_state = FINDING_REF_WP;
 
@@ -225,14 +229,8 @@ int main(void) {
             mav_serial_start_time = cur_time; //reset the timer
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
-#ifdef HIL
-            is_new_gps = TRUE;
 
             if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-
-                if (fabs(wp_type - 0.0) <= TOL) {
-                    is_new_wp = TRUE;
-                }
 
                 if ((cur_time - last_prev_wp_en_time) >=
                         WP_CONFIRM_PERIOD) {
@@ -241,7 +239,7 @@ int main(void) {
                         /* Update the new 'prev' waypoint */
                         wp_prev_en[0] = wp_received_en[0];
                         wp_prev_en[1] = wp_received_en[1];
-                        
+
                         wp_prev_en_last[0] = wp_prev_en[0];
                         wp_prev_en_last[1] = wp_prev_en[1];
 
@@ -264,7 +262,11 @@ int main(void) {
                         is_new_next_wp = TRUE;
                     }
                 }
+            }
 
+#ifdef HIL
+            if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
+                is_new_gps = TRUE;
                 if (fabs(wp_type - VEHI_PT) <= TOL) {
                     vehi_pt_en[0] = wp_received_en[0];
                     vehi_pt_en[1] = wp_received_en[1];
@@ -293,22 +295,6 @@ int main(void) {
             }
 #endif
         }
-
-#ifndef HIL
-        /* Convert the gps position to the Local Tangent Plane (LTP) if a 
-         * reference point has been established*/
-        if ((is_new_gps == TRUE) && (found_ref_point == TRUE)) {
-            vehi_pt_lla[0] = wp_received_en[0]; /* latitude */
-            vehi_pt_lla[1] = wp_received_en[1]; /* longitude */
-            vehi_pt_lla[2] = 0.0; /* altitude */
-
-            /* Convert the gps position to the Local Tangent Plane (LTP) */
-            lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
-
-            vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
-            vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
-        }
-#endif
 
         // Check if mode switch event occurred
         current_mode = check_mavlink_mode();
@@ -342,16 +328,16 @@ int main(void) {
 #ifdef HIL
                         vehi_pt_en[0] = 0.0;
                         vehi_pt_en[1] = 0.0;
-                        wp_prev_en[0] = 0.0;
-                        wp_prev_en[1] = 0.0;
 #else
-                        publisher_get_gps_rmc_position(wp_a);
+                        publisher_get_gps_rmc_position(vehi_pt_lla);
                         /* Convert the gps position to the Local Tangent Plane (LTP) */
                         lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
 
                         vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
                         vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
 #endif
+                        wp_prev_en[0] = 0.0;
+                        wp_prev_en[1] = 0.0;
 
                         /* Complementary Filter Attitude and Heading Reference 
                          * System (AHRS) Initialization. For now use the starting 
@@ -363,8 +349,14 @@ int main(void) {
                         cf_ahrs_set_kp_mag(1.0);
 
                         cf_ahrs_init(SAMPLE_TIME, gyro_bias);
-
+#ifdef HIL
                         current_wp_state = SENDING_NEXT;
+#else
+                        if ((vehi_pt_en[0] != 0.0) && vehi_pt_en[1] != 0.0) {
+                            current_wp_state = SENDING_NEXT;
+                        }
+#endif
+                        
                     }
                     break;
 
@@ -401,10 +393,20 @@ int main(void) {
                     /**********************************************************/
 
                     /* Edge case if too far out */
-                    if (fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) {
+                    if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
+                            (is_far_out == FALSE)) {
                         wp_prev_en[0] = vehi_pt_en[0];
                         wp_prev_en[1] = vehi_pt_en[1];
-                    } 
+                        cross_track_error_last = cross_track_error;
+                        is_far_out = TRUE;
+                    }
+
+                    if ((fabs(cross_track_error_last + cross_track_error) <
+                            MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
+                        wp_prev_en_last[0] = wp_prev_en[0];
+                        wp_prev_en_last[1] = wp_prev_en[1];
+                        is_far_out = FALSE;
+                    }
 
                     /* Exit cases: */
                     if (is_new_prev_wp == TRUE) {
@@ -462,10 +464,7 @@ int main(void) {
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
 
-                    /* Path Angle with angle offset for now */
                     path_angle = lin_tra_get_path_angle();
-                    //                    path_angle = lin_tra_get_path_angle() + M_PI; /* @TODO: figure why -pi is needed */
-                    //                    path_angle = (fmod((path_angle + M_PI), (2.0 * M_PI)) - M_PI);
 
                     heading_angle = yaw;
 #ifdef HIL

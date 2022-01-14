@@ -500,7 +500,8 @@ if __name__ == '__main__':
                                                     prev_or_next_tx)
 
                 if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
-                    Slug3.set_reference_speed(reference_speed)
+                    if simulation_flag:
+                        Slug3.set_reference_speed(reference_speed)
                     state = 'TRACKING'
 
             ##################################################################

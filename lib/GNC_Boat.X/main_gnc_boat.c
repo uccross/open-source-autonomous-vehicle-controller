@@ -176,9 +176,9 @@ int main(void) {
     pid_controller_t trajectory_tracker;
     pid_controller_init(&trajectory_tracker,
             SAMPLE_TIME, // dt The sample time
-            0.05, // kp The initial proportional gain
+            0.5, // kp The initial proportional gain
             0.0, // ki The initial integral gain
-            1.0, // kd The initial derivative gain [HIL:0.1]
+            10.0, // kd The initial derivative gain [HIL:0.1]
             UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
             LOWER_ACT_BOUND); // The minimum rudder actuator limit in radians
 

@@ -381,11 +381,10 @@ int main(void) {
                     /**********************************************************/
                     // Send what the vehicle calculated as its 'prev' waypoint
                     publish_waypoint_en(wp_prev_en, WP_PREV);
+                    lin_tra_set_prev_wp(wp_prev_en);
 
                     if ((cur_time - last_prev_wp_en_time) >=
                             WP_CONFIRM_PERIOD) {
-
-                        lin_tra_set_prev_wp(wp_prev_en);
 
                         current_wp_state = TRACKING;
                     }
@@ -396,11 +395,10 @@ int main(void) {
                     /**********************************************************/
                     // Send what the vehicle calculated as its 'next' waypoint
                     publish_waypoint_en(wp_next_en, WP_NEXT);
+                    lin_tra_set_next_wp(wp_next_en);
 
                     if ((cur_time - last_next_wp_en_time) >=
                             WP_CONFIRM_PERIOD) {
-
-                        lin_tra_set_next_wp(wp_next_en);
 
                         current_wp_state = TRACKING;
                     }
@@ -408,7 +406,7 @@ int main(void) {
 
                 case TRACKING:
                     /**********************************************************/
-                    
+
                     /* Edge case if too far out */
                     if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
                             (is_far_out == FALSE)) {

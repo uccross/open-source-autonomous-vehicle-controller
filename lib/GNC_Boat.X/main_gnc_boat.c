@@ -62,7 +62,7 @@
  *****************************************************************************/
 int main(void) {
     uint32_t cur_time = 0;
-    uint32_t transmit_time = 0;
+    uint32_t startup_wait_time = 0;
     uint32_t last_prev_wp_en_time = 0;
     uint32_t last_next_wp_en_time = 0;
     uint32_t control_start_time = 0;
@@ -109,6 +109,11 @@ int main(void) {
         IMU_retry--;
     }
 #endif
+    cur_time = Sys_timer_get_msec();
+    startup_wait_time = cur_time;
+    while ((cur_time - startup_wait_time) < 5000) {
+        cur_time = Sys_timer_get_msec();
+    }
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */

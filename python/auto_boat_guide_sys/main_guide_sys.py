@@ -520,9 +520,9 @@ if __name__ == '__main__':
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
                     state = 'UPDATING_NEXT'
 
-                if (t_new - t_next_update) >= dt_update:
-                    t_next_update = t_new
-                    state = 'UPDATING_NEXT'
+                # if (t_new - t_next_update) >= dt_update:
+                #     t_next_update = t_new
+                #     state = 'UPDATING_NEXT'
 
                 ##############################################################
                 if msg_type == 'SERVO_OUTPUT_RAW':
@@ -542,25 +542,9 @@ if __name__ == '__main__':
                     ygyro = nav_msg['ygyro']
                     zgyro = nav_msg['zgyro']
 
-                    if not simulation_flag:
-                        cf_heading_angle = yaw*rad2deg
-                        # if cf_heading_angle < 0.0:
-                        #     cf_heading_angle = 360.0 + cf_heading_angle
-
-                        # if simulation_flag:
-                        #     cf_heading_angle = x_os[2][0]*rad2deg
-
-                        path_angle = rollspeed*rad2deg
-                        # if path_angle < 0.0:
-                        #     path_angle = 360.0 + path_angle
-
-                        angle_diff = pitchspeed*rad2deg
-                        # if angle_diff < 0.0:
-                        #     angle_diff = 360.0 + angle_diff
-                    else:
-                        cf_heading_angle = yaw*rad2deg
-                        path_angle = rollspeed*rad2deg
-                        angle_diff = pitchspeed*rad2deg
+                    cf_heading_angle = yaw*rad2deg
+                    path_angle = rollspeed*rad2deg
+                    angle_diff = pitchspeed*rad2deg
 
                 ##############################################################
                 if msg_type == 'GPS_RAW_INT':

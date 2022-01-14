@@ -505,6 +505,11 @@ if __name__ == '__main__':
 
             ##################################################################
             elif state == 'TRACKING':
+                if (t_new - t_transmit) >= dt_transmit:
+                    t_transmit = t_new
+                    prev_or_next_tx = 1.0
+                    logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                    prev_or_next_tx)
 
                 ##############################################################
                 # EXIT CASE: PREVIOUS

@@ -512,7 +512,7 @@ void publish_parameter(const char *param_id) {
     MavSerial_sendMavPacket(&msg_tx);
 }
 
-int publish_waypoint(float wp_lat_lon[DIM]) {
+int publish_waypoint_ll(float wp_lat_lon[DIM]) {
     mavlink_message_t msg_tx;
     mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
             mavlink_system.compid,
@@ -524,6 +524,23 @@ int publish_waypoint(float wp_lat_lon[DIM]) {
             0.2, /* vx [meters/second] */
             3.0, /* vy [meters/second] */
             0.4); /* vz [meters/second] */
+
+    MavSerial_sendMavPacket(&msg_tx);
+    return SUCCESS;
+}
+
+int publish_waypoint_en(float wp_en[DIM], float prev_or_next) {
+    mavlink_message_t msg_tx;
+    mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_usec(),
+            wp_en[0], /* x: EN LTP -> x_east */
+            wp_en[1], /* y: EN LTP -> y_north */
+            prev_or_next, /* z: Altitude [meters] */
+            0.2, /* vx [meters/second] */
+            0.4, /* vy [meters/second] */
+            0.6); /* vz [meters/second] */
 
     MavSerial_sendMavPacket(&msg_tx);
     return SUCCESS;

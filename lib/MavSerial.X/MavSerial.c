@@ -257,6 +257,8 @@ char MavSerial_getMavMsg(mavlink_message_t* r_message) {
 
     if (rx_buf_head_index != rx_buf_tail_index) { // Is the rx_buffer empty?
 
+        //        IEC0bits.U1RXIE = 0; // Disable the RX Interrupt until done reading
+
         r_message->checksum = rx_buffer[rx_buf_head_index].checksum;
         r_message->compat_flags = rx_buffer[rx_buf_head_index].compat_flags;
         r_message->compid = rx_buffer[rx_buf_head_index].compid;
@@ -271,6 +273,8 @@ char MavSerial_getMavMsg(mavlink_message_t* r_message) {
 
         r_message->seq = rx_buffer[rx_buf_head_index].seq;
         r_message->sysid = rx_buffer[rx_buf_head_index].sysid;
+
+        //        IEC0bits.U1RXIE = 1; // Re-enable RX Interrupt since reading is done 
 
         rx_buf_head_index++;
         rx_buf_head_index %= MAV_SERIAL_RX_BUF_SIZE;
@@ -299,7 +303,7 @@ void MavSerial_ParseWrapper(void) {
     }
 }
 
-int MavSerial_SendAck(uint8_t sys_id, uint8_t result, 
+int MavSerial_SendAck(uint8_t sys_id, uint8_t result,
         mavlink_message_t *msg) {
     /* Send a command acknowledgment */
     mavlink_msg_command_ack_pack(sys_id, 1, msg, MAV_CMD_ACK_OK, result, 0, 0, 0, 0);
@@ -533,21 +537,21 @@ int main(void) {
     Board_init();
     MavSerial_Init(); // UART 1 serial for debugging
     Sys_timer_init(); //start the system timer
-//    radio_init();
-//    timer_init(); // Placed here to observe any possible influence
+    //    radio_init();
+    //    timer_init(); // Placed here to observe any possible influence
 
     TRISAbits.TRISA3 = 0; /* Set pin as output. This is also LED4 on Max32 */
     TRISCbits.TRISC1 = 0; /* LED5 */
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
-    
+
 #ifdef ECHO
     char x = 'x';
     while (1) {
         if (x != 0) {
             MavSerial_PutChar(x);
-//            radio_put_char(x);
+            //            radio_put_char(x);
             x = 0;
         }
         x = MavSerial_GetChar();
@@ -558,7 +562,7 @@ int main(void) {
 #ifdef TRANSMIT_ONLY
     unsigned int t_new = 0;
     unsigned int t_old = 0;
-    
+
     int i = 0;
     for (i = 0; i < 10000; i++) {
         MavSerial_PutChar(0x22);

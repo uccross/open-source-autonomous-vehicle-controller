@@ -25,8 +25,8 @@
  *****************************************************************************/
 #define LLA_DIM 3 // DO NOT CHANGE THIS
 
-#define WP_PREV ((float) 0.0)
-#define WP_NEXT ((float) 1.0)
+#define WP_PREV ((float) 1.0)
+#define WP_NEXT ((float) 1.5)
 #define VEHI_PT ((float) 2.0)
 
 
@@ -218,7 +218,7 @@ void publish_heartbeat(void);
 void publish_parameter(const char *param_id);
 
 /**
- * @Function publish_waypoint(float wp_lat_lon[DIM])
+ * @Function publish_waypoint_ll(float wp_lat_lon[DIM])
  * @brief Send waypoint with North and East elements to the companion 
  * @param wp_lat_lon[] A waypoint with North and East elements within the Local 
  * Tangent Plane (LTP) in meters. 
@@ -226,7 +226,20 @@ void publish_parameter(const char *param_id);
  * @return SUCCESS or FAILURE
  * @author Pavlo Vlastos
  */
-int publish_waypoint(float wp_lat_lon[DIM]);
+int publish_waypoint_ll(float wp_lat_lon[DIM]);
+
+/**
+ * @Function publish_waypoint_en(float wp_en[DIM])
+ * @brief Send waypoint with East and North elements to the companion 
+ * @param wp_en[] A waypoint with North and East elements within the Local 
+ * @param prev_or_next A value to indicate if the waypoint is prev: 1.0, 
+ * or next: 1.5
+ * Tangent Plane (LTP) in meters. 
+ * NOTE: Order matters here; [North (meters), East (meters)]
+ * @return SUCCESS or FAILURE
+ * @author Pavlo Vlastos
+ */
+int publish_waypoint_en(float wp_en[DIM], float prev_or_next);
 
 /**
  * @Function publish_ack(uint8_t result)

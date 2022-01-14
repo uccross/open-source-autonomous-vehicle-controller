@@ -165,7 +165,7 @@ int main(void) {
     pid_controller_t trajectory_tracker;
     pid_controller_init(&trajectory_tracker,
             SAMPLE_TIME, // dt The sample time
-            0.1, // kp The initial proportional gain
+            0.05, // kp The initial proportional gain
             0.0, // ki The initial integral gain
             1.0, // kd The initial derivative gain [HIL:0.1]
             UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
@@ -404,10 +404,7 @@ int main(void) {
                     if (fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) {
                         wp_prev_en[0] = vehi_pt_en[0];
                         wp_prev_en[1] = vehi_pt_en[1];
-                    } else {
-                        wp_prev_en_last[0] = wp_prev_en[0];
-                        wp_prev_en_last[1] = wp_prev_en[1];
-                    }
+                    } 
 
                     /* Exit cases: */
                     if (is_new_prev_wp == TRUE) {

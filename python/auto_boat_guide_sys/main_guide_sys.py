@@ -4,6 +4,7 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
+from os import sep
 from re import I
 import numpy as np
 import argparse
@@ -189,7 +190,9 @@ if __name__ == '__main__':
 
     # Tracker
     if tracker_flag:
-        tracker = TR.Tracker(graphInterval=1, wp_grid=Grid.get_points())
+        tracker = TR.Tracker(graphInterval=1, wp_grid=Grid.get_points(),
+                             x_bound=grid_width+grid_separation,
+                             y_bound=grid_length+grid_separation)
 
     ###########################################################################
     # Helper method, based on

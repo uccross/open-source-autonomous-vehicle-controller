@@ -235,9 +235,9 @@ if __name__ == '__main__':
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
 
-    reference_speed = 4000.00
+    reference_speed = 2000.00
 
-    mass = 15.0  # kg
+    mass = 7.5  # kg
     radius = 0.5  # meters
 
     xacc = 0.0
@@ -342,7 +342,7 @@ if __name__ == '__main__':
                                            point_mass_state_vec,
                                            orientation_state_vec,
                                            radius,
-                                           reference_speed=reference_speed,
+                                           reference_speed=0.0,
                                            min_angle=-0.8,
                                            max_angle=0.8)
 
@@ -497,6 +497,7 @@ if __name__ == '__main__':
 
             ##################################################################
             elif state == 'TRACKING':
+                Slug3.set_reference_speed(reference_speed)
 
                 ##############################################################
                 # EXIT CASE: PREVIOUS

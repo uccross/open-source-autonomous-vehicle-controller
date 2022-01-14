@@ -124,7 +124,7 @@ int main(void) {
     float vehi_pt_ll[DIM]; // [latitude, longitude]
     float vehi_pt_lla[DIM + 1]; // [latitude, longitude, altitude]
     float vehi_pt_ned[DIM + 1]; // [NORTH, EAST, DOWN] (METERS)
-    
+
 
     float cross_track_error = 0.0;
     float cross_track_error_last = 0.0;
@@ -293,6 +293,20 @@ int main(void) {
                 lin_alg_set_v(imu.gyro.x, imu.gyro.y, imu.gyro.z, gyro);
                 lin_alg_v_scale(GYRO_SCALE, gyro);
             }
+
+            if (is_new_gps == TRUE) {
+                publisher_get_gps_rmc_position(vehi_pt_ll);
+
+                vehi_pt_lla[0] = vehi_pt_ll[0];
+                vehi_pt_lla[1] = vehi_pt_ll[1];
+                vehi_pt_lla[2] = 0.0;
+
+                /* Convert the gps position to the Local Tangent Plane (LTP) */
+                lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
+
+                vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
+                vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
+            }
 #endif
         }
 
@@ -328,13 +342,6 @@ int main(void) {
 #ifdef HIL
                         vehi_pt_en[0] = 0.0;
                         vehi_pt_en[1] = 0.0;
-#else
-                        publisher_get_gps_rmc_position(vehi_pt_lla);
-                        /* Convert the gps position to the Local Tangent Plane (LTP) */
-                        lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
-
-                        vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
-                        vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
 #endif
                         wp_prev_en[0] = 0.0;
                         wp_prev_en[1] = 0.0;
@@ -352,11 +359,11 @@ int main(void) {
 #ifdef HIL
                         current_wp_state = SENDING_NEXT;
 #else
-                        if ((vehi_pt_en[0] != 0.0) && vehi_pt_en[1] != 0.0) {
+                        if ((vehi_pt_lla[0] != 0.0) && vehi_pt_lla[1] != 0.0) {
                             current_wp_state = SENDING_NEXT;
                         }
 #endif
-                        
+
                     }
                     break;
 
@@ -377,6 +384,9 @@ int main(void) {
 
                 case SENDING_NEXT:
                     /**********************************************************/
+
+                    LATCbits.LATC1 = 1; /* Toggle LED5 */
+
                     // Send what the vehicle calculated as its 'next' waypoint
                     publish_waypoint_en(wp_next_en, WP_NEXT);
 

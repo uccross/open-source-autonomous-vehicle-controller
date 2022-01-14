@@ -439,19 +439,18 @@ if __name__ == '__main__':
                 pitchspeed = nav_msg['pitchspeed']
                 yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
-                if simulation_flag:
-                    if int(yawspeed) == 0:
-                        pic32_wp_state = 'ERROR_WP'
-                    if int(yawspeed) == 1:
-                        pic32_wp_state = 'FINDING_REF_WP'
-                    if int(yawspeed) == 2:
-                        pic32_wp_state = 'SENDING_PREV'
-                    if int(yawspeed) == 3:
-                        pic32_wp_state = 'SENDING_NEXT'
-                    if int(yawspeed) == 4:
-                        pic32_wp_state = 'WAITING_FOR_NEXT_WP'
-                    if int(yawspeed) == 5:
-                        pic32_wp_state = 'TRACKING'
+                if int(yawspeed) == 0:
+                    pic32_wp_state = 'ERROR_WP'
+                if int(yawspeed) == 1:
+                    pic32_wp_state = 'FINDING_REF_WP'
+                if int(yawspeed) == 2:
+                    pic32_wp_state = 'SENDING_PREV'
+                if int(yawspeed) == 3:
+                    pic32_wp_state = 'SENDING_NEXT'
+                if int(yawspeed) == 4:
+                    pic32_wp_state = 'WAITING_FOR_NEXT_WP'
+                if int(yawspeed) == 5:
+                    pic32_wp_state = 'TRACKING'
 
                     delta_angle = pitchspeed
 

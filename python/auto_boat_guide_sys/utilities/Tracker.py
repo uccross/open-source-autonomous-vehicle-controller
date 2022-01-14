@@ -15,7 +15,7 @@ from utilities import Linear as LN
 
 
 class Tracker():
-    def __init__(self, graphInterval=400, x_bound=50, y_bound=50, z_bound=15,
+    def __init__(self, graphInterval=400, x_bound=150, y_bound=150, z_bound=30,
                  wp_grid=np.zeros((1, 2))):
         """
         :param graphInterval: number of main loop cycles before next dynamic

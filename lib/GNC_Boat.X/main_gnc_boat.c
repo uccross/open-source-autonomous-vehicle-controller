@@ -116,6 +116,7 @@ int main(void) {
 
     // Trajectory 
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
+    float wp_prev_en_last[DIM]; // [EAST (meters), NORTH (meters)]
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
@@ -240,6 +241,9 @@ int main(void) {
                         /* Update the new 'prev' waypoint */
                         wp_prev_en[0] = wp_received_en[0];
                         wp_prev_en[1] = wp_received_en[1];
+                        
+                        wp_prev_en_last[0] = wp_prev_en[0];
+                        wp_prev_en_last[1] = wp_prev_en[1];
 
                         last_prev_wp_en_time = cur_time;
 
@@ -400,6 +404,9 @@ int main(void) {
                     if (fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) {
                         wp_prev_en[0] = vehi_pt_en[0];
                         wp_prev_en[1] = vehi_pt_en[1];
+                    } else {
+                        wp_prev_en_last[0] = wp_prev_en[0];
+                        wp_prev_en_last[1] = wp_prev_en[1];
                     }
 
                     /* Exit cases: */

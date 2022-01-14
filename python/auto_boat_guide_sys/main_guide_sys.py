@@ -225,7 +225,7 @@ if __name__ == '__main__':
     dt_uc = 0.01  # seconds
     dt_log = 0.05  # seconds
     dt_transmit = 0.500  # seconds
-    dt_update = 1.500  # seconds
+    dt_update = 5.000  # seconds
     dt_HIL_transmit = 0.5  # seconds
     dt_trajectory = 0.5  # seconds
     dt_graph = 0.5

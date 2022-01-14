@@ -476,8 +476,8 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     prev_or_next_tx)
 
-                    if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
-                        state = 'TRACKING'
+                if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
+                    state = 'TRACKING'
 
             ##################################################################
             elif state == 'UPDATING_NEXT':
@@ -488,8 +488,8 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     prev_or_next_tx)
 
-                    if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
-                        state = 'TRACKING'
+                if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
+                    state = 'TRACKING'
 
             ##################################################################
             elif state == 'TRACKING':

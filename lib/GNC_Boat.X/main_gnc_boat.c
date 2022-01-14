@@ -179,8 +179,8 @@ int main(void) {
             0.5, // kp The initial proportional gain
             0.0, // ki The initial integral gain
             10.0, // kd The initial derivative gain [HIL:0.1]
-            UPPER_ACT_BOUND, // The maximum rudder actuator limit in radians
-            LOWER_ACT_BOUND); // The minimum rudder actuator limit in radians
+            1000.0, // The maximum rudder actuator limit in radians
+            -1000.0); // The minimum rudder actuator limit in radians
 
 #ifdef USB_DEBUG
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
@@ -510,7 +510,7 @@ int main(void) {
                     if (acc_cmd < 0.0) {
                         u_sign = -1.0;
                     }
-                    if (acc_cmd >= 0.0) {
+                    if (acc_cmd > 0.0) {
                         u_sign = 1.0;
                     }
 

@@ -238,7 +238,7 @@ if __name__ == '__main__':
     reference_speed = 2000.00
 
     mass = 7.5  # kg
-    radius = 0.5  # meters
+    radius = 1.5  # meters
 
     xacc = 0.0
     yacc = 0.0

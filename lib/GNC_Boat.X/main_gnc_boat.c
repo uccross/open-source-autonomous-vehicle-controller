@@ -31,6 +31,7 @@
 #define WP_STATE_MACHINE_PERIOD 250
 #define WP_CONFIRM_PERIOD 1000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
+#define NUM_MSG_SEND_CONTROL_PERIOD 5
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
 #define RAW 1
@@ -213,6 +214,8 @@ int main(void) {
 
     unsigned int control_loop_count = 0;
 
+    uint8_t i_tx_mav_msg = 0;
+
     /**************************************************************************
      * Primary Loop                                                           *
      *************************************************************************/
@@ -302,7 +305,9 @@ int main(void) {
                 vehi_pt_lla[2] = 0.0;
 
                 /* Convert the gps position to the Local Tangent Plane (LTP) */
-                lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
+                if ((vehi_pt_lla[0] != 0.0) && vehi_pt_lla[1] != 0.0) {
+                    lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
+                }
 
                 vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
                 vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
@@ -385,8 +390,6 @@ int main(void) {
                 case SENDING_NEXT:
                     /**********************************************************/
 
-                    LATCbits.LATC1 = 1; /* Toggle LED5 */
-
                     // Send what the vehicle calculated as its 'next' waypoint
                     publish_waypoint_en(wp_next_en, WP_NEXT);
 
@@ -402,6 +405,11 @@ int main(void) {
                 case TRACKING:
                     /**********************************************************/
 
+                    // Send what the vehicle calculated as its 'next' waypoint
+                    publish_waypoint_en(wp_next_en, WP_NEXT);
+                    
+                    LATCbits.LATC1 ^= 1; /* Toggle LED5 */
+                    
                     /* Edge case if too far out */
                     if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
                             (is_far_out == FALSE)) {
@@ -534,19 +542,33 @@ int main(void) {
             /******************************************************************
              * Publish data                                                   *
              *****************************************************************/
-            publish_RC_signals_raw();
-            publish_IMU_data(SCALED);
-            publish_attitude(roll,
-                    pitch,
-                    heading_angle, /* Using differently on purpose */
-                    path_angle, // roll-rate, /* Using differently on purpose */
-                    delta_angle, // pitch-rate, /* Using differently on purpose */
-                    (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
-            publisher_set_mode(current_mode); // Sets mode in heartbeat
-#ifndef HIL
-            publish_GPS();
-#endif 
+            switch (i_tx_mav_msg) {
+                case 0:
+                    publish_attitude(roll,
+                            pitch,
+                            heading_angle, /* Using differently on purpose */
+                            path_angle, // roll-rate, /* Using differently on purpose */
+                            delta_angle, // pitch-rate, /* Using differently on purpose */
+                            (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
+                    break;
+                case 1:
+                    publish_RC_signals_raw();
+                    break;
+                case 2:
+                    publish_IMU_data(SCALED);
+                    break;
+                case 3:
+                    publisher_set_mode(current_mode); // Sets mode in heartbeat
+                    break;
+                case 4:
+                    //#ifndef HIL
+                    //            publish_GPS();
+                    //#endif 
+                    break;
+            }
             control_loop_count++;
+            i_tx_mav_msg++;
+            i_tx_mav_msg %= NUM_MSG_SEND_CONTROL_PERIOD;
         }
 
         //#endif

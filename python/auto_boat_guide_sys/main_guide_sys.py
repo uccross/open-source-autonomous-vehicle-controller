@@ -520,9 +520,9 @@ if __name__ == '__main__':
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
                     state = 'UPDATING_NEXT'
 
-                # if (t_new - t_next_update) >= dt_update:
-                #     t_next_update = t_new
-                #     state = 'UPDATING_NEXT'
+                if (t_new - t_next_update) >= dt_update:
+                    t_next_update = t_new
+                    state = 'UPDATING_NEXT'
 
                 ##############################################################
                 if msg_type == 'SERVO_OUTPUT_RAW':

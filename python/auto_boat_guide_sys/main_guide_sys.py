@@ -479,7 +479,7 @@ if __name__ == '__main__':
             ##################################################################
             # START OF STATE MACHINE
             if state == 'UPDATING_PREV':
-                # Send the next waypoint for the linear trajectory tracking
+                # Send the previous waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
                     prev_or_next_tx = 1.0
@@ -505,6 +505,7 @@ if __name__ == '__main__':
 
             ##################################################################
             elif state == 'TRACKING':
+                # Send the previous waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
                     prev_or_next_tx = 1.0
@@ -682,10 +683,7 @@ if __name__ == '__main__':
 
             if tracker_flag:
 
-                yaw_g = yaw
-
-                if simulation_flag:
-                    yaw_g -= (np.pi / 2.0)
+                yaw_g -= (np.pi / 2.0)
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,

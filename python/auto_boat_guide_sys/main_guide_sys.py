@@ -355,9 +355,7 @@ if __name__ == '__main__':
                                            point_mass_state_vec,
                                            orientation_state_vec,
                                            radius,
-                                           reference_speed=0.0,
-                                           min_angle=-0.8,
-                                           max_angle=0.8)
+                                           reference_speed=0.0)
 
     ###########################################################################
     # Main Loop

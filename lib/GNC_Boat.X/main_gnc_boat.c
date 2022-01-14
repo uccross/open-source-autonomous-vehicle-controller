@@ -36,8 +36,8 @@
 #define RAW 1
 #define SCALED 2
 
-#define UPPER_ACT_BOUND ((float) 0.8) // The maximum rudder actuator limit in radians
-#define LOWER_ACT_BOUND ((float)-0.8) // The minimum rudder actuator limit in radians
+#define UPPER_ACT_BOUND ((float) 80.0*M_PI/180.0) //((float) 0.8) // The maximum rudder actuator limit in radians
+#define LOWER_ACT_BOUND ((float) -80.0*M_PI/180.0) //((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
 #define SERVO_PAD 0.0
 #define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))

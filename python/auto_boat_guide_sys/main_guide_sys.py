@@ -436,7 +436,7 @@ if __name__ == '__main__':
 
                 rollspeed = nav_msg['rollspeed']  # Using as path angle
                 # Using as cross track error
-                pitchspeed = nav_msg['pitchspeed']
+                pitchspeed = nav_msg['pitchspeed'] # Using as rudder angle command
                 yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
                 if int(yawspeed) == 0:
@@ -451,6 +451,10 @@ if __name__ == '__main__':
                     pic32_wp_state = 'WAITING_FOR_NEXT_WP'
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
+
+                cf_heading_angle = yaw*rad2deg
+                path_angle = rollspeed*rad2deg
+                angle_diff = pitchspeed*rad2deg
 
                 delta_angle = pitchspeed
 
@@ -548,10 +552,6 @@ if __name__ == '__main__':
                     ygyro = nav_msg['ygyro']
                     zgyro = nav_msg['zgyro']
 
-                    cf_heading_angle = yaw*rad2deg
-                    path_angle = rollspeed*rad2deg
-                    angle_diff = pitchspeed*rad2deg
-
                 ##############################################################
                 if msg_type == 'GPS_RAW_INT':
 
@@ -610,10 +610,10 @@ if __name__ == '__main__':
                 print("    path angle:      {0:.6g}".format(path_angle))
                 print("    ^__checked:      {0:.6g}".format(
                     path_angle_checked))
-                print("    angle_diff:      {0:.6g}".format(angle_diff))
+                # print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    cte:             {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
-                print("    delta_angle:     {0:.6g}".format(delta_angle*180.0/np.pi))
+                print("    delta_angle:     {0:.6g}".format(delta_angle*rad2deg))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
                 print("    yaw:             {0:.6g}".format(yaw*rad2deg))
                 print("    pitch:           {0:.6g}".format(pitch*rad2deg))

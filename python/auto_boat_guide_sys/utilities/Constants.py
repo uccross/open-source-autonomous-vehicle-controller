@@ -129,8 +129,8 @@ kp_rudder = 1.0
 ki_rudder = 0.1
 kd_rudder = 1.0
 
-max_rudder_angle = 0.8 #np.pi/3
-min_rudder_angle = -0.8 #-np.pi/3
+max_rudder_angle = 80.0*np.pi/180.0
+min_rudder_angle = -80.0*np.pi/180.0
 
 max_thrust = 100000 # Newtons
 min_thrust = 0

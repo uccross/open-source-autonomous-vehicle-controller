@@ -75,8 +75,16 @@ parser.add_argument('--grid_angle', type=float, dest='grid_angle',
                     help='The orientation of the grid on the LTP in degrees')
 
 parser.add_argument('--grid_separation', type=float, dest='grid_separation',
-                    default=15.0,
+                    default=20.0,
                     help='The distance between grid points in meters')
+
+parser.add_argument('--grid_width', type=float, dest='grid_width',
+                    default=70.0,
+                    help='The width of the grid in meters')
+
+parser.add_argument('--grid_length', type=float, dest='grid_length',
+                    default=90.0,
+                    help='The length of the grid in meters')
 
 parser.add_argument('--w_threshold', type=float, dest='threshold',
                     default=2.5,
@@ -101,6 +109,8 @@ x0_b = arguments.x0
 y0_b = arguments.y0
 grid_angle = arguments.grid_angle*np.pi/180.0
 grid_separation = arguments.grid_separation
+grid_width = arguments.grid_width
+grid_length = arguments.grid_length
 threshold = arguments.threshold
 
 
@@ -147,7 +157,7 @@ if __name__ == '__main__':
         msg_list = []
 
     # Grid
-    Grid = Grid.Grid()
+    Grid = Grid.Grid(width=grid_width, length=grid_length)
     Grid.form_grid(grid_separation, grid_angle)
     trajectory = LN.Linear()
 

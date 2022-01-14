@@ -476,10 +476,8 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     prev_or_next_tx)
 
-                if (t_new - t_prev_update) >= dt_update:
-                    t_prev_update = t_new
-                    if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
-                        state = 'TRACKING'
+                if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
+                    state = 'TRACKING'
 
             ##################################################################
             elif state == 'UPDATING_NEXT':
@@ -490,11 +488,9 @@ if __name__ == '__main__':
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     prev_or_next_tx)
 
-                if (t_new - t_next_update) >= dt_update:
-                    t_next_update = t_new
-                    if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
-                        Slug3.set_reference_speed(reference_speed)
-                        state = 'TRACKING'
+                if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
+                    Slug3.set_reference_speed(reference_speed)
+                    state = 'TRACKING'
 
             ##################################################################
             elif state == 'TRACKING':
@@ -504,18 +500,18 @@ if __name__ == '__main__':
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
                     state = 'UPDATING_PREV'
 
-                if (t_new - t_prev_update) >= dt_update:
-                    t_prev_update = t_new
-                    state = 'UPDATING_PREV'
+                # if (t_new - t_prev_update) >= dt_update:
+                #     t_prev_update = t_new
+                #     state = 'UPDATING_PREV'
 
                 ##############################################################
                 # EXIT CASE: NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
                     state = 'UPDATING_NEXT'
 
-                if (t_new - t_next_update) >= dt_update:
-                    t_next_update = t_new
-                    state = 'UPDATING_NEXT'
+                # if (t_new - t_next_update) >= dt_update:
+                #     t_next_update = t_new
+                #     state = 'UPDATING_NEXT'
 
                 ##############################################################
                 if msg_type == 'SERVO_OUTPUT_RAW':

@@ -396,11 +396,9 @@ if __name__ == '__main__':
                 # Send GPS position of vehicle to be echoed back
                 vehi_pt_en[0][0] = x_pm[0][0]
                 vehi_pt_en[0][1] = x_pm[1][0]
-                if i_tx == 1:
-                    logger.send_mav_ltp_HIL_en(vehi_pt_en, wp_yaw)
-                    i_tx = 0
 
-                i_tx += 1
+                logger.send_mav_ltp_HIL_en(vehi_pt_en, wp_yaw)
+                i_tx = 0
 
         # Check messages to update the state machine
         if msg:
@@ -462,10 +460,10 @@ if __name__ == '__main__':
                     (np.abs(check1 - 0.4) <= tolerance) and
                         (np.abs(check2 - 0.6) <= tolerance)):
 
-                    if prev_or_next_rx == 1.0:
+                    if (prev_or_next_rx-1.0) <= tolerance:
                         uc_prev_en = np.array([[e, n]])
 
-                    if prev_or_next_rx == 1.5:
+                    if (prev_or_next_rx-1.5) <= tolerance:
                         uc_next_en = np.array([[e, n]])
 
             ##################################################################

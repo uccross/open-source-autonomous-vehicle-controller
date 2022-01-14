@@ -452,7 +452,7 @@ if __name__ == '__main__':
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
 
-                    delta_angle = pitchspeed
+                delta_angle = pitchspeed
 
             ###################################################################
             if msg_type == 'LOCAL_POSITION_NED':
@@ -579,11 +579,11 @@ if __name__ == '__main__':
                     is_beyond_next_wp = False
                     # state = 'SENDING_NEXT_WP'
 
-            ###################################################################
-            # Print the state transition
-            if state != last_state:
-                print("State: {} --> {}".format(last_state, state))
-                last_state = state
+            # ###################################################################
+            # # Print the state transition
+            # if state != last_state:
+            #     print("State: {} --> {}".format(last_state, state))
+            #     last_state = state
 
             # END OF STATE MACHINE
             ###################################################################
@@ -613,7 +613,7 @@ if __name__ == '__main__':
                 print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    cte:             {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
-                print("    delta_angle:     {0:.6g}".format(delta_angle))
+                print("    delta_angle:     {0:.6g}".format(delta_angle*np.pi/180.0))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
                 print("    yaw:             {0:.6g}".format(yaw*rad2deg))
                 print("    pitch:           {0:.6g}".format(pitch*rad2deg))

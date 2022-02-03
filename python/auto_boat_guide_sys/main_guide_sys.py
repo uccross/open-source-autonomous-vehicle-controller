@@ -483,7 +483,7 @@ if __name__ == '__main__':
                     if (prev_next_vehi-1.5) <= tolerance:
                         uc_next_en = np.array([[e, n]])
 
-                    if (prev_next_vehi-2.0) <- tolerance:
+                    if (prev_next_vehi-2.0) <= tolerance:
                         uc_vehi_en = np.array([[e, n]])
 
             ##################################################################
@@ -657,7 +657,7 @@ if __name__ == '__main__':
                 print("    uc_prev_en    = {}".format(uc_prev_en))
 
                 print("    vehi_pt_en    = {}".format(vehi_pt_en))
-                print("    uc_vehi_en = {}".format(uc_vehi_en))
+                print("    uc_vehi_en    = {}".format(uc_vehi_en))
 
                 print("    wp_next_en    = {}".format(wp_next_en))
                 print("    uc_next_en    = {}".format(uc_next_en))

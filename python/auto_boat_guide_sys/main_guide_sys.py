@@ -304,13 +304,13 @@ if __name__ == '__main__':
 
     wp_ref_lla_copy = np.array([[0.0, 0.0, 0.0]])
     vehi_pt_lla_copy = np.array([[0.0, 0.0, 0.0]])
-    wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]])
+    # wp_next_lla_copy = np.array([[0.0, 0.0, 0.0]])
 
     vehi_pt_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
-    wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
+    # wp_next_lla_copy2 = np.array([[0.0, 0.0, 0.0]])
 
-    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
-    wp_next_ned = LTP.lla2ned2(wp_next_lla_copy, wp_ref_lla)
+    vehi_pt_ned = LTP.lla2ned2(np.array([[0.0, 0.0, 0.0]]), wp_ref_lla)
+    wp_next_ned = LTP.lla2ned2(np.array([[0.0, 0.0, 0.0]]), wp_ref_lla)
 
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
@@ -567,7 +567,8 @@ if __name__ == '__main__':
 
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
-                    vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla_copy)
+                    vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
+                    vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
 
                     vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
@@ -632,7 +633,8 @@ if __name__ == '__main__':
                 print("    wp_next_lla = {}".format(wp_next_lla))
 
                 print("    vehi_pt_lla_copy = {}".format(vehi_pt_lla_copy))
-                print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
+                print("    vehi_pt_lla_copy2= {}".format(vehi_pt_lla_copy2))
+                # print("    wp_next_lla_copy = {}".format(wp_next_lla_copy))
 
                 # print("    check0 =     {}".format(check0))
                 # print("    check1 =     {}".format(check1))

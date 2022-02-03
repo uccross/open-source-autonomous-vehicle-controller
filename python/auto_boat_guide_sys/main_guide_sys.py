@@ -570,7 +570,7 @@ if __name__ == '__main__':
                     vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
                     vehi_pt_lla_copy2 = copy.deepcopy(vehi_pt_lla)
 
-                    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla_copy, wp_ref_lla)
+                    vehi_pt_ned = LTP.lla2ned2(vehi_pt_lla, wp_ref_lla)
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 

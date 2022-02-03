@@ -27,3 +27,7 @@ sudo systemclt enable the .service
 make sure the RPI4B doesn't auto-connect to a known network
 
 reboot
+
+Connect to the WiFi network if it appears
+
+attempt to ssh into the pi, for example: '$ ssh ubuntu@10.42.0.1'

@@ -44,6 +44,19 @@ Section "Screen"
     EndSubSection
 EndSection
 
+#### Important steps after following the above instructions:
+If you want to use a regular monitor make sure to rename the xorg.conf:
+1. cd /usr/share/X11/
+2. **sudo mv xorg.conf xorg.conf.bak**
+3. sudo reboot
+
+If you want to switch from a real monitor back to a virtual monitor:
+1. cd /usr/share/X11/
+2. **sudo mv xorg.conf.bak xorg.conf**
+3. sudo reboot
+
+Please note the .bak is indicating that this is a backup file. You could name it something else other than *xorg.conf* so that it doesn't activate the dummy monitor/display
+
 ***OR use the one found here:
 https://techoverflow.net/2019/02/23/how-to-run-x-server-using-xserver-xorg-video-dummy-driver-on-ubuntu/
 :

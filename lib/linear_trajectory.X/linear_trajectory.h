@@ -155,11 +155,11 @@ int lin_tra_set_prev_wp(float wp[DIM]);
  *        reference points (can be the center of the local tangent plane).
  * @param ref_point The reference point acting as the center of the local 
  *        tangent plane
- * @param east_north_point The output point as East, North, Down, needs swap to NED
+ * @param ned_point The output point as North, East, Down, needs swap to NED
  */
-void lin_tra_lla_to_enu(float lla_point[DIM + 1],
+void lin_tra_lla_to_ned(float lla_point[DIM + 1],
         float ref_point[DIM + 1],
-        float enu_point[DIM + 1]);
+        float ned_point[DIM + 1]);
 
 /**
  * @function lin_tra_lla_to_ecef(float lla_point[DIM + 1],

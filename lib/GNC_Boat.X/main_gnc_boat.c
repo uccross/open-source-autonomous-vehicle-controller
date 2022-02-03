@@ -32,7 +32,7 @@
 #define WP_CONFIRM_PERIOD 1000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 5
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
 #define RAW 1
 #define SCALED 2
@@ -199,7 +199,6 @@ int main(void) {
         FINDING_REF_WP, /* Find the reference point for the LTP calculation */
         SENDING_PREV,
         SENDING_NEXT,
-        WAITING_FOR_NEXT_WP,
         TRACKING
     };
     typedef enum waypoints_state waypoints_state_t;
@@ -227,7 +226,6 @@ int main(void) {
     while (1) {
         cur_time = Sys_timer_get_msec();
 
-
         /**********************************************************************
          * Check for all events:                                              *
          * - HIL                                                              *
@@ -237,6 +235,8 @@ int main(void) {
             mav_serial_start_time = cur_time; //reset the timer
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
+            
+            is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
             if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
 
@@ -292,7 +292,6 @@ int main(void) {
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
             check_RC_events(); //check incoming RC commands
-            is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
             /* Update aiding vectors and gyro angular rates */
             if (is_new_imu == TRUE) {
@@ -381,10 +380,11 @@ int main(void) {
                     /**********************************************************/
                     // Send what the vehicle calculated as its 'prev' waypoint
                     publish_waypoint_en(wp_prev_en, WP_PREV);
-                    lin_tra_set_prev_wp(wp_prev_en);
 
                     if ((cur_time - last_prev_wp_en_time) >=
                             WP_CONFIRM_PERIOD) {
+
+                        lin_tra_set_prev_wp(wp_prev_en);
 
                         current_wp_state = TRACKING;
                     }
@@ -395,10 +395,11 @@ int main(void) {
                     /**********************************************************/
                     // Send what the vehicle calculated as its 'next' waypoint
                     publish_waypoint_en(wp_next_en, WP_NEXT);
-                    lin_tra_set_next_wp(wp_next_en);
 
                     if ((cur_time - last_next_wp_en_time) >=
                             WP_CONFIRM_PERIOD) {
+
+                        lin_tra_set_next_wp(wp_next_en);
 
                         current_wp_state = TRACKING;
                     }
@@ -473,8 +474,9 @@ int main(void) {
             /******************************************************************
              * Control                                                        *
              *****************************************************************/
-            if ((current_mode == MAV_MODE_AUTO_ARMED) &&
-                    (lin_tra_is_initialized() == TRUE)) {
+            //            if ((current_mode == MAV_MODE_AUTO_ARMED) &&
+            //                    (lin_tra_is_initialized() == TRUE)) {
+            if (lin_tra_is_initialized() == TRUE) {
 
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
@@ -558,9 +560,9 @@ int main(void) {
                     publisher_set_mode(current_mode); // Sets mode in heartbeat
                     break;
                 case 4:
-                    //#ifndef HIL
-                    //            publish_GPS();
-                    //#endif 
+#ifndef HIL
+                    publish_GPS();
+#endif 
                     break;
             }
             control_loop_count++;

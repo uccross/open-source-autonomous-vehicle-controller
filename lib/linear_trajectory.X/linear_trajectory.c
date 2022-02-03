@@ -38,7 +38,7 @@ typedef struct trajectory {
  * PRIVATE VARIABLES 
  ******************************************************************************/
 static trajectory_t lin_tra;
-static float north_v[DIM] = {0.0, 0.1};
+static float north_v[DIM] = {0.0, 1.0};
 
 /*******************************************************************************
  * Public Function Implementations
@@ -79,34 +79,49 @@ int lin_tra_update(float new_position[DIM]) {
 
 float lin_tra_project(float point[DIM]) {
     int i;
-    float a[DIM]; /* Vector connecting the previous waypoint to the 
-                        *  current vehicle position */
-    float a1[DIM];
-    float a1_sum = 0.0;
-    float b[DIM]; /* Vector connecting the next waypoint to the previous 
-                        * waypoint */
-    float bhat[DIM]; // Normalized 'b' vector
-    float b_mag = 0.0;
+    float a[DIM]; 
+    float a1v[DIM];
+    float a1s = 0.0;
+    float av[DIM];
+    float b[DIM]; 
+    float bv[DIM]; 
+    float p[DIM]; 
+    float bvhat[DIM]; // Normalized 'b' vector
+    float bv_mag = 0.0;
 
-    b_mag = lin_tra_calc_dist(lin_tra.next_wp, lin_tra.prev_wp);
+    for (i = 0; i < DIM; i++) {
+        a[i] = lin_tra.prev_wp[i];
+        b[i] = lin_tra.next_wp[i];
+        p[i] = lin_tra.vehi_pt[i];
+    }
 
-    if (b_mag == 0.0) {
+    /* Move the vector to the origin and project onto path segment */
+    for (i = 0; i < DIM; i++) {
+        bv[i] = b[i] - a[i];
+        av[i] = p[i] - a[i];
+    }
+    
+    bv_mag = sqrt(bv[0]*bv[0] + bv[1]*bv[1]);
+
+    /* Check for zero-case */
+    if (bv_mag == 0.0) {
         return ERROR;
     }
-
+    
     for (i = 0; i < DIM; i++) {
-        a[i] = lin_tra.vehi_pt[i] - lin_tra.prev_wp[i];
-        b[i] = lin_tra.next_wp[i] - lin_tra.prev_wp[i];
-        bhat[i] = b[i] / b_mag;
-        a1_sum += a[i] * bhat[i];
+        bvhat[i] = bv[i] / bv_mag;
     }
-
+    
+    for (i = 0; i < DIM; i++) {
+        a1s += (av[i] * bvhat[i]);
+    }
+    
     // Projection
     for (i = 0; i < DIM; i++) {
-        a1[i] = a1_sum * bhat[i];
+        a1v[i] = a1s * bvhat[i];
         /* This places the origin-anchored vector back to being relative to the
          * previous waypoint */
-        point[i] = a1[i] + lin_tra.prev_wp[i];
+        point[i] = a1v[i] + a[i];
     }
 
     return SUCCESS;
@@ -135,18 +150,18 @@ float lin_tra_calc_cte(void) {
 
 float lin_tra_calc_path_angle(void) {
     int i = 0;
-    float a[DIM] = {0.0};
+    float p1v[DIM] = {0.0};
     float path_angle = 0.0;
 
     /* Move vector to origin */
     for (i = 0; i < DIM; i++) {
-        a[i] = lin_tra.next_wp[i] - lin_tra.prev_wp[i];
+        p1v[i] = lin_tra.next_wp[i] - lin_tra.prev_wp[i];
     }
 
-    path_angle = atan2(north_v[1], north_v[0]) - atan2(a[1], a[0]);
+    path_angle = atan2(north_v[1], north_v[0]) - atan2(p1v[1], p1v[0]);
 
     /* Ensure that the path angle is wrapped between -pi and pi */
-    return fmod(path_angle + M_PI, 2.0 * M_PI) - M_PI;
+    return (fmod((path_angle + M_PI), (2.0 * M_PI)) - M_PI);
 }
 
 int lin_tra_rotate2d(float v[DIM], float path_angle, float v_new[DIM]) {
@@ -209,9 +224,9 @@ int lin_tra_set_prev_wp(float wp[DIM]) {
     return SUCCESS;
 }
 
-void lin_tra_lla_to_enu(float lla_point[DIM + 1],
+void lin_tra_lla_to_ned(float lla_point[DIM + 1],
         float ref_point[DIM + 1],
-        float enu_point[DIM + 1]) {
+        float ned_point[DIM + 1]) {
     int row;
     int col;
     float lat0;
@@ -245,13 +260,13 @@ void lin_tra_lla_to_enu(float lla_point[DIM + 1],
 
     // Multiply rotation matrix with ECEF vector
     for (row = 0; row < (DIM + 1); row++) {
-        enu_point[row] = 0;
+        ned_point[row] = 0;
         for (col = 0; col < (DIM + 1); col++) {
-            enu_point[row] += te2n[row][col] * ecef_point[col];
+            ned_point[row] += te2n[row][col] * ecef_point[col];
         }
     }
 
-    enu_point[2] += (((float) EARTH_RADIUS) + alt0);
+    ned_point[2] += (((float) EARTH_RADIUS) + alt0);
 }
 
 void lin_tra_lla_to_ecef(float lla_point[DIM + 1],

@@ -314,7 +314,7 @@ if __name__ == '__main__':
 
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
-    vehi_pt_en_uc = np.zeros((1, 2))
+    uc_vehi_en = np.zeros((1, 2))
     wp_next_en = wpq.getNext()
     uc_prev_en = np.zeros((1, 2))
     uc_next_en = np.zeros((1, 2))
@@ -343,7 +343,7 @@ if __name__ == '__main__':
 
     i_tx = 0
     prev_or_next_tx = 0.0
-    prev_or_next_rx = 0.0
+    prev_next_vehi = 0.0
     check0 = 0.0
     check1 = 0.0
     check2 = 0.0
@@ -467,7 +467,7 @@ if __name__ == '__main__':
 
                 e = nav_msg['x']  # East
                 n = nav_msg['y']  # North
-                prev_or_next_rx = nav_msg['z']  #
+                prev_next_vehi = nav_msg['z']  #
 
                 check0 = nav_msg['vx']  # using vx as a check value
                 check1 = nav_msg['vy']  # using vy as a check value
@@ -477,14 +477,14 @@ if __name__ == '__main__':
                     (np.abs(check1 - 0.4) <= tolerance) and
                         (np.abs(check2 - 0.6) <= tolerance)):
 
-                    if (prev_or_next_rx-1.0) <= tolerance:
+                    if (prev_next_vehi-1.0) <= tolerance:
                         uc_prev_en = np.array([[e, n]])
 
-                    if (prev_or_next_rx-1.5) <= tolerance:
+                    if (prev_next_vehi-1.5) <= tolerance:
                         uc_next_en = np.array([[e, n]])
 
-                    if (prev_or_next_rx-2.0) <- tolerance:
-                        vehi_pt_en_uc = np.array([[e, n]])
+                    if (prev_next_vehi-2.0) <- tolerance:
+                        uc_vehi_en = np.array([[e, n]])
 
             ##################################################################
             # START OF STATE MACHINE
@@ -651,13 +651,13 @@ if __name__ == '__main__':
                 # print("    check2 =     {}".format(check2))
 
                 print("    prevNextTx    = {}".format(prev_or_next_tx))
-                print("    prevNextRx    = {}".format(prev_or_next_rx))
+                print("    prev_next_vehi = {}".format(prev_next_vehi))
 
                 print("    wp_prev_en    = {}".format(wp_prev_en))
                 print("    uc_prev_en    = {}".format(uc_prev_en))
 
                 print("    vehi_pt_en    = {}".format(vehi_pt_en))
-                print("    vehi_pt_en_uc = {}".format(vehi_pt_en_uc))
+                print("    uc_vehi_en = {}".format(uc_vehi_en))
 
                 print("    wp_next_en    = {}".format(wp_next_en))
                 print("    uc_next_en    = {}".format(uc_next_en))
@@ -700,7 +700,7 @@ if __name__ == '__main__':
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
-                               position_en=vehi_pt_en_uc,
+                               position_en=uc_vehi_en,
                                clst_pt_en=clst_pt_en,
                                new_grid_pts=Grid.get_points())
 

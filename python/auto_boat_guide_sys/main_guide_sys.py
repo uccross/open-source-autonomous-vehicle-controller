@@ -314,9 +314,12 @@ if __name__ == '__main__':
 
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
+    vehi_pt_en_uc = np.zeros((1, 2))
     wp_next_en = wpq.getNext()
     uc_prev_en = np.zeros((1, 2))
     uc_next_en = np.zeros((1, 2))
+
+    is_first_gps = True
 
     msg_type = None
     current_base_mode = -1
@@ -480,6 +483,9 @@ if __name__ == '__main__':
                     if (prev_or_next_rx-1.5) <= tolerance:
                         uc_next_en = np.array([[e, n]])
 
+                    if (prev_or_next_rx-2.0) <- tolerance:
+                        vehi_pt_en_uc = np.array([[e, n]])
+
             ##################################################################
             # START OF STATE MACHINE
             if state == 'UPDATING_PREV':
@@ -565,6 +571,10 @@ if __name__ == '__main__':
 
                     cog = nav_msg['cog']
 
+                    if is_first_gps:
+                        wp_ref_lla = np.array([[lat, lon, 0.0]])
+                        is_first_gps = False
+
                     vehi_pt_lla = np.array([[lat, lon, 0.0]])
 
                     vehi_pt_lla_copy = copy.deepcopy(vehi_pt_lla)
@@ -640,16 +650,17 @@ if __name__ == '__main__':
                 # print("    check1 =     {}".format(check1))
                 # print("    check2 =     {}".format(check2))
 
-                print("    prevNextTx = {}".format(prev_or_next_tx))
-                print("    prevNextRx = {}".format(prev_or_next_rx))
+                print("    prevNextTx    = {}".format(prev_or_next_tx))
+                print("    prevNextRx    = {}".format(prev_or_next_rx))
 
-                print("    wp_prev_en = {}".format(wp_prev_en))
-                print("    uc_prev_en = {}".format(uc_prev_en))
+                print("    wp_prev_en    = {}".format(wp_prev_en))
+                print("    uc_prev_en    = {}".format(uc_prev_en))
 
-                print("    vehi_pt_en = {}".format(vehi_pt_en))
+                print("    vehi_pt_en    = {}".format(vehi_pt_en))
+                print("    vehi_pt_en_uc = {}".format(vehi_pt_en_uc)
 
-                print("    wp_next_en = {}".format(wp_next_en))
-                print("    uc_next_en = {}".format(uc_next_en))
+                print("    wp_next_en    = {}".format(wp_next_en))
+                print("    uc_next_en    = {}".format(uc_next_en))
 
                 print("    state:          {}".format(state))
                 print("    pic32_wp_state: {}".format(pic32_wp_state))
@@ -689,7 +700,7 @@ if __name__ == '__main__':
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
-                               position_en=vehi_pt_en,
+                               position_en=vehi_pt_en_uc,
                                clst_pt_en=clst_pt_en,
                                new_grid_pts=Grid.get_points())
 

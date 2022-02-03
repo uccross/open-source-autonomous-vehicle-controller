@@ -657,7 +657,7 @@ if __name__ == '__main__':
                 print("    uc_prev_en    = {}".format(uc_prev_en))
 
                 print("    vehi_pt_en    = {}".format(vehi_pt_en))
-                print("    vehi_pt_en_uc = {}".format(vehi_pt_en_uc)
+                print("    vehi_pt_en_uc = {}".format(vehi_pt_en_uc))
 
                 print("    wp_next_en    = {}".format(wp_next_en))
                 print("    uc_next_en    = {}".format(uc_next_en))

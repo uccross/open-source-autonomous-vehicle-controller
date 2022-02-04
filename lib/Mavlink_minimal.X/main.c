@@ -288,10 +288,11 @@ void check_radio_events(void) {
                     publish_parameter(param_read.param_id);
                     break;
                 default:
-                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n", 
-                           msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
+                    printf("Received message with ID %d, sequence: %d from component %d of system %d\r\n",
+                            msg_rx.msgid, msg_rx.seq, msg_rx.compid, msg_rx.sysid);
                     break;
             }
+        }
     }
 }
 

@@ -28,11 +28,12 @@
  *****************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define MAV_SERIAL_READ_PERIOD 10 
+#define GPS_FIX_TIME 5000
 #define WP_STATE_MACHINE_PERIOD 250
 #define WP_CONFIRM_PERIOD 1000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 5
-#define CONTROL_PERIOD 10 //Period for control loop in msec
+#define CONTROL_PERIOD 100 //Period for control loop in msec
 #define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
 #define RAW 1
 #define SCALED 2
@@ -48,7 +49,7 @@
 #define TOL 0.0001
 #define MAX_ACCEPTABLE_CTE ((float) 10.0)
 
-#define GYRO_SCALE ((M_PI / 180.0) * 0.6)
+#define GYRO_SCALE ((M_PI / 180.0) * 0.06)
 #define GYRO_BUF_LEN 1000
 #define GYRO_N ((float) GYRO_BUF_LEN)
 
@@ -111,9 +112,9 @@ int main(void) {
 #endif
     cur_time = Sys_timer_get_msec();
     startup_wait_time = cur_time;
-    while ((cur_time - startup_wait_time) < 5000) {
-        cur_time = Sys_timer_get_msec();
-    }
+    //    while ((cur_time - startup_wait_time) < 5000) {
+    //        cur_time = Sys_timer_get_msec();
+    //    }
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
@@ -220,11 +221,17 @@ int main(void) {
 
     uint8_t i_tx_mav_msg = 0;
 
+    char gps_fix_flag = FALSE;
+
     /**************************************************************************
      * Primary Loop                                                           *
      *************************************************************************/
     while (1) {
         cur_time = Sys_timer_get_msec();
+
+        if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
+            gps_fix_flag = TRUE;
+        }
 
         /**********************************************************************
          * Check for all events:                                              *
@@ -235,7 +242,7 @@ int main(void) {
             mav_serial_start_time = cur_time; //reset the timer
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
-            
+
             is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
             if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
@@ -368,8 +375,18 @@ int main(void) {
 #ifdef HIL
                         current_wp_state = SENDING_NEXT;
 #else
-                        if ((vehi_pt_lla[0] != 0.0) && vehi_pt_lla[1] != 0.0) {
-                            current_wp_state = SENDING_PREV;
+
+
+                        publisher_get_gps_rmc_position(vehi_pt_ll);
+
+                        if (gps_fix_flag == TRUE) {
+                            ref_lla[0] = vehi_pt_ll[0];
+                            ref_lla[1] = vehi_pt_ll[1];
+                            ref_lla[2] = 0.0;
+
+                            if ((ref_lla[0] != 0.0) && ref_lla[1] != 0.0) {
+                                current_wp_state = SENDING_PREV;
+                            }
                         }
 #endif
 
@@ -561,6 +578,7 @@ int main(void) {
                     break;
                 case 4:
 #ifndef HIL
+                    publish_waypoint_en(vehi_pt_en, VEHI_PT);
                     publish_GPS();
 #endif 
                     break;

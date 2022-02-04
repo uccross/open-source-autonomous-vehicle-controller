@@ -232,14 +232,14 @@ int publish_waypoint_ll(float wp_lat_lon[DIM]);
  * @Function publish_waypoint_en(float wp_en[DIM])
  * @brief Send waypoint with East and North elements to the companion 
  * @param wp_en[] A waypoint with North and East elements within the Local 
- * @param prev_or_next A value to indicate if the waypoint is prev: 1.0, 
- * or next: 1.5
+ * @param prev_next_vehi A value to indicate if the waypoint is prev: 1.0, 
+ * next: 1.5, or vehicle location: 2.0
  * Tangent Plane (LTP) in meters. 
  * NOTE: Order matters here; [North (meters), East (meters)]
  * @return SUCCESS or FAILURE
  * @author Pavlo Vlastos
  */
-int publish_waypoint_en(float wp_en[DIM], float prev_or_next);
+int publish_waypoint_en(float wp_en[DIM], float prev_next_vehi);
 
 /**
  * @Function publish_ack(uint8_t result)

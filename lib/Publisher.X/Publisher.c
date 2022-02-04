@@ -529,7 +529,7 @@ int publish_waypoint_ll(float wp_lat_lon[DIM]) {
     return SUCCESS;
 }
 
-int publish_waypoint_en(float wp_en[DIM], float prev_or_next) {
+int publish_waypoint_en(float wp_en[DIM], float prev_next_vehi) {
     mavlink_message_t msg_tx;
     mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
             mavlink_system.compid,
@@ -537,7 +537,7 @@ int publish_waypoint_en(float wp_en[DIM], float prev_or_next) {
             Sys_timer_get_usec(),
             wp_en[0], /* x: EN LTP -> x_east */
             wp_en[1], /* y: EN LTP -> y_north */
-            prev_or_next, /* z: Altitude [meters] */
+            prev_next_vehi, /* z: Altitude [meters] */
             0.2, /* vx [meters/second] */
             0.4, /* vy [meters/second] */
             0.6); /* vz [meters/second] */

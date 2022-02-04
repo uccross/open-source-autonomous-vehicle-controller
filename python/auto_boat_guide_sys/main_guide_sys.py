@@ -480,10 +480,10 @@ if __name__ == '__main__':
                     if (prev_next_vehi-1.0) <= tolerance:
                         uc_prev_en = np.array([[e, n]])
 
-                    if (prev_next_vehi-1.5) <= tolerance:
+                    elif (prev_next_vehi-1.5) <= tolerance:
                         uc_next_en = np.array([[e, n]])
 
-                    if (prev_next_vehi-2.0) <= tolerance:
+                    elif (prev_next_vehi-2.0) <= tolerance:
                         uc_vehi_en = np.array([[e, n]])
 
             ##################################################################

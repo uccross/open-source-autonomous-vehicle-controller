@@ -161,8 +161,8 @@ uint8_t Encoder_init(void) {
     CS3_TRIS = 0; /* set up CS3 for CS output */
     CS3_LAT = 1; /* deselect encoder 3 (steering servo)*
     /*LED indicator of ISR  to be removed later*/
-    LED_OUT_TRIS = 0;
-    LED_OUT_LAT = 0;
+    //    LED_OUT_TRIS = 0;
+    //    LED_OUT_LAT = 0;
     /*set up SPI2 RX interrupt*/
     IEC1bits.SPI2RXIE = 1; //enable interrupt
     IFS1bits.SPI2RXIF = 0; // clear interrupt flag
@@ -172,7 +172,9 @@ uint8_t Encoder_init(void) {
     /*Initialize encoder.*/
     setting = 0; //ABI PWM off
     return_value = write_register(SETTINGS_REG, setting);
+#ifdef ENC_TESTING
     printf("\r\nEncoder set to:0x%x\r\n", return_value);
+#endif
     __builtin_enable_interrupts();
     for (index = 0; index < NUM_ENCODERS; index++) {
         Encoder_init_encoder_data(&encoder_data[index]);
@@ -373,14 +375,17 @@ static int16_t write_register(uint16_t address, uint16_t value) {
     delay(1);
 
     /*check for errors*/
+#ifdef ENC_TESTING
     error_val = read_register(ERRFL);
     error_val = error_val & 0x8;
+
     if (data & 0xC000 != value & 0xC000) {
         printf("Value written: %d, value read: %d", value, data);
     }
     if (error_val != 0) {
         printf("Error condition returned: %d", error_val);
     }
+#endif
     return (data & 0xC000);
 }
 
@@ -491,23 +496,18 @@ int main(void) {
 
     Board_init();
     Serial_init();
-    Encoder_init();
     printf("\r\nAS5047D Encoder Test Harness %s, %s\r\n", __DATE__, __TIME__);
+    Encoder_init();
+
     for (index = 0; index < NUM_ENCODERS; index++) {
         Encoder_init_encoder_data(&enc_data[index]);
     }
 
     while (1) {
         Encoder_start_data_acq();
-        angle_left = Encoder_get_angle(LEFT_MOTOR);
-        angle_right = Encoder_get_angle(RIGHT_MOTOR);
-        vel_left = Encoder_get_velocity(LEFT_MOTOR);
-        vel_right = Encoder_get_velocity(RIGHT_MOTOR);
-        phi = Encoder_get_angle(HEADING);
-        dphi_dt = Encoder_get_velocity(HEADING);
         if (Encoder_is_data_ready() == TRUE) {
             Encoder_get_data(enc_data);
-            printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n",
+            printf("L: %6d, %6d; R: %6d, %6d, S: %6d, %6d\r",
                     enc_data[LEFT_MOTOR].next_theta,
                     enc_data[LEFT_MOTOR].omega,
                     enc_data[RIGHT_MOTOR].next_theta,
@@ -515,7 +515,6 @@ int main(void) {
                     enc_data[HEADING].next_theta,
                     enc_data[HEADING].omega);
         }
-        printf("L: %d, %d; R: %d, %d, S: %d, %d\r\n", angle_left, vel_left, angle_right, vel_right, phi, dphi_dt);
         delay(150000);
     }
 }

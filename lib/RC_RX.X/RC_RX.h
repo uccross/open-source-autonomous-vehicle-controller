@@ -67,6 +67,16 @@ uint8_t RCRX_new_cmd_avail(void);
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels);
 
+/**
+ * @Function RCRX_get_err()
+ * @param pointer to servo data buffer
+ * @return number of rc errors detected since init
+ * @brief 
+ * @note 
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_err(void);
+
 
 
 

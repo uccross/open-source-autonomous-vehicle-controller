@@ -636,16 +636,25 @@ static uint16_t calc_pw(uint16_t raw_counts) {
  * @author Aaron Hunter
  */
 void set_control_output(void) {
+    static uint8_t debounce = 0;
+    uint8_t bounces = 5;
     int tol = 100;
     if (RC_channels[SWITCH_D] > RC_RX_MAX_COUNTS - tol) {
-        // update pulsewidths for each servo output
-        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+        if (debounce > 0) debounce--;
+        if (debounce == 0) {
+            // update pulsewidths for each servo output
+            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+        }
     } else {
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
-        RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+        debounce++;
+        if (debounce >= bounces) {
+            debounce = bounces;
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_RIGHT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), RC_STEERING);
+        }
     }
 }
 
@@ -717,6 +726,7 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat();
+//            printf("RC_RX errors: %d\r", RCRX_get_err());
 
         }
     }

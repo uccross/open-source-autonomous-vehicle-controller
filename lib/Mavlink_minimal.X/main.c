@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <math.h>
 #include "xc.h"
 #include "Board.h"
 #include "SerialM32.h"
@@ -30,18 +31,14 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_PERIOD 10 //Period for control loop in msec
 #define CONTROL_FREQUENCY (1000/CONTROL_PERIOD) //frequency in Hz
-#define ENCODER_TWO_PI 0x4fff  //counts to 2 pi conversion 
-#define PI 3.141592653589793
+#define ENCODER_MAX_CTS 16384.0 //2^14 counts/rev for the encoder
+#define ENCODER_TWO_PI 2*M_PI/0x4fff  //counts to 2 pi conversion 
 #define WHEEL_RADIUS 0.0325 //meters
-#define WHEEL_CIRCUMFERENCE WHEEL_RADIUS*2*PI
-#define RPS_TO_RPM (60*1000/CONTROL_PERIOD)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define BUFFER_SIZE 1024
 #define UINT_16_MAX 0xffff
-#define RAD2DEG 180.0/M_PI
-#define DEG2RAD M_PI/180.0
 #define KNOTS_TO_MPS 1/1.9438444924406 //1 meter/second is equal to 1.9438444924406 knots
 #define RAW 1
 #define SCALED 2
@@ -71,6 +68,11 @@ static uint8_t pub_RC_signals = TRUE;
 static uint8_t pub_IMU = TRUE;
 static uint8_t pub_Encoder = TRUE;
 
+/*Pre-calculate float conversions*/
+static float omega_to_dist = WHEEL_RADIUS * 2 * M_PI / ENCODER_MAX_CTS;
+static float knots_to_mps = KNOTS_TO_MPS;
+static float cts_to_deg = 360.0 / ENCODER_MAX_CTS;
+static float freq = (float)CONTROL_FREQUENCY;
 /*******************************************************************************
  * TYPEDEFS                                                                    *
  ******************************************************************************/
@@ -366,6 +368,9 @@ void publish_IMU_data(uint8_t data_type) {
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);
     }
+    /*Test for values, comment out when done:*/
+//    printf("a: %d %d %d g: %d %d %d m: %d %d %d \r",  IMU_scaled.acc.x, IMU_scaled.acc.y, IMU_scaled.acc.z, 
+//    IMU_scaled.gyro.x,IMU_scaled.gyro.y,IMU_scaled.gyro.z, IMU_scaled.mag.x, IMU_scaled.mag.x, IMU_scaled.mag.z);
 }
 
 ///**
@@ -386,11 +391,12 @@ void publish_encoder_data(void) {
     double distance[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     // encode the distance traveled into the first NUM_ENCODER distances
     for (i = 0; i < NUM_ENCODERS; i++) {
-        distance[i] = ((double) encoder_data[i].omega / ENCODER_TWO_PI) * WHEEL_CIRCUMFERENCE;
+        distance[i] = (double) encoder_data[i].omega * omega_to_dist;
     }
     //encode the exact angle for the steering servo--not necessary for the wheel encoders
-    distance[i + 1] = (double) encoder_data[HEADING].next_theta / ENCODER_TWO_PI;
-
+    distance[NUM_ENCODERS] = (double) encoder_data[HEADING].next_theta * cts_to_deg;
+    /* Examine output of conversion, remove this code once the output is confirmed*/
+//    printf("D; %f %f %f %f \r", distance[0], distance[1], distance[2], distance[3] );
 
     mavlink_msg_wheel_distance_pack(
             mavlink_system.sysid,
@@ -407,36 +413,6 @@ void publish_encoder_data(void) {
     }
     //    printf("last char %x \r\n", msg_buffer[index - 1]);
 }
-// publish with ESC_STATUS
-//
-//void publish_encoder_data(void) {
-//    mavlink_message_t msg_tx;
-//    uint16_t msg_length;
-//    uint8_t msg_buffer[BUFFER_SIZE];
-//    uint16_t index = 0;
-//    int32_t rpm[4];
-//    float voltage[4] = {0, 0, 0, 0};
-//    float current[4] = {0, 0, 0, 0};
-//
-//    rpm[LEFT_MOTOR] = ((int32_t) encoder_data[LEFT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-//    rpm[RIGHT_MOTOR] = ((int32_t) encoder_data[RIGHT_MOTOR].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-//    rpm[HEADING] = ((int32_t) encoder_data[HEADING].omega * RPS_TO_RPM) / ENCODER_TWO_PI;
-//    rpm[3] = (int32_t) encoder_data[HEADING].next_theta;
-//    mavlink_msg_esc_status_pack(
-//            mavlink_system.sysid,
-//            mavlink_system.compid,
-//            &msg_tx,
-//            Sys_timer_get_usec(),
-//            LEFT_MOTOR,
-//            rpm,
-//            voltage,
-//            current
-//            );
-//    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-//    for (index = 0; index < msg_length; index++) {
-//        Radio_put_char(msg_buffer[index]);
-//    }
-//}
 
 /**
  * @function publish_RC_signals(void)
@@ -726,7 +702,7 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat();
-//            printf("RC_RX errors: %d\r", RCRX_get_err());
+            //            printf("RC_RX errors: %d\r", RCRX_get_err());
 
         }
     }

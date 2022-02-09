@@ -35,7 +35,7 @@
 #define LED_OUT_TRIS TRISDbits.TRISD3
 #define LED_OUT_LAT LATDbits.LATD3
 /*important constants*/
-#define MAX_VELOCITY 5000 //extrapolated to 100 Hz
+#define MAX_VELOCITY 6000 //extrapolated to 100 Hz
 #define TWO_PI 16384
 /*AS5047D register definitions*/
 #define NOP 0x0000

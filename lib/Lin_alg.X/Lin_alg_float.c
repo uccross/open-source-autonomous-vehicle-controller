@@ -63,7 +63,7 @@
  * @param m2 A 3x3 matrix
  * @return TRUE if matrices are equal, FALSE otherwise
  */
-char lin_alg_is_m_equal(float m1[MSZ][MSZ], float m2[MSZ][MSZ]) {
+char lin_alg_is_m_equal(const float m1[MSZ][MSZ], const float m2[MSZ][MSZ]) {
     int row;
     int col;
 
@@ -294,9 +294,9 @@ void lin_alg_m_m_add(float m1[MSZ][MSZ], float m2[MSZ][MSZ],
 
 /**
  * @function lin_alg_m_m_sub()
- * Add a matrix to a matrix
- * @param m1 Matrix to subtract to another matrix
- * @param m2 Matrix to have a matrix subtracted to it
+ * Subtract a matrix from another a matrix
+ * @param m1 Matrix to subtract from another matrix
+ * @param m2 Matrix to have a matrix subtracted from it
  * @param m_out Matrix as difference of two matrices
  */
 void lin_alg_m_m_sub(float m1[MSZ][MSZ], float m2[MSZ][MSZ],
@@ -462,7 +462,7 @@ float lin_alg_dot(float u[MSZ], float v[MSZ]) {
  * @param v A vector
  * @return The cross product (sometimes called the outter product) of u and v
  */
-void lin_alg_cross(float u[MSZ], float v[MSZ], float w_out[MSZ]) {
+void lin_alg_cross(const float u[MSZ], const float v[MSZ], float w_out[MSZ]) {
     w_out[0] = u[1] * v[2] - u[2] * v[1];
     w_out[1] = u[2] * v[0] - u[0] * v[2];
     w_out[2] = u[0] * v[1] - u[1] * v[0];
@@ -545,6 +545,7 @@ void lin_alg_gen_dcm_with_angles(float psi, float theta, float phi,
 }
 
 /**
+ * NOT EXPLICITLY TESTED YET
  * @function lin_alg_extract_angles();
  * Extract Euler angles from the DCM
  * @param dcm The Direction Cosine Matrix, a rotation matrix
@@ -555,11 +556,11 @@ void lin_alg_gen_dcm_with_angles(float psi, float theta, float phi,
  */
 char lin_alg_extract_angles(float dcm[MSZ][MSZ], float *psi, float *theta,
         float *phi) {
-    *psi = atan2(dcm[1][0], dcm[0][0]); /* Yaw */
+    *psi = atan2(dcm[1][2], dcm[2][2]); /* Yaw */
 
-    *theta = asin(-dcm[2][0]); /* Pitch */
+    *theta = asin(-dcm[0][2]); /* Pitch */
 
-    *phi = atan2(dcm[2][1], dcm[2][2]); /* Roll */
+    *phi = atan2(dcm[0][1], dcm[0][0]); /* Roll */
 
     return SUCCESS;
 }
@@ -701,7 +702,7 @@ void lin_alg_q2euler_abs(float q[QSZ], float *psi, float *theta, float *phi) {
  * @param phi
  * @param v_new
  */
-void lin_alg_rot_v_q(const float v[MSZ], float psi, float theta, float phi,
+void lin_alg_rot_v_q(float v[MSZ], float psi, float theta, float phi,
         float v_new[MSZ]) {
     float v_pure[QSZ];
     float v_temp[MSZ];
@@ -721,6 +722,69 @@ void lin_alg_rot_v_q(const float v[MSZ], float psi, float theta, float phi,
     v_new[0] = v_pure[1];
     v_new[1] = v_pure[2];
     v_new[2] = v_pure[3];
+}
+
+/**
+ * @function lin_alg_R_exp() NOT TESTED YET
+ * Matrix exponential with Rodiques parameters. This integration keeps R on 
+ * SO(3). See paper: Geometric Integration on Euclidean Group With Application 
+ * to Articulated Multibody Systems. Credit to the UCSC ECE167 class material 
+ * and instructors Gabriel Elkaim and Max Dunne and a *little* credit to Pavlo 
+ * Vlastos
+ * @param w A 3x1 angular rate vector or something similar of the same size
+ * @param dt Time step in seconds
+ * @param thresh The threshold to account for the case where the norm is near 
+ * @param R_exp[][] out A 3x3 rotation DCM
+ * zero
+ * 
+ * @TODO: THIS FUNCTION IS NOT TESTED YET
+ * 
+ */
+void lin_alg_R_exp(float w[MSZ], float dt, float thresh,
+        float R_exp[MSZ][MSZ]) {
+    float w_norm = lin_alg_v_norm(w);
+    float wx[MSZ][MSZ];
+    float sinc_w = 0.0;
+    float one_minus_cos_w = 0.0;
+    float I[MSZ][MSZ];
+    float sinc_w_wx[MSZ][MSZ];
+    float I_minus_sinc_w_wx[MSZ][MSZ];
+    float one_minus_cos_w_wx_wx[MSZ][MSZ];
+    
+    float w_norm_2 = w_norm*w_norm;
+    float w_norm_4 = w_norm_2*w_norm_2;
+    
+    float dt_2 = dt*dt;
+    float dt_3 = dt_2*dt;
+    float dt_4 = dt_3*dt;
+    float dt_5 = dt_4*dt;
+    float dt_6 = dt_5*dt;
+    
+    lin_alg_skew_sym(w, wx);
+    lin_alg_skew_sym(w, sinc_w_wx);
+    
+    if (w_norm < thresh) {
+        sinc_w = dt - (dt_3 * w_norm_2) / 6.0 + (dt_5 * w_norm_4) / 120.0;
+        one_minus_cos_w = (dt_2) / 2.0 - (dt_4 * w_norm_2) / 24.0 + (dt_6 * w_norm_4) / 720.0;
+    } else {
+        sinc_w = sin(w_norm * dt) / w_norm;
+        one_minus_cos_w = (1.0 - cos(w_norm * dt)) / w_norm_2;
+    }
+    //    R_exp = [1 0 0;
+    //    0 1 0;
+    //    0 0 1] - sincW * wx + oneMinusCosW * wx * wx;
+    lin_alg_set_m(
+            1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0,
+            0.0, 0.0, 1.0, I);
+    
+    lin_alg_m_scale(sinc_w, sinc_w_wx);
+    
+    lin_alg_m_m_mult(wx, wx, one_minus_cos_w_wx_wx);
+    lin_alg_m_scale(one_minus_cos_w, one_minus_cos_w_wx_wx);
+    
+    lin_alg_m_m_sub(I, sinc_w_wx, I_minus_sinc_w_wx); /* This is a subtraction */
+    lin_alg_m_m_add(I_minus_sinc_w_wx, one_minus_cos_w_wx_wx, R_exp);
 }
 
 /**
@@ -775,8 +839,8 @@ int test_num_print(int i, int k);
 int main(void) {
     Board_init();
     Serial_init();
-    
-    printf("\r\nLinear Algebra Test Harness %s. %s",__DATE__,__TIME__);
+
+    printf("\r\nLinear Algebra Test Harness %s. %s", __DATE__, __TIME__);
 
     int pass_count = 0;
 
@@ -1502,26 +1566,26 @@ int main(void) {
             0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, dcma);
     lin_alg_q2dcm(q, dcma);
-    
+
     lin_alg_set_m(0.0, 0.0, 0.0,
             0.0, 0.0, 0.0,
             0.0, 0.0, 0.0, dcm);
 
     lin_alg_gen_dcm_with_angles(psi, theta, phi, dcm);
-    
-    if (lin_alg_is_m_equal(dcma, dcm) == TRUE){
+
+    if (lin_alg_is_m_equal(dcma, dcm) == TRUE) {
         pass_lin_alg_gen_dcm_with_angles++;
         printf("\r\nSUCCESS: Test %d lin_alg_gen_dcm_with_angles() correctly passes", total);
     } else {
         printf("\r\nFAIL:    Test %d lin_alg_gen_dcm_with_angles() correctly passes", total);
     }
-    
+
     printf("\r\n     DCM from quaternion");
     lin_alg_m_print(dcma);
     printf("\r\n     DCM from angles");
     lin_alg_m_print(dcm);
-    
-    
+
+
 
     for (i = 0; i < PAUSE; i++);
 

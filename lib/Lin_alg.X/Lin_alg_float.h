@@ -52,7 +52,7 @@
  * @param m2 A 3x3 matrix
  * @return TRUE if matrices are equal, FALSE otherwise
  */
-char lin_alg_is_m_equal(float m1[MSZ][MSZ], float m2[MSZ][MSZ]);
+char lin_alg_is_m_equal(const float m1[MSZ][MSZ], const float m2[MSZ][MSZ]);
 
 /**
  * @function lin_alg_m_m_mult()
@@ -261,7 +261,7 @@ float lin_alg_dot(float u[MSZ], float v[MSZ]);
  * @param v A vector
  * @return The cross product (sometimes called the outter product) of u and v
  */
-void lin_alg_cross(float u[MSZ], float v[MSZ], float w_out[MSZ]);
+void lin_alg_cross(const float u[MSZ], const float v[MSZ], float w_out[MSZ]);
 
 /**
  * @function lin_alg_angle_from_2vecs()
@@ -387,7 +387,7 @@ void lin_alg_q2euler_abs(float q[QSZ], float *psi, float *theta, float *phi);
  * @param phi
  * @param v_new
  */
-void lin_alg_rot_v_q(const float v[MSZ], float psi, float theta, float phi,
+void lin_alg_rot_v_q(float v[MSZ], float psi, float theta, float phi,
         float v_new[MSZ]);
 
 /**

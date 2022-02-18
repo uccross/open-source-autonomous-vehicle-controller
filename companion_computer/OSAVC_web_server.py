@@ -86,11 +86,12 @@ def MAVlogging():
 def timelapse():  # continuous shooting
     cam = PiCamera()
     cam.resolution = (1640,922)
-    for filename in enumerate(cam.capture_continuous('img{timestamp:%Y%m%d-%H%M%S}.jpg')):
+    for filename in enumerate(cam.capture_continuous('/mnt/usb/images/img{timestamp:%Y%m%d-%H%M%S}.jpg')):
         print('snap taken')
         print(btn1,btn2)
-        shutil.copyfile(filename,'/mnt/usb/latest/latest.jpg')
-        shutil.copyfile(filename,'/home/pi/Flask/static/latest.jpg')
+        print(filename)
+        #shutil.copyfile(filename,'/mnt/usb/images/filename')
+        #shutil.copyfile(filename,'/home/pi/Flask/static/latest.jpg')
         if btn1 != 's':
             break
     cam.close()
@@ -136,6 +137,7 @@ def snapstart(): # take pictures on demand
 @app.route('/', methods = ['POST','GET'])
 def hello_world():
 
+    
     status = 'off'
     global btn1
     btn1 = 'o'
@@ -152,9 +154,14 @@ def hello_world():
         if request.form['submit'] == 'Video':
             print('BP: Recording video')
             status = 'video'
-            btn1 = 'vid'
+            btn1 = 'v'
             t2 = Thread(target=video)
             t2.start()
+            message = 'All good'
+        elif request.form['submit'] == 'Video Off':
+            print('BP: Video off')
+            status = 'Idle'
+            btn1 = 'o'
             message = 'All good'
         elif request.form['submit'] == 'Connect MAV':
             print('Trying to connect')
@@ -171,11 +178,6 @@ def hello_world():
         elif request.form['submit'] == 'Stop logging':
             Datalogging = False
             btn1 = 'o'
-        elif request.form['submit'] == 'Video Off':
-            print('BP: Video off')
-            status = 'Idle'
-            btn1 = 'o'
-            message = 'All good'
         elif request.form['submit'] == 'Stills':
             print('BP: Recording stills')
             btn1 = 's'

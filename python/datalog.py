@@ -33,7 +33,7 @@ def mav_print_imu():
 # Create the connection
 # Need to provide the serial port and baudrate
 print("Starting application\n")
-master = mavutil.mavlink_connection("COM5", baud=57600)
+master = mavutil.mavlink_connection("COM3", baud=57600)
 master.wait_heartbeat()
 print('target_system {}, target component {} \n'.format(master.target_system,master.target_component))
 msg = None

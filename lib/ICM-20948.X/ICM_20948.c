@@ -301,10 +301,10 @@ uint8_t IMU_init(char interface_mode) {
         SPI_set_reg(AGB0_REG_REG_BANK_SEL, USER_BANK_0);
         value = SPI_read_reg(AGB0_REG_WHO_AM_I);
         if (value != ICM_DEV_ID) {
-            printf("IMU not found!\r\n");
+            //printf("IMU not found!\r\n");
             return ERROR;
         }
-        printf("IMU returned who am I = 0x%x \r\n", value);
+        //printf("IMU returned who am I = 0x%x \r\n", value);
         SPI_set_reg(AGB0_REG_USER_CTRL, 0x30); //enable master I2C, disable slave I2C interface
         SPI_set_reg(AGB0_REG_PWR_MGMT_1, 0x01); //clear sleep bit and set clock to best available
         /*switch to user bank 3 to configure slave devices*/
@@ -318,10 +318,10 @@ uint8_t IMU_init(char interface_mode) {
         }
         value = SPI_read_reg(AGB3_REG_I2C_SLV4_DI); /*read the data returned by the mag*/
         if (value != MAG_DEV_ID) {
-            printf("Magnetometer not found!\r\n");
+            //printf("Magnetometer not found!\r\n");
             return ERROR;
         }
-        printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
+        //printf("Magnetometer returned who I am 2 = 0x%x\r\n", value); /*mag should return 0x9*/
         SPI_set_reg(AGB3_REG_I2C_SLV4_ADDR, MAG_I2C_ADDR); /*load the I2C address of the magnetometer*/
         /*set the mag parameters on mag control 2 register*/
         SPI_set_reg(AGB3_REG_I2C_SLV4_REG, M_REG_CNTL2);
@@ -357,7 +357,7 @@ uint8_t IMU_init(char interface_mode) {
 int8_t IMU_start_data_acq(void) {
     int8_t error = FALSE;
     if (IMU_CS_LAT == 0) {
-        printf("IMU error found\r\n");
+       // printf("IMU error found\r\n");
         SPI1BUF; //read buffer
         IFS0bits.SPI1RXIF = 0; //clear any interrupt flag
         error = TRUE;

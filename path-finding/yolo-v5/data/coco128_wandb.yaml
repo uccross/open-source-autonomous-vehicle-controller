@@ -1,0 +1,6 @@
+names:
+- cone
+nc: 1
+test: null
+train: wandb-artifact://yolo-wandb-demo/train
+val: wandb-artifact://yolo-wandb-demo/val

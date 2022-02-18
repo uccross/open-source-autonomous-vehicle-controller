@@ -84,7 +84,9 @@
 	<article>
 
         <h1>OSAVC Web Server Status: {{ status }}!</h1>
-        <h2>Free disk space: {{ df_pc}}%</h2>
+
+        <h2>Free disk space: {{ df_pc }}%</h2>
+
         <h3>Message: {{ message}} </h3>
         <h3>MAVstatus: {{ MAVstatus }} </h3>
 
@@ -102,7 +104,9 @@
         {%endif %}
       </p>
       <p>
-          {% if btn1 == 'vid' %}
+
+          {% if btn1 == 'v' %}
+
           <input class="button_off" type="submit" name="submit" value="Video Off">
           {% else %}
            <input class="button" type="submit" name="submit" value="Video">

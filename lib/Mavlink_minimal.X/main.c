@@ -426,7 +426,7 @@ void publish_encoder_data(void) {
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);
     }
-    //    printf("last char %x \r\n", msg_buffer[index - 1]);
+        printf("last char %x \r\n", msg_buffer[index - 1]);
 }
 
 /**

@@ -247,9 +247,9 @@ void RC_channels_init(void) {
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
         RCRX_get_cmd(RC_channels);
-        if (pub_RC_signals == TRUE) {
-            publish_RC_signals_raw();
-        }
+//        if (pub_RC_signals == TRUE) {
+//            publish_RC_signals_raw();
+//        }
     }
 }
 

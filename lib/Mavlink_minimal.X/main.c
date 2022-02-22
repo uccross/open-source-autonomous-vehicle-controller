@@ -247,9 +247,9 @@ void RC_channels_init(void) {
 void check_RC_events() {
     if (RCRX_new_cmd_avail()) {
         RCRX_get_cmd(RC_channels);
-        if (pub_RC_signals == TRUE) {
-            publish_RC_signals_raw();
-        }
+//        if (pub_RC_signals == TRUE) {
+//            publish_RC_signals_raw();
+//        }
     }
 }
 
@@ -539,7 +539,7 @@ void publish_encoder_data(void) {
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);
     }
-    //    printf("last char %x \r\n", msg_buffer[index - 1]);
+//        printf("last char %x \r\n", msg_buffer[index - 1]);
 }
 
 /**

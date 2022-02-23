@@ -33,7 +33,6 @@
 !*.pb
 !*.tflite
 !*.mp4
-!*.html
 !LICENSE
 !.gitignore
 

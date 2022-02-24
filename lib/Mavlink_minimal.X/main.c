@@ -54,10 +54,25 @@ mavlink_system_t mavlink_system = {
 };
 
 enum RC_channels {
-    ACCELERATOR = 2,
-    STEERING,
+    THR,
+    AIL,
+    ELE,
+    RUD,
+    SWITCH_A,
+    SWITCH_B,
+    SWITCH_C,
     SWITCH_D,
+    SWITCH_E,
+    SWITCH_1,
+    SWITCH_F,
+    SWITCH_G,
 }; //map to the car controls from the RC receiver
+//enum RC_channels {
+//    ACCELERATOR = 2,
+//    STEERING,
+//    SWITCH_D,
+//}; //map to the car controls from the RC receiver
+
 const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
 
 RCRX_channel_buffer RC_channels[CHANNELS];
@@ -634,9 +649,11 @@ void set_control_output(void) {
         if (debounce > 0) debounce--;
         if (debounce == 0) {
             // update pulsewidths for each servo output
-            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_LEFT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_channels[ACCELERATOR]), RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(calc_pw(RC_channels[STEERING]), RC_STEERING);
+            // we're using the elevator channel for accelerator 
+            RC_servo_set_pulse(calc_pw(RC_channels[ELE]), RC_LEFT_WHEEL);
+            RC_servo_set_pulse(calc_pw(RC_channels[ELE]), RC_RIGHT_WHEEL);
+            // and rudder for steering
+            RC_servo_set_pulse(calc_pw(RC_channels[RUD]), RC_STEERING);
         }
     } else {
         debounce++;

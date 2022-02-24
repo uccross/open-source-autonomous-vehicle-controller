@@ -5,6 +5,7 @@
         <group>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/Mavlink_minimal.X/main.c</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/RC_RX.X/RC_RX.c</file>
+            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/NEO_M8N.X/NEO_M8N.c</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/RC_RX.X/RC_RX.h</file>
         </group>
     </open-files>

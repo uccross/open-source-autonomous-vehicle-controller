@@ -184,7 +184,7 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
  * @note 
  * @author aahunter
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
-unsigned int RCRX_get_err(void){
+unsigned int RCRX_get_err(void) {
     return parse_error_counter;
 }
 
@@ -365,7 +365,7 @@ static void RCRX_run_RX_state_machine(uint8_t curr_byte) {
     static uint8_t byte_counter = 0;
     RCRX_state_t next_state;
     switch (current_state) {
-        case WAIT_SYNC: 
+        case WAIT_SYNC:
             /* data stream shows STATUS BYTE = 0x00 = END_BYTE so we look for 
              * two instances of END_BYTE in a row to synchronize the parsing
              * sequence. 
@@ -455,6 +455,24 @@ static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels) {
     channels[7] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][10] >> 5 \
             | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][11] << 3) & 0x7ff);
     // this pattern repeats for the second 8 channels
+    channels[8] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][12]\
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][13] << 8) &0x7ff);
+    channels[9] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][13] >> 3 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][14] << 5) &0x7ff);
+    channels[10] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][14] >> 6 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][15] << 2 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][16] << 10) &0x7ff);
+    channels[11] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][16] >> 1 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][17] << 7) & 0x7ff);
+    channels[12] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][17] >> 4 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][18] << 4) & 0x7ff);
+    channels[13] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][18] >> 7 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][19] << 1 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][20] << 9) & 0x7ff);
+    channels[14] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][20] >> 2 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][21] << 6) & 0x7ff);
+    channels[15] = (uint16_t) ((RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][21] >> 5 \
+            | RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][22] << 3) & 0x7ff);
     return SUCCESS;
 }
 
@@ -476,8 +494,10 @@ void main(void) {
             ///*Throttle is assigned to elevator channel to center at midpoint for ESCs unlike
             // how an airplane motor is configured.  We need reverse drive in other words.
             // Steering servo is assigned to rudder channel, may be easier to drive on aileron
-            // Switch D is for passthrough mode and assigned to channel 4.  Low is passthrough, High is autonomous*/
-            printf("T %d S %d M %d  ERR %d \r", servo_data[2], servo_data[3], servo_data[4], parse_error_counter);
+            // Switch D is for passthrough mode and assigned to channel .  Low is passthrough, High is autonomous*/
+            printf("T %d S %d M %d stat %x ERR %d \r", servo_data[2], servo_data[3], \
+                    servo_data[7], RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
+//            printf("stat %x ERR %d \r\n", RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
         }
     }
 }

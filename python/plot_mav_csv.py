@@ -13,7 +13,7 @@
     'lon' is a parameter also within that message type we want to plot.
 
     Extra parameters for 3D plots can be added too:
-    python plot_mav_csv.py -c ../../my_data/2021_08_12.csv -m GPS_RAW_INT --ch0 lat --ch1 lon --ch2 current_distance
+    python plot_mav_csv.py -c ../../reboat_data/mav_csv_data/2021_10_17a.csv --ch0 lat --ch1 lon --ch2 current_distance --ch2_max 0.0 --ch2_min -10.0 -s 1450 -e 6000 --title "Depth Measurements and Position"
 
     where '../../my_data/2021_08_12.csv' is the file path and name, 
     'GPS_RAW_INT' is the MAVLink message type,
@@ -52,7 +52,7 @@ parser.add_argument('-c', '--csv_file_path',
 parser.add_argument('-m', '--mav_message',
                     dest='mav_message',
                     type=str,
-                    default=None,
+                    default='ALL',
                     help='A valid MAVLink message name, for example: \
                         GPS_RAW_INT. For more examples see \
                             https://mavlink.io/en/messages/common.html')
@@ -126,7 +126,7 @@ parser.add_argument('-e', '--end',
                     dest='data_end_index',
                     default=100000000000000,
                     help='The end index for the data')
-                    
+
 parser.add_argument('--title',
                     type=str,
                     default='Default Title',
@@ -220,8 +220,8 @@ with open(csv_file_path, 'r') as read_obj:
 
         # print("row: {}".format(row[column_names[0]]))
 
-        if ((row[column_names[0]] == mav_message) and
-                (skip_index >= data_start_index) and
+        if (((row[column_names[0]] == mav_message) or (mav_message == 'ALL'))
+            and (skip_index >= data_start_index) and
                 (skip_index <= data_end_index)):
 
             # @NOTE: these are strings in a matrix at this point, NOT floats,
@@ -327,20 +327,21 @@ if len(mav_params) == 3:
     ax.plot(target_mav_data_clean[:, 0],
             target_mav_data_clean[:, 1],
             target_mav_data_clean[:, 2],
-            color='#1f77b4', marker='o', markersize=2, markerfacecolor ='black', 
-            markeredgecolor = 'black')
+            color='#1f77b4', marker='o', markersize=2, markerfacecolor='black',
+            markeredgecolor='black')
     ax.scatter(target_mav_data_clean[0, 0], target_mav_data_clean[0, 1],
-                target_mav_data_clean[0, 2], color='lime', label='Start',
-                marker='o', edgecolors='lime')
+               target_mav_data_clean[0, 2], color='lime', label='Start',
+               marker='o', edgecolors='lime')
     ax.scatter(target_mav_data_clean[-1, 0], target_mav_data_clean[-1, 1],
-                target_mav_data_clean[-1, 2], color='red', label='End',
-                marker='s', edgecolors='black')
+               target_mav_data_clean[-1, 2], color='red', label='End',
+               marker='s', edgecolors='black')
     # ax.set_zlim(min(target_mav_data_clean[:, 2]) - margins,
     #             max(target_mav_data_clean[:, 2]) + margins)
     ax.set_zlabel('{}'.format(mav_params[2]))
     ax.legend()
 else:
-    plt.scatter(target_mav_data_clean[:, 0], target_mav_data_clean[:, 1])
+    print("target_mav_data_clean.shape: {}".format(target_mav_data_clean.shape))
+    plt.plot(target_mav_data_clean[:, 0], target_mav_data_clean[:, 1])
     plt.scatter(target_mav_data_clean[0, 0], target_mav_data_clean[0, 1],
                 color='lime',
                 label='Start',

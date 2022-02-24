@@ -158,7 +158,7 @@ if __name__ == '__main__':
         msg_list = []
 
     # Grid
-    Grid = Grid.Grid(width=grid_width, length=grid_length)
+    Grid = Grid.Grid(width=grid_width, length=grid_length, x0=x0_b, y0=y0_b)
     Grid.form_grid(grid_separation, grid_angle)
     trajectory = LN.Linear()
 

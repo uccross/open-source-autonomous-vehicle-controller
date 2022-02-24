@@ -118,7 +118,7 @@ parser.add_argument('-m', '--mav_message',
 parser.add_argument('--margins',
                     dest='margins',
                     type=float,
-                    default=10.0,
+                    default=2.5,
                     help='Plot margins')
 
 parser.add_argument('-o', '--outliers',

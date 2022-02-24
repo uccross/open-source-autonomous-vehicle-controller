@@ -141,31 +141,13 @@ class MAVCSVLogger():
 
         ret_type = None
 
-        was_zero = False
-
         # Don't log bad data
         if msg:
-            msg_type = msg.get_type()
-            if msg_type != 'BAD_DATA':
+            if msg.get_type() != 'BAD_DATA':
                 # add msg to the msgs_dict
-                nav_msg = msg.to_dict()
-                self.msgs_dict.update(nav_msg)
-
-                # Check if data had zero for value that is normally not zero
-                if msg_type == 'ATTITUDE':
-                    if (nav_msg['yaw'] == 0.0):
-                        was_zero = True
-                
-                if msg_type == 'LOCAL_POSITION_NED':
-                    if (nav_msg['x'] == 0.0):
-                        was_zero = True
-                        
-                    if (nav_msg['y'] == 0.0):
-                        was_zero = True
-
+                self.msgs_dict.update(msg.to_dict())
                 # and write it to the file
-                if not was_zero:
-                    self.writer.writerow(self.msgs_dict)
+                self.writer.writerow(self.msgs_dict)
 
             ret_type = msg.get_type()
 

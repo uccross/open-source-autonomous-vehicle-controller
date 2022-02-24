@@ -556,11 +556,13 @@ void lin_alg_gen_dcm_with_angles(float psi, float theta, float phi,
  */
 char lin_alg_extract_angles(float dcm[MSZ][MSZ], float *psi, float *theta,
         float *phi) {
-    *psi = atan2(dcm[1][2], dcm[2][2]); /* Yaw */
+    //    *psi = atan2(dcm[1][2], dcm[2][2]); /* Yaw */
+    *psi = atan2(dcm[0][1], dcm[1][1]); /* Yaw */
 
     *theta = asin(-dcm[0][2]); /* Pitch */
 
-    *phi = atan2(dcm[0][1], dcm[0][0]); /* Roll */
+    //    *phi = atan2(dcm[0][1], dcm[0][0]); /* Roll */
+    *phi = atan2(dcm[1][2], dcm[2][2]); /* Roll */
 
     return SUCCESS;
 }
@@ -750,19 +752,19 @@ void lin_alg_R_exp(float w[MSZ], float dt, float thresh,
     float sinc_w_wx[MSZ][MSZ];
     float I_minus_sinc_w_wx[MSZ][MSZ];
     float one_minus_cos_w_wx_wx[MSZ][MSZ];
-    
+
     float w_norm_2 = w_norm*w_norm;
     float w_norm_4 = w_norm_2*w_norm_2;
-    
+
     float dt_2 = dt*dt;
     float dt_3 = dt_2*dt;
     float dt_4 = dt_3*dt;
     float dt_5 = dt_4*dt;
     float dt_6 = dt_5*dt;
-    
+
     lin_alg_skew_sym(w, wx);
     lin_alg_skew_sym(w, sinc_w_wx);
-    
+
     if (w_norm < thresh) {
         sinc_w = dt - (dt_3 * w_norm_2) / 6.0 + (dt_5 * w_norm_4) / 120.0;
         one_minus_cos_w = (dt_2) / 2.0 - (dt_4 * w_norm_2) / 24.0 + (dt_6 * w_norm_4) / 720.0;
@@ -777,12 +779,12 @@ void lin_alg_R_exp(float w[MSZ], float dt, float thresh,
             1.0, 0.0, 0.0,
             0.0, 1.0, 0.0,
             0.0, 0.0, 1.0, I);
-    
+
     lin_alg_m_scale(sinc_w, sinc_w_wx);
-    
+
     lin_alg_m_m_mult(wx, wx, one_minus_cos_w_wx_wx);
     lin_alg_m_scale(one_minus_cos_w, one_minus_cos_w_wx_wx);
-    
+
     lin_alg_m_m_sub(I, sinc_w_wx, I_minus_sinc_w_wx); /* This is a subtraction */
     lin_alg_m_m_add(I_minus_sinc_w_wx, one_minus_cos_w_wx_wx, R_exp);
 }

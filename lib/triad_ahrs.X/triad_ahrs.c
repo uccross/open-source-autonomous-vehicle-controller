@@ -71,7 +71,8 @@ void triad_ahrs_init(float desired_dt) {
     /* See https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm 
      * for values (changes by 0.08 degrees each year) 
      *              East,    North,     Down            */
-    lin_alg_set_v(5249.8, 22722.9, 41327.4, v2);
+//    lin_alg_set_v(5249.8, 22722.9, 41327.4, v2);
+    lin_alg_set_v(0.0, 1.0, 0.0, v2);
     
     /* Kept here more to highlight the fact that it is important to check if 
      * the norm of a vector is zero for other use cases. Not really practical 
@@ -136,6 +137,10 @@ void triad_ahrs_update(float w1[MSZ], float w2[MSZ], float *yaw,
     float w1Xw2[MSZ];
     float w1Xw1Xw2[MSZ];
     
+    float psi = 0.0;
+    float theta = 0.0;
+    float phi = 0.0;
+    
     lin_alg_set_v(0.0, 0.0, 0.0, o1);
     lin_alg_set_v(0.0, 0.0, 0.0, o2);
     lin_alg_set_v(0.0, 0.0, 0.0, o3);
@@ -146,9 +151,6 @@ void triad_ahrs_update(float w1[MSZ], float w2[MSZ], float *yaw,
     
     lin_alg_set_v(0.0, 0.0, 0.0, w1Xw2);
     lin_alg_set_v(0.0, 0.0, 0.0, w1Xw1Xw2);
-    
-    lin_alg_set_v(0.0, 0.0, 0.0, v1Xv2);
-    lin_alg_set_v(0.0, 0.0, 0.0, v1Xv1Xv2);
     
     wi_norm = lin_alg_v_norm(w1);
     if (wi_norm != 0.0) {
@@ -194,7 +196,15 @@ void triad_ahrs_update(float w1[MSZ], float w2[MSZ], float *yaw,
     
     lin_alg_m_m_mult(m_o, m_r_t, a_hat);
     
-    lin_alg_extract_angles(a_hat, yaw, pitch, roll);
+    
+    // Doing this as a sanity check will / should change back just one set
+    lin_alg_extract_angles(a_hat, &psi, &theta, &phi);
+    
+    *yaw = psi; 
+    
+    *pitch = theta;
+    
+    *roll = phi;
 }
 
 /******************************************************************************

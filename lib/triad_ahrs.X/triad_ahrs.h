@@ -1,5 +1,5 @@
 /*
- * File:   cf_ahrs.h
+ * File:   triad_ahrs.h
  * Author: Pavlo Vlastos
  *
  * Created on January 28, 2020, 12:47 PM

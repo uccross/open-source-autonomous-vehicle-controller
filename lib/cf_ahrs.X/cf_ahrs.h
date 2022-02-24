@@ -58,12 +58,17 @@ void cf_ahrs_set_kp_acc(float desired_kp_acc);
  */
 void cf_ahrs_set_kp_mag(float desired_kp_mag);
 
-
 /**
  * @function cf_ahrs_set_ki_gyro()
  * @param desired_ki_gyro 
  */
 void cf_ahrs_set_ki_gyro(float desired_ki_gyro);
+
+/**
+ * @function cf_ahrs_set_mag_vi()
+ * @param desired_mag_vi
+ */
+void cf_ahrs_set_mag_vi(float desired_mag_vi[MSZ]);
 
 /**
  * @function cf_ahrs_update()

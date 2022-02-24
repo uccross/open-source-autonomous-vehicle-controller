@@ -19,7 +19,12 @@
 #include "RC_RX.h"
 #include "RC_servo.h"
 #include "Publisher.h"
+#ifdef CF_AHRS
 #include "cf_ahrs.h"
+#endif
+#ifdef TRIAD_AHRS
+#include "triad_ahrs.h"
+#endif
 #include "Lin_alg_float.h"
 
 
@@ -32,9 +37,9 @@
 #define WP_STATE_MACHINE_PERIOD 250
 #define WP_CONFIRM_PERIOD 1000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
-#define NUM_MSG_SEND_CONTROL_PERIOD 5
-#define CONTROL_PERIOD 100 //Period for control loop in msec
-#define SAMPLE_TIME (1.0 / ((float) CONTROL_PERIOD))
+#define NUM_MSG_SEND_CONTROL_PERIOD 6
+#define CONTROL_PERIOD 50 //Period for control loop in msec
+#define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
 
@@ -49,7 +54,7 @@
 #define TOL 0.0001
 #define MAX_ACCEPTABLE_CTE ((float) 10.0)
 
-#define GYRO_SCALE ((M_PI / 180.0) * 0.06)
+#define GYRO_SCALE ((M_PI / 180.0))
 #define GYRO_BUF_LEN 1000
 #define GYRO_N ((float) GYRO_BUF_LEN)
 
@@ -57,6 +62,8 @@
 #define LTP_Y0 ((float) -10.0)
 #define LTP_BOUND_X ((float) 60.0)/* meters */
 #define LTP_BOUND_Y ((float) 80.0) /* meters */
+
+#define HEADING_ANGLE_BUF 10
 
 /******************************************************************************
  * MAIN                                                                       *
@@ -75,6 +82,8 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+
+    uint32_t ha_buf_i = 0;
 
     /**************************************************************************
      * Initialization routines                                                *
@@ -123,10 +132,11 @@ int main(void) {
 
     // Trajectory 
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float wp_prev_en_last[DIM]; // [EAST (meters), NORTH (meters)]
+    //    float wp_prev_en_last[DIM]; // [EAST (meters), NORTH (meters)]
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
+    float ref_ll[DIM]; // [latitude, longitude]
     float ref_lla[DIM + 1]; // [latitude, longitude, altitude]
     float vehi_pt_ll[DIM]; // [latitude, longitude]
     float vehi_pt_lla[DIM + 1]; // [latitude, longitude, altitude]
@@ -139,6 +149,7 @@ int main(void) {
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
                                 * heading vector within the local tangent plane
                                 * (LTP) */
+    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
     float u = 0.0; // Resulting control effort
     float delta_angle = 0.0; // Resulting control effort
@@ -162,10 +173,18 @@ int main(void) {
     imu.gyro.y = 0.0;
     imu.gyro.z = 0.0;
 
-    float acc[MSZ] = {0.0};
-    float mag[MSZ] = {0.0};
+    float acc[MSZ] = {0.1};
+    float mag[MSZ] = {0.1};
+
+#ifdef CF_AHRS
     float gyro_bias[MSZ] = {0.0};
     float gyro[MSZ] = {0.0};
+#endif
+
+#ifdef TRIAD_AHRS
+    triad_ahrs_init(SAMPLE_TIME);
+#endif
+
     float roll = 0.0;
     float pitch = 0.0;
     float yaw = 0.0;
@@ -194,12 +213,14 @@ int main(void) {
     uint16_t cmd = 0;
     float wp_type = -1.0;
     float wp_yaw = 0.0;
+    float m[3] = {0.0};
 
     enum waypoints_state {
         ERROR_WP = 0,
         FINDING_REF_WP, /* Find the reference point for the LTP calculation */
         SENDING_PREV,
         SENDING_NEXT,
+        WAITING_FOR_NEXT_WP, /* Get rid of this */
         TRACKING
     };
     typedef enum waypoints_state waypoints_state_t;
@@ -228,10 +249,10 @@ int main(void) {
      *************************************************************************/
     while (1) {
         cur_time = Sys_timer_get_msec();
-
-        if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
-            gps_fix_flag = TRUE;
-        }
+        //
+        //        if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
+        //            gps_fix_flag = TRUE;
+        //        }
 
         /**********************************************************************
          * Check for all events:                                              *
@@ -255,8 +276,8 @@ int main(void) {
                         wp_prev_en[0] = wp_received_en[0];
                         wp_prev_en[1] = wp_received_en[1];
 
-                        wp_prev_en_last[0] = wp_prev_en[0];
-                        wp_prev_en_last[1] = wp_prev_en[1];
+                        //                        wp_prev_en_last[0] = wp_prev_en[0];
+                        //                        wp_prev_en_last[1] = wp_prev_en[1];
 
                         last_prev_wp_en_time = cur_time;
 
@@ -303,13 +324,27 @@ int main(void) {
             /* Update aiding vectors and gyro angular rates */
             if (is_new_imu == TRUE) {
                 lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
-                lin_alg_set_v(imu.mag.x, imu.mag.y, imu.mag.z, mag);
-                lin_alg_set_v(imu.gyro.x, imu.gyro.y, imu.gyro.z, gyro);
+                lin_alg_set_v(imu.mag.x, -imu.mag.y, -imu.mag.z, mag);
+                m[0] = imu.mag.x;
+                m[1] = imu.mag.y;
+                m[2] = imu.mag.z;
+#ifdef CF_AHRS
+                lin_alg_set_v(-imu.gyro.x, -imu.gyro.y, -imu.gyro.z, gyro);
                 lin_alg_v_scale(GYRO_SCALE, gyro);
+#endif
             }
 
             if (is_new_gps == TRUE) {
                 publisher_get_gps_rmc_position(vehi_pt_ll);
+
+                if (current_wp_state == FINDING_REF_WP) {
+                    ref_ll[0] = vehi_pt_ll[0];
+                    ref_ll[1] = vehi_pt_ll[1];
+
+                    ref_lla[0] = vehi_pt_ll[0];
+                    ref_lla[1] = vehi_pt_ll[1];
+                    ref_lla[2] = 0.0;
+                }
 
                 vehi_pt_lla[0] = vehi_pt_ll[0];
                 vehi_pt_lla[1] = vehi_pt_ll[1];
@@ -352,45 +387,47 @@ int main(void) {
                 case FINDING_REF_WP:
                     /**********************************************************/
 
-                    // State exit case
-                    if ((is_new_gps == TRUE) &&
-                            (current_mode == MAV_MODE_AUTO_ARMED)) {
 #ifdef HIL
-                        vehi_pt_en[0] = 0.0;
-                        vehi_pt_en[1] = 0.0;
+                    vehi_pt_en[0] = 0.0;
+                    vehi_pt_en[1] = 0.0;
 #endif
-                        wp_prev_en[0] = 0.0;
-                        wp_prev_en[1] = 0.0;
+                    wp_prev_en[0] = 0.0;
+                    wp_prev_en[1] = 0.0;
 
-                        /* Complementary Filter Attitude and Heading Reference 
-                         * System (AHRS) Initialization. For now use the starting 
-                         * rates assuming the vehicle is stationary */
-                        lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias);
-                        cf_ahrs_set_gyro_biases(gyro_bias);
+                    /* Complementary Filter Attitude and Heading Reference 
+                     * System (AHRS) Initialization. For now use the starting 
+                     * rates assuming the vehicle is stationary */
+#ifdef CF_AHRS
+                    lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias);
+                    cf_ahrs_set_gyro_biases(gyro_bias);
 
-                        cf_ahrs_set_kp_acc(5.0);
-                        cf_ahrs_set_kp_mag(1.0);
+                    cf_ahrs_set_mag_vi(m);
 
-                        cf_ahrs_init(SAMPLE_TIME, gyro_bias);
+                    cf_ahrs_set_kp_acc(20.0);
+                    cf_ahrs_set_kp_mag(5.0);
+                    cf_ahrs_set_ki_gyro(0.1);
+
+                    cf_ahrs_init(SAMPLE_TIME, gyro_bias);
+#endif
+
 #ifdef HIL
-                        current_wp_state = SENDING_NEXT;
+                    current_wp_state = SENDING_NEXT;
 #else
 
 
-                        publisher_get_gps_rmc_position(vehi_pt_ll);
+                    //                        publisher_get_gps_rmc_position(vehi_pt_ll);
 
-                        if (gps_fix_flag == TRUE) {
-                            ref_lla[0] = vehi_pt_ll[0];
-                            ref_lla[1] = vehi_pt_ll[1];
-                            ref_lla[2] = 0.0;
+                    //                        if (gps_fix_flag == TRUE) {
 
-                            if ((ref_lla[0] != 0.0) && ref_lla[1] != 0.0) {
-                                current_wp_state = SENDING_PREV;
-                            }
-                        }
+
+                    // State exit case
+                    if ((ref_ll[0] != 0.0) && (ref_ll[1] != 0.0)) {
+                        current_wp_state = SENDING_PREV;
+                    }
+                    //                        }
 #endif
 
-                    }
+
                     break;
 
                 case SENDING_PREV:
@@ -436,8 +473,8 @@ int main(void) {
 
                     if ((fabs(cross_track_error_last + cross_track_error) <
                             MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
-                        wp_prev_en_last[0] = wp_prev_en[0];
-                        wp_prev_en_last[1] = wp_prev_en[1];
+                        //                        wp_prev_en_last[0] = wp_prev_en[0];
+                        //                        wp_prev_en_last[1] = wp_prev_en[1];
                         is_far_out = FALSE;
                     }
 
@@ -485,7 +522,29 @@ int main(void) {
              *****************************************************************/
             /* Update */
 #ifndef HIL
+#ifdef CF_AHRS
             cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
+
+            heading_angle = yaw;
+#endif
+#ifdef TRIAD_AHRS
+            mag[2] = 0.0; /* Not using z component of magnetometer with TRIAD */
+            triad_ahrs_update(acc, mag, &yaw, &pitch, &roll);
+
+            /* Average the TRIAD yaw angle */
+            heading_angle_buffer[control_loop_count % HEADING_ANGLE_BUF] = yaw;
+            heading_angle = 0;
+            for (ha_buf_i = 0; ha_buf_i < HEADING_ANGLE_BUF; ha_buf_i++) {
+                heading_angle += heading_angle_buffer[ha_buf_i];
+            }
+
+            heading_angle /= ((float) HEADING_ANGLE_BUF);
+
+            /* Correction offset */
+            //            heading_angle += (M_PI);
+            //            heading_angle = fmod(
+            //                    (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
+#endif
 #endif
 
             /******************************************************************
@@ -499,15 +558,13 @@ int main(void) {
                     cross_track_error = lin_tra_get_cte();
 
                     path_angle = lin_tra_get_path_angle();
-
-                    heading_angle = yaw;
-#ifdef HIL
-                    heading_angle += M_PI;
-#else
-                    heading_angle += (M_PI / 2.0);
-#endif
-                    heading_angle = fmod(
-                            (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
+                    //#ifdef HIL
+                    //                    heading_angle += M_PI;
+                    //#else
+                    //                    heading_angle += (M_PI / 2.0);
+                    //#endif
+                    //                    heading_angle = fmod(
+                    //                            (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
 
                     heading_angle_diff = heading_angle - path_angle;
 
@@ -579,6 +636,10 @@ int main(void) {
                 case 4:
 #ifndef HIL
                     publish_waypoint_en(vehi_pt_en, VEHI_PT);
+#endif 
+                    break;
+                case 5:
+#ifndef HIL
                     publish_GPS();
 #endif 
                     break;

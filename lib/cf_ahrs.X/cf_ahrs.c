@@ -18,7 +18,7 @@
  *****************************************************************************/
 #define CF_2_PI (2.0 * M_PI)
 #define NORM_ZERO_THRESHOLD 0.01 /* Arbitrarily chosen */
-#define QUATERNION_OR_DCM_BASED 1 /* 0 for quaternion, 1 for DCM-based */
+#define QUATERNION_OR_DCM_BASED 0 /* 0 for quaternion, 1 for DCM-based */
 
 /******************************************************************************
  * PRIVATE DATATYPES 

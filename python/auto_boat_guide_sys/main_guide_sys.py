@@ -236,7 +236,7 @@ if __name__ == '__main__':
 
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
-    dt_log = 0.005  # seconds
+    dt_log = 0.001 # seconds
     dt_transmit = 0.500  # seconds
     dt_update = 4.000  # seconds
     dt_HIL_transmit = 0.5  # seconds
@@ -733,6 +733,8 @@ if __name__ == '__main__':
                         echo_sensor_covariance)
 
                 msg_list = [echo_msg]
+
+        msg = None
 
         # Periodically close and re-open the file to ensure that the data was
         # written to the CSV file, this unfortunately very slow, especially

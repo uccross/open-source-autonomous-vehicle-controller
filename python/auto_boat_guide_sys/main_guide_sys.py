@@ -288,6 +288,7 @@ if __name__ == '__main__':
     cog = 0.0
 
     rad2deg = 180.0/np.pi
+    deg2rad = np.pi/180.0
 
     waypoints = Grid.get_points()
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=threshold)
@@ -433,9 +434,9 @@ if __name__ == '__main__':
             if msg_type == 'ATTITUDE':
                 nav_msg = msg.to_dict()
 
-                yaw = nav_msg['yaw']
-                pitch = nav_msg['pitch']
-                roll = nav_msg['roll']
+                yaw = nav_msg['yaw'] # Already in degrees
+                pitch = nav_msg['pitch'] # radians
+                roll = nav_msg['roll'] # radians
 
                 rollspeed = nav_msg['rollspeed']  # Using as path angle
                 # Using as cross track error
@@ -455,7 +456,7 @@ if __name__ == '__main__':
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
 
-                cf_heading_angle = yaw*rad2deg
+                cf_heading_angle = yaw # Already in degrees
                 path_angle = rollspeed*rad2deg
                 angle_diff = pitchspeed*rad2deg
 
@@ -700,7 +701,7 @@ if __name__ == '__main__':
 
             if tracker_flag:
 
-                yaw_g = yaw - (np.pi / 2.0)
+                yaw_g = (yaw*deg2rad) - (np.pi / 2.0)
 
                 tracker.update(yaw_g, pitch, roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,

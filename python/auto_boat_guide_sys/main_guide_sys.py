@@ -571,6 +571,10 @@ if __name__ == '__main__':
 
                     cog = nav_msg['cog']
 
+                    # Make sure the heading angle is wrapped to [-180, 180]
+                    cog = (np.mod((cog + 180), (360)) - 180)
+
+
                     if is_first_gps:
                         wp_ref_lla = np.array([[lat, lon, 0.0]])
                         is_first_gps = False

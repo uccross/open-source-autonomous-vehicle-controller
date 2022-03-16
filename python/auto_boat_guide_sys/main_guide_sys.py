@@ -4,8 +4,7 @@
 	:synopsis: The main guidance system for a small autonomous boat
 .. moduleauthor:: Pavlo Vlastos <pvlastos@ucsc.edu>
 """
-from os import sep
-from re import I
+
 import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
@@ -582,7 +581,7 @@ if __name__ == '__main__':
                     cog -= 180
 
 
-                    if is_first_gps and (lat != 0) and (lon != 0):
+                    if is_first_gps:
                         wp_ref_lla = np.array([[lat, lon, 0.0]])
                         is_first_gps = False
 
@@ -734,6 +733,10 @@ if __name__ == '__main__':
                     echo_sensor_distance = echo_data["distance"]
                     echo_confidence = echo_data["confidence"]
 
+                    echo_sensor_orientation = int(cte*10) # using orentation for recording cross track error for simple test
+                    if echo_sensor_orientation > 255:
+                        echo_sensor_orientation = 255
+
                     echo_msg = mavutil.mavlink.MAVLink_distance_sensor_message(
                         echo_sensor_time,
                         echo_sensor_min,
@@ -742,7 +745,7 @@ if __name__ == '__main__':
                         echo_sensor_type,
                         echo_sensor_id,
                         echo_sensor_orientation,
-                        echo_sensor_covariance)
+                        echo_confidence)
 
                 msg_list = [echo_msg]
 

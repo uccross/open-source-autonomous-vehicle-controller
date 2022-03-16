@@ -282,6 +282,10 @@ if __name__ == '__main__':
     ygyro = 0.0
     zgyro = 0.0
 
+    # Echo sounder depth sensor
+    echo_sensor_distance = 0
+    echo_confidence = 0
+
     heading_angle = 0.0
 
     cog = 0.0
@@ -648,6 +652,9 @@ if __name__ == '__main__':
                 print("    xgyro:           {0:.6g}".format(xgyro*rad2deg))
                 print("    ygyro:           {0:.6g}".format(ygyro*rad2deg))
                 print("    zgyro:           {0:.6g}".format(zgyro*rad2deg))
+
+                print("    depth:           {}".format(echo_sensor_distance))
+                print("    depth cnfdnc:    {}".format(echo_confidence))
 
                 print("    vehi_pt_lla = {}".format(vehi_pt_lla))
                 print("    wp_next_lla = {}".format(wp_next_lla))

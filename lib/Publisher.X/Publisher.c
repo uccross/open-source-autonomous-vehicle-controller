@@ -29,6 +29,9 @@
 #define BUFFER_SIZE 1024
 #define CTS_2_USEC 1  //divide by 2 scaling of counts to usec with right shift
 
+
+#define MAG_X_OFFSET ((float) -0.108)
+#define MAG_Y_OFFSET ((float) -0.082)
 /******************************************************************************
  * VARIABLES                                                                  *
  *****************************************************************************/
@@ -138,8 +141,8 @@ char check_IMU_events(uint8_t data_type, struct IMU_output *data) {
         data->acc.y = IMU_scaled.acc.y;
         data->acc.z = IMU_scaled.acc.z;
 
-        data->mag.x = IMU_scaled.mag.x;
-        data->mag.y = IMU_scaled.mag.y;
+        data->mag.x = IMU_scaled.mag.x - MAG_X_OFFSET;
+        data->mag.y = IMU_scaled.mag.y - MAG_Y_OFFSET;
         data->mag.z = IMU_scaled.mag.z;
 
         data->gyro.x = IMU_scaled.gyro.x;
@@ -246,8 +249,8 @@ void publish_IMU_data(uint8_t data_type) {
                 (float) IMU_scaled.gyro.x,
                 (float) IMU_scaled.gyro.y,
                 (float) IMU_scaled.gyro.z,
-                (float) IMU_scaled.mag.x,
-                (float) IMU_scaled.mag.y,
+                (float) IMU_scaled.mag.x - MAG_X_OFFSET,
+                (float) IMU_scaled.mag.y - MAG_Y_OFFSET,
                 (float) IMU_scaled.mag.z,
                 0.0, //no pressure
                 0.0, //no diff pressure

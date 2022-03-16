@@ -350,6 +350,8 @@ if __name__ == '__main__':
     check2 = 0.0
     tolerance = 0.00001
 
+    was_waypoint_flag = False
+
     ###########################################################################
     # Simulation
     if simulation_flag:
@@ -364,6 +366,8 @@ if __name__ == '__main__':
     ###########################################################################
     # Main Loop
     while True:
+            
+        was_waypoint_flag = False
 
         # Timing
         t_new = time.time()
@@ -434,7 +438,7 @@ if __name__ == '__main__':
             if msg_type == 'ATTITUDE':
                 nav_msg = msg.to_dict()
 
-                yaw = nav_msg['yaw'] # Already in degrees
+                yaw = nav_msg['yaw'] - 180# Already in degrees
                 pitch = nav_msg['pitch'] # radians
                 roll = nav_msg['roll'] # radians
 
@@ -456,7 +460,7 @@ if __name__ == '__main__':
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
 
-                cf_heading_angle = yaw # Already in degrees
+                cf_heading_angle = yaw - 180.0 # Already in degrees
                 path_angle = rollspeed*rad2deg
                 angle_diff = pitchspeed*rad2deg
 
@@ -479,9 +483,11 @@ if __name__ == '__main__':
                         (np.abs(check2 - 0.6) <= tolerance)):
 
                     if (prev_next_vehi-1.0) <= tolerance:
+                        was_waypoint_flag = True
                         uc_prev_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-1.5) <= tolerance:
+                        was_waypoint_flag = True
                         uc_next_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-2.0) <= tolerance:
@@ -572,8 +578,8 @@ if __name__ == '__main__':
 
                     cog = nav_msg['cog']
 
-                    # Make sure the heading angle is wrapped to [-180, 180]
-                    cog = (np.mod((cog + 180), (360)) - 180)
+                    # # Make sure the heading angle is wrapped to [-180, 180]
+                    cog -= 180
 
 
                     if is_first_gps:
@@ -714,7 +720,8 @@ if __name__ == '__main__':
         if (t_new - t_old) >= dt_log:
             t_old = t_new
 
-            status = logger.log(msg)
+            if was_waypoint_flag == False:
+                status = logger.log(msg)
 
             if echo_sensor:
                 if status == 'GPS_RAW_INT':

@@ -19,6 +19,8 @@
 #include "RC_RX.h"
 #include "RC_servo.h"
 #include "Publisher.h"
+#include "nmea0183v4.h"
+
 #ifdef CF_AHRS
 #include "cf_ahrs.h"
 #endif
@@ -38,7 +40,7 @@
 #define WP_CONFIRM_PERIOD 1000
 #define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 6
-#define CONTROL_PERIOD 50 //Period for control loop in msec
+#define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
@@ -54,7 +56,10 @@
 #define TOL 0.0001
 #define MAX_ACCEPTABLE_CTE ((float) 10.0)
 
-#define GYRO_SCALE ((M_PI / 180.0))
+#define COG_YAW_MAX_DIFF (5.0 / 180.0 * M_PI)
+#define RAD_2_DEG (180.0 / M_PI)
+#define DEG_2_RAD (M_PI / 180.0)
+#define GYRO_SCALE DEG_2_RAD
 #define GYRO_BUF_LEN 1000
 #define GYRO_N ((float) GYRO_BUF_LEN)
 
@@ -70,7 +75,7 @@
  *****************************************************************************/
 int main(void) {
     uint32_t cur_time = 0;
-    uint32_t startup_wait_time = 0;
+    //    uint32_t startup_wait_time = 0;
     uint32_t last_prev_wp_en_time = 0;
     uint32_t last_next_wp_en_time = 0;
     uint32_t control_start_time = 0;
@@ -83,7 +88,7 @@ int main(void) {
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
 
-    uint32_t ha_buf_i = 0;
+    //    uint32_t ha_buf_i = 0;
 
     /**************************************************************************
      * Initialization routines                                                *
@@ -120,7 +125,7 @@ int main(void) {
     }
 #endif
     cur_time = Sys_timer_get_msec();
-    startup_wait_time = cur_time;
+    //    startup_wait_time = cur_time;
     //    while ((cur_time - startup_wait_time) < 5000) {
     //        cur_time = Sys_timer_get_msec();
     //    }
@@ -149,7 +154,12 @@ int main(void) {
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
                                 * heading vector within the local tangent plane
                                 * (LTP) */
-    float heading_angle_buffer[HEADING_ANGLE_BUF];
+    float angle_correction = 0.0; /* To correct the heading angle from the CF 
+                                   * AHRS */
+    float cog = 0.0; /* Course over ground angle from GPS */
+    float cog_last = 0.0; /* Course over ground angle from GPS */
+    float ha_report = 0.0;
+    //    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
     float u = 0.0; // Resulting control effort
     float delta_angle = 0.0; // Resulting control effort
@@ -213,7 +223,7 @@ int main(void) {
     uint16_t cmd = 0;
     float wp_type = -1.0;
     float wp_yaw = 0.0;
-    float m[3] = {0.0};
+    //    float m[3] = {0.0};
 
     enum waypoints_state {
         ERROR_WP = 0,
@@ -242,7 +252,7 @@ int main(void) {
 
     uint8_t i_tx_mav_msg = 0;
 
-    char gps_fix_flag = FALSE;
+    //    char gps_fix_flag = FALSE;
 
     /**************************************************************************
      * Primary Loop                                                           *
@@ -259,12 +269,13 @@ int main(void) {
          * - HIL                                                              *
          * - Real sensors                                                     *
          *********************************************************************/
+
+        is_new_gps = check_GPS_events(); //check and process incoming GPS messages
+
         if (cur_time - mav_serial_start_time >= MAV_SERIAL_READ_PERIOD) {
             mav_serial_start_time = cur_time; //reset the timer
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
                     &cmd, &wp_type, &wp_yaw);
-
-            is_new_gps = check_GPS_events(); //check and process incoming GPS messages
 
             if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
 
@@ -325,9 +336,9 @@ int main(void) {
             if (is_new_imu == TRUE) {
                 lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
                 lin_alg_set_v(imu.mag.x, -imu.mag.y, -imu.mag.z, mag);
-                m[0] = imu.mag.x;
-                m[1] = imu.mag.y;
-                m[2] = imu.mag.z;
+                //                m[0] = imu.mag.x;
+                //                m[1] = imu.mag.y;
+                //                m[2] = imu.mag.z;
 #ifdef CF_AHRS
                 lin_alg_set_v(-imu.gyro.x, -imu.gyro.y, -imu.gyro.z, gyro);
                 lin_alg_v_scale(GYRO_SCALE, gyro);
@@ -401,11 +412,11 @@ int main(void) {
                     lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias);
                     cf_ahrs_set_gyro_biases(gyro_bias);
 
-                    cf_ahrs_set_mag_vi(m);
+                    //                    cf_ahrs_set_mag_vi(m);
 
-                    cf_ahrs_set_kp_acc(20.0);
-                    cf_ahrs_set_kp_mag(5.0);
-                    cf_ahrs_set_ki_gyro(0.1);
+                    cf_ahrs_set_kp_acc(10.0);
+                    cf_ahrs_set_kp_mag(0.075);
+                    cf_ahrs_set_ki_gyro(0.0);
 
                     cf_ahrs_init(SAMPLE_TIME, gyro_bias);
 #endif
@@ -526,6 +537,16 @@ int main(void) {
             cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
 
             heading_angle = yaw;
+
+            // Using cog for now, but still publishing the ATTITUDE message
+            cog = (nmea_get_rmc_cog() - 180.0) * DEG_2_RAD; 
+            
+            if (fabs(cog - cog_last) > M_PI_2) {
+                cog = cog_last;
+            }
+            
+            cog_last = cog;
+
 #endif
 #ifdef TRIAD_AHRS
             mag[2] = 0.0; /* Not using z component of magnetometer with TRIAD */
@@ -550,9 +571,9 @@ int main(void) {
             /******************************************************************
              * Control                                                        *
              *****************************************************************/
-            //            if ((current_mode == MAV_MODE_AUTO_ARMED) &&
-            //                    (lin_tra_is_initialized() == TRUE)) {
-            if (lin_tra_is_initialized() == TRUE) {
+            if ((current_mode == MAV_MODE_AUTO_ARMED) &&
+                    (lin_tra_is_initialized() == TRUE)) {
+                //            if (lin_tra_is_initialized() == TRUE) {
 
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
@@ -560,14 +581,19 @@ int main(void) {
                     path_angle = lin_tra_get_path_angle();
                     //#ifdef HIL
                     //                    heading_angle += M_PI;
-                    //#else
-                    //                    heading_angle += (M_PI / 2.0);
+                    //#elseI / 2.0);
                     //#endif
                     //                    heading_angle = fmod(
                     //                            (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
 
-                    heading_angle_diff = heading_angle - path_angle;
+                    //                    heading_angle += (M_PI / 2.0);
+                    //#endif
+                    
+                    ha_report = (heading_angle*RAD_2_DEG) + 180.0;
 
+
+//                    heading_angle_diff = heading_angle - path_angle;
+                    heading_angle_diff = cog - path_angle;
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
@@ -619,7 +645,7 @@ int main(void) {
                 case 0:
                     publish_attitude(roll,
                             pitch,
-                            heading_angle, /* Using differently on purpose */
+                            ha_report, //heading_angle, /* Using differently on purpose */
                             path_angle, // roll-rate, /* Using differently on purpose */
                             delta_angle, // pitch-rate, /* Using differently on purpose */
                             (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */

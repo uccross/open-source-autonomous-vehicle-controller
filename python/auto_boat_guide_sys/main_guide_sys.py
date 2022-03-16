@@ -582,7 +582,7 @@ if __name__ == '__main__':
                     cog -= 180
 
 
-                    if is_first_gps:
+                    if is_first_gps and (lat != 0) and (lon != 0):
                         wp_ref_lla = np.array([[lat, lon, 0.0]])
                         is_first_gps = False
 

@@ -340,7 +340,7 @@ int main(void) {
                 //                m[1] = imu.mag.y;
                 //                m[2] = imu.mag.z;
 #ifdef CF_AHRS
-                lin_alg_set_v(-imu.gyro.x, -imu.gyro.y, -imu.gyro.z, gyro);
+                lin_alg_set_v(-imu.gyro.y, -imu.gyro.x, -imu.gyro.z, gyro);
                 lin_alg_v_scale(GYRO_SCALE, gyro);
 #endif
             }
@@ -539,12 +539,12 @@ int main(void) {
             heading_angle = yaw;
 
             // Using cog for now, but still publishing the ATTITUDE message
-            cog = (nmea_get_rmc_cog() - 180.0) * DEG_2_RAD; 
-            
+            cog = (nmea_get_rmc_cog() - 180.0) * DEG_2_RAD;
+
             if (fabs(cog - cog_last) > M_PI_2) {
                 cog = cog_last;
             }
-            
+
             cog_last = cog;
 
 #endif
@@ -579,20 +579,12 @@ int main(void) {
                     cross_track_error = lin_tra_get_cte();
 
                     path_angle = lin_tra_get_path_angle();
-                    //#ifdef HIL
-                    //                    heading_angle += M_PI;
-                    //#elseI / 2.0);
-                    //#endif
-                    //                    heading_angle = fmod(
-                    //                            (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
 
-                    //                    heading_angle += (M_PI / 2.0);
-                    //#endif
-                    
-                    ha_report = (heading_angle*RAD_2_DEG) + 180.0;
+                    //                    ha_report = (heading_angle*RAD_2_DEG) + 180.0;
+                    ha_report = cog * RAD_2_DEG;
 
 
-//                    heading_angle_diff = heading_angle - path_angle;
+                    //                    heading_angle_diff = heading_angle - path_angle;
                     heading_angle_diff = cog - path_angle;
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
@@ -666,7 +658,9 @@ int main(void) {
                     break;
                 case 5:
 #ifndef HIL
-                    publish_GPS();
+                    if (current_wp_state != FINDING_REF_WP) {
+                        publish_GPS();
+                    }
 #endif 
                     break;
             }

@@ -247,11 +247,11 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
          * the sign of rotation with the reference vectors */
 
         q_gyro[0] = 0.0;
-        q_gyro[1] = gyro_vb[0] - b[0] + w_meas_sum[0] + omega_bias[0];
+        q_gyro[1] = gyro_vb[0] - b[0] - w_meas_sum[0] + omega_bias[0];
 
-        q_gyro[2] = gyro_vb[1] - b[1] + w_meas_sum[1] + omega_bias[1];
+        q_gyro[2] = gyro_vb[1] - b[1] - w_meas_sum[1] + omega_bias[1];
 
-        q_gyro[3] = gyro_vb[2] - b[2] + w_meas_sum[2] + omega_bias[2];
+        q_gyro[3] = gyro_vb[2] - b[2] -w_meas_sum[2] + omega_bias[2];
 
         lin_alg_q_mult(q_est, q_gyro, q_est_dot);
 

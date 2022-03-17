@@ -715,7 +715,7 @@ if __name__ == '__main__':
 
                 yaw_g = (yaw*deg2rad) - (np.pi / 2.0)
 
-                tracker.update(yaw_g, -roll, -pitch, wp_prev_en=wp_prev_en,
+                tracker.update(yaw_g, -pitch, -roll, wp_prev_en=wp_prev_en,
                                wp_next_en=wp_next_en,
                                position_en=uc_vehi_en,
                                clst_pt_en=clst_pt_en,

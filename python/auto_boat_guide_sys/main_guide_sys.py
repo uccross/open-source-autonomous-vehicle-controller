@@ -730,7 +730,7 @@ if __name__ == '__main__':
             if was_waypoint_flag == False:
                 status = logger.log(msg)
 
-            if echo_sensor or (sensor_com != "x"):
+            if echo_sensor or (sensor_com == "x"):
                 if status == 'GPS_RAW_INT':
                     for msg in msg_list:
                         logger.log(msg)

@@ -442,7 +442,7 @@ if __name__ == '__main__':
             if msg_type == 'ATTITUDE':
                 nav_msg = msg.to_dict()
 
-                yaw = nav_msg['yaw'] - 180# Already in degrees
+                yaw = nav_msg['yaw']# Already in degrees
                 pitch = nav_msg['pitch'] # radians
                 roll = nav_msg['roll'] # radians
 

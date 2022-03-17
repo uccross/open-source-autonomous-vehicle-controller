@@ -159,7 +159,7 @@ int main(void) {
     float angle_correction = 0.0; /* To correct the heading angle from the CF 
                                    * AHRS */
     float cog = 0.0; /* Course over ground angle from GPS */
-    float cog_last = 0.0; /* Course over ground angle from GPS */
+//    float cog_last = 0.0; /* Course over ground angle from GPS */
     float ha_report = 0.0;
     //    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
@@ -542,11 +542,11 @@ int main(void) {
             // Using cog for now, but still publishing the ATTITUDE message
             cog = (nmea_get_rmc_cog() * DEG_2_RAD);
 
-            if (fabs(cog - cog_last) > M_PI_2) {
-                cog = cog_last;
-            }
-
-            cog_last = cog;
+//            if (fabs(cog - cog_last) > M_PI_2) {
+//                cog = cog_last;
+//            }
+//
+//            cog_last = cog;
 
 #endif
 #ifdef TRIAD_AHRS

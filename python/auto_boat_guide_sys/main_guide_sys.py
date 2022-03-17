@@ -117,7 +117,7 @@ threshold = arguments.threshold
 ###############################################################################
 if __name__ == '__main__':
     # Ping Echo Sounder for depth measurements in water
-    if echo_sensor:
+    if echo_sensor or (sensor_com == "x"):
         if sensor_com != "x":
             print("Using echo distance sensor")
             from brping import Ping1D

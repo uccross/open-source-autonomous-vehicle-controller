@@ -41,7 +41,7 @@ parser.add_argument('--ebaudrate', type=int, dest='ebaudrate',
 parser.add_argument('--ecom', type=str, dest='ecom', default="COM3",
                     help='Specify COM port number for serial \
                         communication with echo sounder. Default is 3, as \
-                        in COM3')  # /dev/ttyUSB0
+                        in COM3, x for CTE overload')  # /dev/ttyUSB0
 
 parser.add_argument('--csv_file', type=str, dest='csv_file',
                     default='./log_file.csv',
@@ -118,14 +118,15 @@ threshold = arguments.threshold
 if __name__ == '__main__':
     # Ping Echo Sounder for depth measurements in water
     if echo_sensor:
-        print("Using echo distance sensor")
-        from brping import Ping1D
-        myPing = Ping1D()
-        myPing.connect_serial(sensor_com, sensor_baudrate)
+        if sensor_com != "x":
+            print("Using echo distance sensor")
+            from brping import Ping1D
+            myPing = Ping1D()
+            myPing.connect_serial(sensor_com, sensor_baudrate)
 
-        if myPing.initialize() is False:
-            print("Failed to initialize Ping!")
-            exit(1)
+            if myPing.initialize() is False:
+                print("Failed to initialize Ping!")
+                exit(1)
 
         time.sleep(1)
 
@@ -729,16 +730,17 @@ if __name__ == '__main__':
             if was_waypoint_flag == False:
                 status = logger.log(msg)
 
-            if echo_sensor:
+            if echo_sensor or (sensor_com != "x"):
                 if status == 'GPS_RAW_INT':
                     for msg in msg_list:
                         logger.log(msg)
 
                     echo_sensor_time = int(t_new)
 
-                    echo_data = myPing.get_distance()
-                    echo_sensor_distance = echo_data["distance"]
-                    echo_confidence = echo_data["confidence"]
+                    if sensor_com != "x":
+                        echo_data = myPing.get_distance()
+                        echo_sensor_distance = echo_data["distance"]
+                        echo_confidence = echo_data["confidence"]
 
                     echo_sensor_orientation = int(cte*10) # using orentation for recording cross track error for simple test
                     if echo_sensor_orientation > 255:

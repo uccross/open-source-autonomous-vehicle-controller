@@ -35,18 +35,19 @@
  *****************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define MAV_SERIAL_READ_PERIOD 10 
-#define GPS_FIX_TIME 5000
+#define GPS_FIX_TIME 4000
 #define WP_STATE_MACHINE_PERIOD 250
 #define WP_CONFIRM_PERIOD 1000
-#define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
+//#define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 6
 #define CONTROL_PERIOD 10 //Period for control loop in msec
 #define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
 
-#define UPPER_ACT_BOUND ((float) 80.0*M_PI/180.0) //((float) 0.8) // The maximum rudder actuator limit in radians
-#define LOWER_ACT_BOUND ((float) -80.0*M_PI/180.0) //((float)-0.8) // The minimum rudder actuator limit in radians
+#define K_ACT ((float) 0.001)
+#define UPPER_ACT_BOUND ((float) 80.0*M_PI/180.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
+#define LOWER_ACT_BOUND ((float) -80.0*M_PI/180.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
 #define SERVO_PAD 0.0
 #define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))
@@ -75,7 +76,7 @@
  *****************************************************************************/
 int main(void) {
     uint32_t cur_time = 0;
-    //    uint32_t startup_wait_time = 0;
+    uint32_t startup_wait_time = 0;
     uint32_t last_prev_wp_en_time = 0;
     uint32_t last_next_wp_en_time = 0;
     uint32_t control_start_time = 0;
@@ -125,7 +126,7 @@ int main(void) {
     }
 #endif
     cur_time = Sys_timer_get_msec();
-    //    startup_wait_time = cur_time;
+    startup_wait_time = cur_time;
     //    while ((cur_time - startup_wait_time) < 5000) {
     //        cur_time = Sys_timer_get_msec();
     //    }
@@ -144,7 +145,8 @@ int main(void) {
     float ref_ll[DIM]; // [latitude, longitude]
     float ref_lla[DIM + 1]; // [latitude, longitude, altitude]
     float vehi_pt_ll[DIM]; // [latitude, longitude]
-    float vehi_pt_lla[DIM + 1]; // [latitude, longitude, altitude]
+    float vehi_pt_lla[DIM + 1] = {0.0}; // [latitude, longitude, altitude]
+    float vehi_pt_lla_last[DIM + 1] = {0.0}; // [latitude, longitude, altitude]
     float vehi_pt_ned[DIM + 1]; // [NORTH, EAST, DOWN] (METERS)
 
 
@@ -209,8 +211,8 @@ int main(void) {
             0.5, // kp The initial proportional gain
             0.0, // ki The initial integral gain
             10.0, // kd The initial derivative gain [HIL:0.1]
-            1000.0, // The maximum rudder actuator limit in radians
-            -1000.0); // The minimum rudder actuator limit in radians
+            1000.0, // The maximum 
+            -1000.0); // The minimum 
 
 #ifdef USB_DEBUG
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
@@ -252,17 +254,12 @@ int main(void) {
 
     uint8_t i_tx_mav_msg = 0;
 
-    //    char gps_fix_flag = FALSE;
 
     /**************************************************************************
      * Primary Loop                                                           *
      *************************************************************************/
     while (1) {
         cur_time = Sys_timer_get_msec();
-        //
-        //        if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
-        //            gps_fix_flag = TRUE;
-        //        }
 
         /**********************************************************************
          * Check for all events:                                              *
@@ -345,30 +342,35 @@ int main(void) {
 #endif
             }
 
-            if (is_new_gps == TRUE) {
-                publisher_get_gps_rmc_position(vehi_pt_ll);
+            //            if (is_new_gps == TRUE) {
+            publisher_get_gps_rmc_position(vehi_pt_ll);
 
-                if (current_wp_state == FINDING_REF_WP) {
-                    ref_ll[0] = vehi_pt_ll[0];
-                    ref_ll[1] = vehi_pt_ll[1];
+            if (current_wp_state == FINDING_REF_WP) {
+                ref_ll[0] = vehi_pt_ll[0];
+                ref_ll[1] = vehi_pt_ll[1];
 
-                    ref_lla[0] = vehi_pt_ll[0];
-                    ref_lla[1] = vehi_pt_ll[1];
-                    ref_lla[2] = 0.0;
-                }
-
-                vehi_pt_lla[0] = vehi_pt_ll[0];
-                vehi_pt_lla[1] = vehi_pt_ll[1];
-                vehi_pt_lla[2] = 0.0;
-
-                /* Convert the gps position to the Local Tangent Plane (LTP) */
-                if ((vehi_pt_lla[0] != 0.0) && vehi_pt_lla[1] != 0.0) {
-                    lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
-                }
-
-                vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
-                vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
+                ref_lla[0] = vehi_pt_ll[0];
+                ref_lla[1] = vehi_pt_ll[1];
+                ref_lla[2] = 0.0;
             }
+
+            vehi_pt_lla[0] = vehi_pt_ll[0];
+            vehi_pt_lla[1] = vehi_pt_ll[1];
+            vehi_pt_lla[2] = 0.0;
+
+            /* Convert the gps position to the Local Tangent Plane (LTP) */
+            if ((vehi_pt_lla[0] != vehi_pt_lla_last[0]) &&
+                    (vehi_pt_lla[1] != vehi_pt_lla_last[1])) {
+                
+                vehi_pt_lla_last[0] = vehi_pt_lla[0];
+                vehi_pt_lla_last[1] = vehi_pt_lla[1];
+                
+                lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
+            }
+
+            vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
+            vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
+            //            }
 #endif
         }
 
@@ -428,14 +430,13 @@ int main(void) {
 
                     //                        publisher_get_gps_rmc_position(vehi_pt_ll);
 
-                    //                        if (gps_fix_flag == TRUE) {
-
 
                     // State exit case
-                    if ((ref_ll[0] != 0.0) && (ref_ll[1] != 0.0)) {
-                        current_wp_state = SENDING_PREV;
+                    if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
+                        if ((ref_ll[0] != 0.0) && (ref_ll[1] != 0.0)) {
+                            current_wp_state = SENDING_PREV;
+                        }
                     }
-                    //                        }
 #endif
 
 

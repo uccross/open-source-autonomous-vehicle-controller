@@ -464,7 +464,7 @@ if __name__ == '__main__':
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
 
-                cf_heading_angle = yaw - 180.0 # Already in degrees
+                cf_heading_angle = yaw # Already in degrees
                 path_angle = rollspeed*rad2deg
                 angle_diff = pitchspeed*rad2deg
 

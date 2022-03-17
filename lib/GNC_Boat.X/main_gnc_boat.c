@@ -540,7 +540,7 @@ int main(void) {
             heading_angle = yaw;
 
             // Using cog for now, but still publishing the ATTITUDE message
-            cog = (nmea_get_rmc_cog() - 180.0) * DEG_2_RAD;
+            cog = (nmea_get_rmc_cog() * DEG_2_RAD);
 
             if (fabs(cog - cog_last) > M_PI_2) {
                 cog = cog_last;

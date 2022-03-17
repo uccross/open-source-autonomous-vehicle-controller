@@ -53,6 +53,9 @@ This document has three lists, a pre-flight checklist, a pre-launch checklist, a
   * The dates for the files should be changed accordingly
   * see -h option for more, such as -d for debug, -m for mode, and others
   * The usb ports might switch, so just swap ttyUSB0 with ttyUSB1 if the related error shows up, and double check connections
+  * -e --ecom "/dev/ttyUSBx" (where x is 0, 1, 2, ... , etc.) Both -e and --ecom are necessary for echo sounding "ping" depth measurements
+  * using '--ecom x' without '-e' will 
+  * NOTE that cross-track error is temporarily being multiplied by 10, turned into an integer, and added to the DISTANCE_SENSOR MAVLink message under orientation. This should be changed to a different, preferablly custom MAVLink message.
 - [ ] Test remote controls
 - [ ] control c (^c) and check that the data logger worked over ssh
 - [ ] re-run sudo python3 main_guide_sys.py -c "/def/ttyUSB1" --csv_file /media/pavlo/PGV/log_2021_10_9.csv --log_file /media/pavlo/PGV/log_2021_10_9.log -e --ecom "/dev/ttyUSB0" 

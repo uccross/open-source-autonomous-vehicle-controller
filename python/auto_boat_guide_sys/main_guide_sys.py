@@ -253,6 +253,9 @@ if __name__ == '__main__':
     mass = 7.5  # kg
     radius = 0.5  # meters
 
+    lon = 0
+    lat = 0
+
     xacc = 0.0
     yacc = 0.0
     zacc = 0.0
@@ -727,11 +730,9 @@ if __name__ == '__main__':
                 status = logger.log(msg)
 
             if echo_sensor or (sensor_com == "x"):
-                if status == 'GPS_RAW_INT':
-                    for msg in msg_list:
-                        logger.log(msg)
+                if status == 'GPS_RAW_INT': # log depth if we just got a GPS MAVLink message
 
-                    echo_sensor_time = int(t_new)
+                    echo_sensor_time = int(t_new) # Time in milliseconds
 
                     if sensor_com != "x":
                         echo_data = myPing.get_distance()
@@ -753,6 +754,11 @@ if __name__ == '__main__':
                         echo_confidence)
 
                 msg_list = [echo_msg]
+
+                # Written this way in case more python-side MAVLink messages 
+                # are to be added
+                for msg in msg_list: 
+                    logger.log(msg)
 
         msg = None
 

@@ -337,7 +337,7 @@ int main(void) {
                 //                m[1] = imu.mag.y;
                 //                m[2] = imu.mag.z;
 #ifdef CF_AHRS
-                lin_alg_set_v(-imu.gyro.y, -imu.gyro.x, -imu.gyro.z, gyro);
+                lin_alg_set_v(-imu.gyro.x, -imu.gyro.y, -imu.gyro.z, gyro);
                 lin_alg_v_scale(GYRO_SCALE, gyro);
 #endif
             }

@@ -40,7 +40,7 @@
 #define WP_CONFIRM_PERIOD 1000
 //#define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 6
-#define CONTROL_PERIOD 10 //Period for control loop in msec
+#define CONTROL_PERIOD 20 //Period for control loop in msec
 #define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
@@ -59,7 +59,7 @@
 
 #define COG_YAW_MAX_DIFF (5.0 / 180.0 * M_PI)
 #define RAD_2_DEG (180.0 / M_PI)
-#define DEG_2_RAD (M_PI / 180.0)
+#define DEG_2_RAD (M_PI / 180.0) 
 #define GYRO_SCALE DEG_2_RAD
 #define GYRO_BUF_LEN 1000
 #define GYRO_N ((float) GYRO_BUF_LEN)
@@ -411,13 +411,16 @@ int main(void) {
                      * System (AHRS) Initialization. For now use the starting 
                      * rates assuming the vehicle is stationary */
 #ifdef CF_AHRS
-                    lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias);
+                    /* Z-axis Found experimentally, others are greatly 
+                     * corrected by gravity */
+                    lin_alg_set_v(0.0, 0.0, -0.0062, gyro_bias); /* Control period: 20ms*/
                     cf_ahrs_set_gyro_biases(gyro_bias);
 
                     //                    cf_ahrs_set_mag_vi(m);
 
                     cf_ahrs_set_kp_acc(10.0);
-                    cf_ahrs_set_kp_mag(0.075);
+//                    cf_ahrs_set_kp_mag(0.075);
+                    cf_ahrs_set_kp_mag(0.01); /* Control period: 20ms*/
                     cf_ahrs_set_ki_gyro(0.0);
 
                     cf_ahrs_init(SAMPLE_TIME, gyro_bias);
@@ -581,12 +584,12 @@ int main(void) {
 
                     path_angle = lin_tra_get_path_angle();
 
-                    //                    ha_report = (heading_angle*RAD_2_DEG) + 180.0;
-                    ha_report = cog * RAD_2_DEG;
+                    ha_report = (heading_angle*RAD_2_DEG);
+//                    ha_report = cog * RAD_2_DEG;
 
 
-                    //                    heading_angle_diff = heading_angle - path_angle;
-                    heading_angle_diff = cog - path_angle;
+                    heading_angle_diff = heading_angle - path_angle;
+//                    heading_angle_diff = cog - path_angle;
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
@@ -642,6 +645,8 @@ int main(void) {
                             path_angle, // roll-rate, /* Using differently on purpose */
                             delta_angle, // pitch-rate, /* Using differently on purpose */
                             (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
+
+                    LATCbits.LATC1 ^= 1; /* Toggle LED5 */
                     break;
                 case 1:
                     publish_RC_signals_raw();

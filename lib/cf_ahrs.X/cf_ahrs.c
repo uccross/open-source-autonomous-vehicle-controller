@@ -266,20 +266,21 @@ void cf_ahrs_update(float acc_vb[MSZ], float mag_vb[MSZ],
         q_norm = lin_alg_q_norm(q_est);
         if (q_norm != 0.0) {
             q_magnitude = 1.0 / q_norm;
-        }
-        lin_alg_scale_q(q_magnitude, q_est);
+            
+            lin_alg_scale_q(q_magnitude, q_est);
 
-        lin_alg_q2euler_abs(q_est, &cf_yaw, &cf_pitch, &cf_roll);
+            lin_alg_q2euler_abs(q_est, &cf_yaw, &cf_pitch, &cf_roll);
+        }
 
         *yaw = cf_yaw;
         *pitch = cf_pitch;
         *roll = cf_roll;
 
-        lin_alg_q_inv(q_est, q_est_conj);
-        lin_alg_q2euler_abs(q_est_conj,
-                &cf_yaw_conj,
-                &cf_pitch_conj,
-                &cf_roll_conj);
+        //        lin_alg_q_inv(q_est, q_est_conj);
+        //        lin_alg_q2euler_abs(q_est_conj,
+        //                &cf_yaw_conj,
+        //                &cf_pitch_conj,
+        //                &cf_roll_conj);
 
         lin_alg_q2dcm(q_est, r_hat);
         

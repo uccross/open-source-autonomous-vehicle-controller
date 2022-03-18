@@ -45,9 +45,9 @@
 #define RAW 1
 #define SCALED 2
 
-#define K_ACT ((float) 0.001)
-#define UPPER_ACT_BOUND ((float) 80.0*M_PI/180.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
-#define LOWER_ACT_BOUND ((float) -80.0*M_PI/180.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
+#define K_ACT ((float) 0.01)
+#define UPPER_ACT_BOUND ((float) 75.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
+#define LOWER_ACT_BOUND ((float) -75.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
 #define SERVO_PAD 0.0
 #define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))
@@ -159,7 +159,7 @@ int main(void) {
     float angle_correction = 0.0; /* To correct the heading angle from the CF 
                                    * AHRS */
     float cog = 0.0; /* Course over ground angle from GPS */
-//    float cog_last = 0.0; /* Course over ground angle from GPS */
+    //    float cog_last = 0.0; /* Course over ground angle from GPS */
     float ha_report = 0.0;
     //    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
@@ -169,6 +169,7 @@ int main(void) {
     float acc_cmd = 0.0;
     float rtemp = 0.0;
     float speed = 1.0; /* 'measured' speed in meters per second */
+    int u_intermediate = 0; // Pulse from converted control effort
     uint16_t u_pulse = 0; // Pulse from converted control effort
 
     // Attitude
@@ -208,7 +209,7 @@ int main(void) {
     pid_controller_t trajectory_tracker;
     pid_controller_init(&trajectory_tracker,
             SAMPLE_TIME, // dt The sample time
-            0.5, // kp The initial proportional gain
+            0.0,//0.5, // kp The initial proportional gain
             0.0, // ki The initial integral gain
             10.0, // kd The initial derivative gain [HIL:0.1]
             1000.0, // The maximum 
@@ -361,10 +362,10 @@ int main(void) {
             /* Convert the gps position to the Local Tangent Plane (LTP) */
             if ((vehi_pt_lla[0] != vehi_pt_lla_last[0]) &&
                     (vehi_pt_lla[1] != vehi_pt_lla_last[1])) {
-                
+
                 vehi_pt_lla_last[0] = vehi_pt_lla[0];
                 vehi_pt_lla_last[1] = vehi_pt_lla[1];
-                
+
                 lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
             }
 
@@ -419,7 +420,7 @@ int main(void) {
                     //                    cf_ahrs_set_mag_vi(m);
 
                     cf_ahrs_set_kp_acc(10.0);
-//                    cf_ahrs_set_kp_mag(0.075);
+                    //                    cf_ahrs_set_kp_mag(0.075);
                     cf_ahrs_set_kp_mag(0.01); /* Control period: 20ms*/
                     cf_ahrs_set_ki_gyro(0.0);
 
@@ -545,11 +546,11 @@ int main(void) {
             // Using cog for now, but still publishing the ATTITUDE message
             cog = (nmea_get_rmc_cog() * DEG_2_RAD);
 
-//            if (fabs(cog - cog_last) > M_PI_2) {
-//                cog = cog_last;
-//            }
-//
-//            cog_last = cog;
+            //            if (fabs(cog - cog_last) > M_PI_2) {
+            //                cog = cog_last;
+            //            }
+            //
+            //            cog_last = cog;
 
 #endif
 #ifdef TRIAD_AHRS
@@ -584,12 +585,12 @@ int main(void) {
 
                     path_angle = lin_tra_get_path_angle();
 
-                    ha_report = (heading_angle*RAD_2_DEG);
-//                    ha_report = cog * RAD_2_DEG;
+                    ha_report = (heading_angle * RAD_2_DEG);
+                    //                    ha_report = cog * RAD_2_DEG;
 
 
                     heading_angle_diff = heading_angle - path_angle;
-//                    heading_angle_diff = cog - path_angle;
+                    //                    heading_angle_diff = cog - path_angle;
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
@@ -621,12 +622,15 @@ int main(void) {
                 u = delta_angle;
 
                 // Scale resulting control input
-                u /= UPPER_ACT_BOUND;
                 u *= (SERVO_DELTA - SERVO_PAD);
+                u /= UPPER_ACT_BOUND;
                 u += ((float) RC_SERVO_CENTER_PULSE);
-                u_pulse = ((uint16_t) u);
+                u_intermediate = (int)u;
+                u_pulse = ((uint16_t) u_intermediate);
 
                 RC_servo_set_pulse(u_pulse, RC_STEERING);
+
+                delta_angle = (float) u_pulse;
 
             }
 

@@ -638,7 +638,7 @@ if __name__ == '__main__':
                 # print("    angle_diff:      {0:.6g}".format(angle_diff))
                 print("    cte:             {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
-                print("    delta_angle:     {0:.6g}".format(delta_angle*rad2deg))
+                print("    delta_angle:     {0:.6g}".format(delta_angle))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
                 print("    yaw:             {0:.6g}".format(yaw))
                 print("    pitch:           {0:.6g}".format(pitch*rad2deg))

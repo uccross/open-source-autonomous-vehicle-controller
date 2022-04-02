@@ -42,6 +42,8 @@ parser.add_argument('-b', '--baudrate', type=int, dest='baudrate',
 parser.add_argument('-c', '--com', type=str, dest='com', default="COM4",
                     help='Specify COM port number for serial \
                     communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
+parser.add_argument('--dynamic_hyperparams', dest='dynamic_hyperparams',
+                    action='store_true', help='Flag to approximate GPR/PGPR hyperparameters')
 parser.add_argument('-d', '--debug', dest='debug_flag',
                     action='store_true', help='Flag to print helpful info')
 parser.add_argument('-e', '--echo', dest='echo_sensor',
@@ -107,6 +109,14 @@ parser.add_argument('--w_threshold', type=float, dest='threshold',
 
 parser.add_argument('-r', '--resolution', type=float, dest='resolution',
                     default=ds, help='The distance between discrete points')
+                    
+parser.add_argument('--max_recur', dest='max_recur',
+                    type=int, default=2,
+                    help='Maximum level of recursion for POK and PGPR')
+
+parser.add_argument('--spatial_estimator', dest='spatial_estimator',
+                    type=str, default="GPR",
+                    help='Spatial estimator type: GPR, PGPR, OK, IIOK, or POK')
 
 parser.add_argument('-v', '--vario_interval', dest='vario_interval',
                     type=int, default=50,
@@ -129,6 +139,7 @@ arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
 com = arguments.com
+dynamic_hyperparams = arguments.dynamic_hyperparams
 debug_flag = arguments.debug_flag
 echo_sensor = arguments.echo_sensor
 estimate_interval = arguments.estimate_interval
@@ -145,9 +156,12 @@ vizualize_attitude_flag = arguments.vizualize_attitude_flag
 ox0 = arguments.ox0
 oy0 = arguments.oy0
 grid_angle = arguments.grid_angle*np.pi/180.0
-threshold = 2.5  # meters
 
 resolution = arguments.resolution
+max_recur = arguments.max_recur
+spatial_est_type = arguments.spatial_estimator
+threshold = 2.5  # meters
+
 vario_interval = arguments.vario_interval
 x0 = arguments.x0
 xf = arguments.xf
@@ -213,23 +227,6 @@ if __name__ == '__main__':
     stopping_position = np.array([[xf, yf]])
 
     ###########################################################################
-    # Spatiel Estimation Setup
-    new_est_flag_internal = False
-
-    sigma_w = 0.0
-
-    est_update_interval = estimate_interval  # every 'N' measurements
-    vario_update_interval = vario_interval  # every 'N' measurements
-    est_updt_meas_cnt = 0
-
-    # Number of measurements and estimate update counter
-    est_updt_meas_cnt_last = 0
-    vario_updt_meas_cnt_last = 0
-    Zhat = np.zeros((field.get_yLen(), field.get_xLen()))
-    V_Zhat = np.ones((field.get_yLen(), field.get_xLen())) * \
-        100  # Make sure it's non-zero
-
-    ###########################################################################
     # Path Planner
     if path_planner_type == "Zig-zag":
         path_planner = PATH.Zigzag(
@@ -260,7 +257,97 @@ if __name__ == '__main__':
             stopping_position=stopping_position)
 
     else:
-        raise ValueError("Nomoto.py: Invalid path planner!")
+        raise ValueError("main_guide_sys.py: Invalid path planner!")
+
+    ###########################################################################
+    # Spatiel Estimation Setup
+    new_est_flag_internal = False
+
+    sigma_w = 0.0
+
+    est_update_interval = estimate_interval  # every 'N' measurements
+    vario_update_interval = vario_interval  # every 'N' measurements
+    est_updt_meas_cnt = 0
+
+    # Number of measurements and estimate update counter
+    est_updt_meas_cnt_last = 0
+    vario_updt_meas_cnt_last = 0
+    Zhat = np.zeros((field.get_yLen(), field.get_xLen()))
+    V_Zhat = np.ones((field.get_yLen(), field.get_xLen())) * \
+        100  # Make sure it's non-zero
+
+    max_recursion_level = max_recur
+    min_recursion_level = 1
+
+    l_max = 1  # Default max level of recursion
+
+    # Variogram stuff
+    maxlag = 50
+    lagsize = 0.25
+    lagvec = np.arange(0, maxlag, lagsize)
+    lagvec = np.reshape(lagvec, (len(lagvec), 1))
+    nLags = len(lagvec)
+
+    k_sill=1.0
+    k_rng=100.0
+
+    # Gaussian Process Regression and Partitioned Gaussian Process
+    # Regression
+    if (spatial_est_type == "GPR") or (spatial_est_type == "PGPR"):
+
+        dynamic_hyperparams = dynamic_hyperparams
+
+        spatial_estimator = GP.TwoDimensional(m_field=field.get_yLen(),
+                                                    n_field=field.get_xLen(),
+                                                    sigma_f=1.0,
+                                                    ell=5.5,
+                                                    sigma_w=0.1,
+                                                    rlvl=max_recursion_level,
+                                                    type=spatial_est_type)
+
+        if dynamic_hyperparams or (spatial_est_type == "PGPR"):
+            x = starting_position[0][0]
+            y = starting_position[0][1]
+            kriging_zxy = np.array([[0.0, x, y]])
+            variogrammer = KG.OrdinaryKriging(field=field,
+                                                    tol=field.ds, 
+                                                    nLags=nLags)
+
+    # Ordinary Kriging and Partitioned Ordinary Kriging
+    elif ((spatial_est_type == "OK") or (spatial_est_type == "IIOK") or
+            (spatial_est_type == "POK")):
+
+        dynamic_hyperparams = False  # This only applies to GPR/PGPR
+
+        x = starting_position[0][0]
+        y = starting_position[0][1]
+        kriging_zxy = np.array([[0.0, x, y]])
+
+        if (spatial_est_type == "OK"):
+            spatial_estimator = KG.OrdinaryKriging(field=field,
+                                                        tol=field.ds,
+                                                        nLags=nLags)
+        elif (spatial_est_type == "IIOK"):
+            spatial_estimator = KG.OrdinaryKriging(field=field,
+                                                        tol=field.ds,
+                                                        nLags=nLags)
+
+        elif (spatial_est_type == "POK"):
+            spatial_estimator = KG.PartitionedKriging(
+                nLags=nLags,
+                tol=field.ds,
+                ds=field.ds,
+                xMag=field.get_width(),
+                yMag=field.get_length(),
+                Zhat=np.zeros(field.getZ().shape),
+                Vhat=np.ones(field.getZ().shape)*1000,
+                rlvl=max_recursion_level, x0=field.get_x0(),
+                mMax=field.get_max(),
+                mMin=field.get_min(),
+                y0=field.get_y0(), xf=field.get_xf(), yf=field.get_yf())
+
+    else:
+        print("**** No valid spatial estimator specified")
 
     [iqy, iqx] = field.getTrueFieldIndices(starting_position[0][1],
                                            starting_position[0][0])
@@ -639,13 +726,7 @@ if __name__ == '__main__':
 
             ##################################################################
             elif state == 'TRACKING':
-                # Send the previous waypoint for the linear trajectory tracking
-                # if (t_new - t_transmit) >= dt_transmit:
-                #     t_transmit = t_new
-                #     prev_or_next_tx = 1.0
-                #     logger.send_mav_ltp_en_waypoint(wp_prev_en,
-                #                                     prev_or_next_tx)
-
+                
                 ##############################################################
                 # EXIT CASE: PREVIOUS
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
@@ -659,10 +740,6 @@ if __name__ == '__main__':
                 # EXIT CASE: NEXT
                 if (np.linalg.norm(uc_next_en-wp_next_en) > tolerance):
                     state = 'UPDATING_NEXT'
-
-                # if (t_new - t_next_update) >= dt_update:
-                #     t_next_update = t_new
-                #     state = 'UPDATING_NEXT'
 
                 ##############################################################
                 if msg_type == 'SERVO_OUTPUT_RAW':
@@ -802,6 +879,132 @@ if __name__ == '__main__':
                     if mode_print_flag:
                         print("MAVLink base_mode changed: {}".format(
                             current_base_mode))
+
+
+        ###################################################################
+        # Is it time to update the empirical variogram
+        # Currently setup to update once, but can be changed for multiple
+        # updates. Keep in mind that it is computationally expensive to
+        # update the empirical variogram
+        if ((np.mod(est_updt_meas_cnt, vario_update_interval) == 0)
+                and (vario_updt_meas_cnt_last != est_updt_meas_cnt)
+                and (empirical_formed == False)):
+
+            # Prevent repeat variograms within a single interval
+            vario_updt_meas_cnt_last = est_updt_meas_cnt
+
+            ###############################################################
+            # GPR general cases
+            if ((spatial_est_type == "GPR") or
+                    (spatial_est_type == "PGPR")):
+                    
+                if (dynamic_hyperparams or
+                        (spatial_est_type == "PGPR")):
+
+                    E = variogrammer.makeEmpericalSemiVariogram(
+                        kriging_zxy, lag_vec=lagvec)
+
+                    sill, _, _ = variogrammer.fit2EmpiricalScipy(
+                        lagvec[:len(E)], E)
+
+                    f = variogrammer.variogramGauss(lagvec)
+                    rng = 1
+                    for lag, fl in zip(lagvec, f):
+                        if fl >= 0.95*sill:
+                            rng = lag[0]
+                            break
+
+                    # Set the hyperparameters:
+                    # 1) the common length scale
+                    # 2) the variance scale factor
+                    spatial_estimator.set_ell(k_rng*rng)
+                    spatial_estimator.set_sigma_f(k_sill*sill)
+                    
+
+
+            ###############################################################
+            # OK, IIOK, and POK variogram cases
+            if ((spatial_est_type == "OK") or
+                    (spatial_est_type == "IIOK") or
+                    (spatial_est_type == "POK")):
+
+                # Global variogram for whole field
+                if ((spatial_est_type == "OK") or
+                        (spatial_est_type == "IIOK")):
+
+                    # print(kriging_zxy)
+
+                    E = spatial_estimator.makeEmpericalSemiVariogram(
+                        kriging_zxy, lag_vec=lagvec)
+
+                    # print(E)
+
+                elif (spatial_est_type == "POK"):
+                    E = spatial_estimator.makeEmpericalSemiVariogram(
+                        sensorLog=kriging_zxy,
+                        endlevel=1)
+
+                # Fit the global empirical variogram
+                sill, _, _ = spatial_estimator.fit2EmpiricalScipy(
+                    lagvec[:len(E)], E)
+
+            ###############################################################
+            # Special Cases for recursive partition of the field into
+            # subfields for PGPR and POK
+            if ((spatial_est_type == "PGPR") or
+                    (spatial_est_type == "POK")):
+
+                if (spatial_est_type == "PGPR"):
+                    f = variogrammer.variogramGauss(lagvec)
+
+                elif (spatial_est_type == "POK"):
+                    f = spatial_estimator.variogramGauss(lagvec)
+
+                rng = 1
+                for lag, fl in zip(lagvec, f):
+                    if fl >= 0.95*sill:
+                        rng = lag[0]
+                        break
+
+                qx = field.get_width()
+                qy = field.get_length()
+
+                l_max = (
+                    int(np.floor(np.sqrt((qx**2 + qy**2))/(rng))) - 1)
+
+                l_max = np.min([max_recursion_level, l_max])
+
+
+                if l_max < min_recursion_level:
+                    l_max = min_recursion_level
+
+                if l_max > max_recursion_level:
+                    l_max = max_recursion_level
+
+
+                # Recursion level cases for PGPR and POK
+
+                if (spatial_est_type == "PGPR"):
+                    # Set the hyperparameters:
+                    # 1) the common length scale
+                    # 2) the variance scale factor
+                    spatial_estimator.set_ell(k_rng*rng)
+                    spatial_estimator.set_sigma_f(k_sill*sill)
+                    spatial_estimator.set_rlvl(l_max)
+
+                elif (spatial_est_type == "POK"):
+
+                    # Local variogram from immediate sub-field
+                    E = spatial_estimator.makeEmpericalSemiVariogram(
+                        sensorLog=kriging_zxy,
+                        endlevel=l_max)
+
+                    # Fit the local variogram from immediate sub-field
+                    spatial_estimator.fit2EmpiricalScipy(
+                        lagvec[:len(E)], E)
+
+            #
+            empirical_formed = True
 
         #######################################################################
         # Simulation Update Vehicle

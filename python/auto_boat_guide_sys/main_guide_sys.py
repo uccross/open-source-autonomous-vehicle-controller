@@ -303,8 +303,8 @@ if __name__ == '__main__':
     if tracker_flag:
         tracker = TR.Tracker(graphInterval=1,
                              wp_grid=path_planner.get_wp_queue(),
-                             x_bound=grid_width+grid_separation,
-                             y_bound=grid_length+grid_separation)
+                             x_bound=field.get_width()*1.10,
+                             y_bound=field.get_length()*1.10)
 
     ###########################################################################
     # Helper method, based on

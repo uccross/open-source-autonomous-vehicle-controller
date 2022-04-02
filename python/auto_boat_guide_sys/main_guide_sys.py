@@ -145,9 +145,6 @@ vizualize_attitude_flag = arguments.vizualize_attitude_flag
 ox0 = arguments.ox0
 oy0 = arguments.oy0
 grid_angle = arguments.grid_angle*np.pi/180.0
-grid_separation = arguments.grid_separation
-grid_width = arguments.grid_width
-grid_length = arguments.grid_length
 threshold = 2.5  # meters
 
 resolution = arguments.resolution

@@ -85,7 +85,7 @@ parser.add_argument('-s', '--simulation', dest='simulation_flag',
 parser.add_argument('-t', '--tracker', dest='tracker_flag',
                     action='store_true', help='Flag to print mode changes')
 
-parser.add_argument('-v', '--vizualize', dest='vizualize_attitude_flag',
+parser.add_argument('--vizualize', dest='vizualize_attitude_flag',
                     action='store_true', help='Flag to print mode changes')
 
 parser.add_argument('--ox0', type=float, dest='ox0',

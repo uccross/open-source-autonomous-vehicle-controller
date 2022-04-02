@@ -507,9 +507,6 @@ if __name__ == '__main__':
 
             clst_pt_en = trajectory.getClosestPoint()
 
-            is_beyond_next_wp = trajectory.is_closest_point_beyond_next(
-                threshold)
-
             cte = trajectory.getCte()
 
         # Read the state of the vehicle
@@ -716,7 +713,6 @@ if __name__ == '__main__':
                     #     threshold))):
                     wp_prev_en = wp_next_en
                     wp_next_en = path_planner.get_wp_next_en()
-                    is_beyond_next_wp = False
                     # state = 'SENDING_NEXT_WP'
 
             # ###################################################################

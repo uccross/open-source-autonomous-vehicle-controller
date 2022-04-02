@@ -12,13 +12,26 @@ from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
 from utilities import AttitudeVisualization as AV
 from utilities import Tracker as TR
-from utilities import Grid
-from utilities import Linear as LN
+from Modules.Trajectories import Linear as LN
+from Modules.Field import Field
+from Modules.Utilities import Quaternions as QU
+from Modules.Utilities import GaussianProcess as GP
+from Modules.Utilities import Kriging as KG
+from Modules.Utilities import Graph as Graph
+from Modules.Utilities import PathPlanner as PATH
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
 from sys import exit
 import copy
+
+###############################################################################
+# Arbitrary default values
+x0 = -25.0
+xf = 25.0
+y0 = -20.0
+yf = 20.0
+ds = 2.00
 
 ###############################################################################
 # Parse Arguments
@@ -43,6 +56,10 @@ parser.add_argument('--ecom', type=str, dest='ecom', default="COM3",
                         communication with echo sounder. Default is 3, as \
                         in COM3, x for CTE overload')  # /dev/ttyUSB0
 
+parser.add_argument('--estimate_interval', dest='estimate_interval',
+                    type=int, default=10,
+                    help='Interval for estimating the field every n-new measurements')
+
 parser.add_argument('--csv_file', type=str, dest='csv_file',
                     default='./log_file.csv',
                     help='log file path')
@@ -50,8 +67,17 @@ parser.add_argument('--csv_file', type=str, dest='csv_file',
 parser.add_argument('--log_file', type=str, dest='log_file',
                     default='./log_file.log',
                     help='log file path')
+
 parser.add_argument('-m', '--mode', dest='mode_print_flag',
                     action='store_true', help='Flag to print mode changes')
+
+parser.add_argument('--node_separation', dest='node_separation',
+                    type=int, default=3,
+                    help='Discrete field point node index separation')
+
+parser.add_argument('--path_planner', dest='path_planner',
+                    type=str, default="Zig-zag",
+                    help='Path planner type: Zig-zag, Myopic, HV, HV-Bellman-Ford, Random')
 
 parser.add_argument('-s', '--simulation', dest='simulation_flag',
                     action='store_true', help='Flag to print mode changes')
@@ -62,34 +88,42 @@ parser.add_argument('-t', '--tracker', dest='tracker_flag',
 parser.add_argument('-v', '--vizualize', dest='vizualize_attitude_flag',
                     action='store_true', help='Flag to print mode changes')
 
-parser.add_argument('--x0', type=float, dest='x0',
-                    default=30.0,
+parser.add_argument('--ox0', type=float, dest='ox0',
+                    default=0.0,
                     help='Grid shift in meters in the body-x axis')
 
-parser.add_argument('--y0', type=float, dest='y0',
-                    default=-10.0,
+parser.add_argument('--oy0', type=float, dest='oy0',
+                    default=-0.0,
                     help='Grid shift in meters in the body-y axis')
 
 parser.add_argument('--grid_angle', type=float, dest='grid_angle',
                     default=30.0*np.pi/180.0,
                     help='The orientation of the grid on the LTP in degrees')
 
-parser.add_argument('--grid_separation', type=float, dest='grid_separation',
-                    default=20.0,
-                    help='The distance between grid points in meters')
-
-parser.add_argument('--grid_width', type=float, dest='grid_width',
-                    default=70.0,
-                    help='The width of the grid in meters')
-
-parser.add_argument('--grid_length', type=float, dest='grid_length',
-                    default=90.0,
-                    help='The length of the grid in meters')
-
 parser.add_argument('--w_threshold', type=float, dest='threshold',
                     default=2.5,
                     help='The threshold distance that qualifies a waypoint\
                         transition')
+
+parser.add_argument('-r', '--resolution', type=float, dest='resolution',
+                    default=ds, help='The distance between discrete points')
+
+parser.add_argument('-v', '--vario_interval', dest='vario_interval',
+                    type=int, default=50,
+                    help='Record animation if animate flag')
+
+parser.add_argument('--x0', type=float, dest='x0',
+                    default=x0,
+                    help='Minimum x0 coordinate (must be less than xf)')
+parser.add_argument('--xf', type=float, dest='xf',
+                    default=xf,
+                    help='Minimum xf coordinate (must be more than x0)')
+parser.add_argument('--y0', type=float, dest='y0',
+                    default=y0,
+                    help='Minimum y0 coordinate (must be less than yf)')
+parser.add_argument('--yf', type=float, dest='yf',
+                    default=yf,
+                    help='Minimum yf coordinate (must be more than y0)')
 
 arguments = parser.parse_args()
 
@@ -97,21 +131,31 @@ baudrate = arguments.baudrate
 com = arguments.com
 debug_flag = arguments.debug_flag
 echo_sensor = arguments.echo_sensor
+estimate_interval = arguments.estimate_interval
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
+node_separation = arguments.node_separation
+path_planner_type = arguments.path_planner
 simulation_flag = arguments.simulation_flag
 tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
-x0_b = arguments.x0
-y0_b = arguments.y0
+ox0 = arguments.ox0
+oy0 = arguments.oy0
 grid_angle = arguments.grid_angle*np.pi/180.0
 grid_separation = arguments.grid_separation
 grid_width = arguments.grid_width
 grid_length = arguments.grid_length
-threshold = arguments.threshold
+threshold = 2.5  # meters
+
+resolution = arguments.resolution
+vario_interval = arguments.vario_interval
+x0 = arguments.x0
+xf = arguments.xf
+y0 = arguments.y0
+yf = arguments.yf
 
 
 ###############################################################################
@@ -158,9 +202,79 @@ if __name__ == '__main__':
         msg_list = []
 
     # Grid
-    Grid = Grid.Grid(width=grid_width, length=grid_length, x0=x0_b, y0=y0_b)
-    Grid.form_grid(grid_separation, grid_angle)
-    trajectory = LN.Linear()
+    # Grid = Grid.Grid(width=grid_width, length=grid_length, x0=ox0, y0=oy0)
+    # Grid.form_grid(grid_separation, grid_angle)
+
+    ###########################################################################
+    # Blank field setup
+    field = Field.Field(ds=resolution, x0=x0, y0=y0, xf=xf, yf=yf,
+                        alpha=-3.0, mMin=-10, mMax=0)
+
+    ###########################################################################
+    # Position Setup
+    starting_position = np.array([[x0, y0]])
+    stopping_position = np.array([[xf, yf]])
+
+    ###########################################################################
+    # Spatiel Estimation Setup
+    new_est_flag_internal = False
+
+    sigma_w = 0.0
+
+    est_update_interval = estimate_interval  # every 'N' measurements
+    vario_update_interval = vario_interval  # every 'N' measurements
+    est_updt_meas_cnt = 0
+
+    # Number of measurements and estimate update counter
+    est_updt_meas_cnt_last = 0
+    vario_updt_meas_cnt_last = 0
+    Zhat = np.zeros((field.get_yLen(), field.get_xLen()))
+    V_Zhat = np.ones((field.get_yLen(), field.get_xLen())) * \
+        100  # Make sure it's non-zero
+
+    ###########################################################################
+    # Path Planner
+    if path_planner_type == "Zig-zag":
+        path_planner = PATH.Zigzag(
+            field=field,
+            starting_position=starting_position,
+            stopping_position=stopping_position,
+            node_separation=node_separation)
+
+    elif path_planner_type == "Myopic":
+        path_planner = PATH.Myopic(
+            field=field,
+            look_int_dist=15,
+            starting_position=starting_position,
+            stopping_position=stopping_position)
+
+    elif path_planner_type == "Random":
+        path_planner = PATH.RandomizedWaypoints(field=field)
+
+    elif path_planner_type == "HV":
+        path_planner = PATH.HighestVariance(field=field)
+
+    elif path_planner_type == "HV-Bellman-Ford":
+        path_planner = PATH.BellmanFord(
+            # Can be changed, but this works well.
+            field=field, distance_weight=10.0,
+            node_separation=node_separation, threshold=threshold,
+            starting_position=starting_position,
+            stopping_position=stopping_position)
+
+    else:
+        raise ValueError("Nomoto.py: Invalid path planner!")
+
+    [iqy, iqx] = field.getTrueFieldIndices(starting_position[0][1],
+                                           starting_position[0][0])
+
+    trajectory = LN.Linear(vehiPT=starting_position,
+                           prevWP=starting_position,
+                           nextWP=path_planner.get_wp_next_en(
+                               iqy, iqx,
+                               V_Zhat,
+                               new_est_flag_internal,
+                               heading_angle=0.0))
 
     # Initialization
     extra_headers = ['vertical_fov', 'signal_quality',
@@ -190,7 +304,8 @@ if __name__ == '__main__':
 
     # Tracker
     if tracker_flag:
-        tracker = TR.Tracker(graphInterval=1, wp_grid=Grid.get_points(),
+        tracker = TR.Tracker(graphInterval=1,
+                             wp_grid=path_planner.get_wp_queue(),
                              x_bound=grid_width+grid_separation,
                              y_bound=grid_length+grid_separation)
 
@@ -236,7 +351,7 @@ if __name__ == '__main__':
 
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
-    dt_log = 0.001 # seconds
+    dt_log = 0.001  # seconds
     dt_transmit = 0.500  # seconds
     dt_update = 4.000  # seconds
     dt_HIL_transmit = 0.5  # seconds
@@ -297,7 +412,7 @@ if __name__ == '__main__':
     rad2deg = 180.0/np.pi
     deg2rad = np.pi/180.0
 
-    waypoints = Grid.get_points()
+    waypoints = path_planner.get_wp_queue()
     wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=threshold)
 
     wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
@@ -373,7 +488,7 @@ if __name__ == '__main__':
     ###########################################################################
     # Main Loop
     while True:
-            
+
         was_waypoint_flag = False
 
         # Timing
@@ -445,13 +560,14 @@ if __name__ == '__main__':
             if msg_type == 'ATTITUDE':
                 nav_msg = msg.to_dict()
 
-                yaw = nav_msg['yaw']# Already in degrees
-                pitch = nav_msg['pitch'] # radians
-                roll = nav_msg['roll'] # radians
+                yaw = nav_msg['yaw']  # Already in degrees
+                pitch = nav_msg['pitch']  # radians
+                roll = nav_msg['roll']  # radians
 
                 rollspeed = nav_msg['rollspeed']  # Using as path angle
                 # Using as cross track error
-                pitchspeed = nav_msg['pitchspeed'] # Using as rudder angle command
+                # Using as rudder angle command
+                pitchspeed = nav_msg['pitchspeed']
                 yawspeed = nav_msg['yawspeed']  # Using as pic32_wp_state
 
                 if int(yawspeed) == 0:
@@ -467,7 +583,7 @@ if __name__ == '__main__':
                 if int(yawspeed) == 5:
                     pic32_wp_state = 'TRACKING'
 
-                cf_heading_angle = yaw # Already in degrees
+                cf_heading_angle = yaw  # Already in degrees
                 path_angle = rollspeed*rad2deg
                 angle_diff = pitchspeed*rad2deg
 
@@ -598,9 +714,11 @@ if __name__ == '__main__':
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
-                if wpq.isNearNext(clst_pt_en):  # or is_beyond_next_wp:
+                if (trajectory.is_closest_point_near_next_wp(threshold)
+                    or (trajectory.is_closest_point_beyond_next(
+                        threshold))):
                     wp_prev_en = wp_next_en
-                    wp_next_en = wpq.getNext()
+                    wp_next_en = path_planner.get_wp_next_en()
                     is_beyond_next_wp = False
                     # state = 'SENDING_NEXT_WP'
 
@@ -719,7 +837,7 @@ if __name__ == '__main__':
                                wp_next_en=wp_next_en,
                                position_en=uc_vehi_en,
                                clst_pt_en=clst_pt_en,
-                               new_grid_pts=Grid.get_points())
+                               new_grid_pts=path_planner.get_wp_queue())
 
         #######################################################################
         # Log messages (at intervals)
@@ -730,16 +848,17 @@ if __name__ == '__main__':
                 status = logger.log(msg)
 
             if echo_sensor or (sensor_com == "x"):
-                if status == 'GPS_RAW_INT': # log depth if we just got a GPS MAVLink message
+                if status == 'GPS_RAW_INT':  # log depth if we just got a GPS MAVLink message
 
-                    echo_sensor_time = int(t_new) # Time in milliseconds
+                    echo_sensor_time = int(t_new)  # Time in milliseconds
 
                     if sensor_com != "x":
                         echo_data = myPing.get_distance()
                         echo_sensor_distance = echo_data["distance"]
                         echo_confidence = echo_data["confidence"]
 
-                    echo_sensor_orientation = int(cte*10) # using orentation for recording cross track error for simple test
+                    # using orentation for recording cross track error for simple test
+                    echo_sensor_orientation = int(cte*10)
                     if echo_sensor_orientation > 255:
                         echo_sensor_orientation = 255
 
@@ -755,9 +874,9 @@ if __name__ == '__main__':
 
                 msg_list = [echo_msg]
 
-                # Written this way in case more python-side MAVLink messages 
+                # Written this way in case more python-side MAVLink messages
                 # are to be added
-                for msg in msg_list: 
+                for msg in msg_list:
                     logger.log(msg)
 
         msg = None

@@ -711,9 +711,9 @@ if __name__ == '__main__':
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
-                if (trajectory.is_closest_point_near_next_wp(threshold)
-                    or (trajectory.is_closest_point_beyond_next(
-                        threshold))):
+                if (trajectory.is_closest_point_near_next_wp(threshold)):
+                    # or (trajectory.is_closest_point_beyond_next(
+                    #     threshold))):
                     wp_prev_en = wp_next_en
                     wp_next_en = path_planner.get_wp_next_en()
                     is_beyond_next_wp = False

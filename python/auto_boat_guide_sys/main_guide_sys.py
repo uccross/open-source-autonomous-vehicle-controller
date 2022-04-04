@@ -512,9 +512,6 @@ if __name__ == '__main__':
     rad2deg = 180.0/np.pi
     deg2rad = np.pi/180.0
 
-    waypoints = path_planner.get_wp_queue()
-    wpq = WQ.WaypointQueue(waypoint_queue=waypoints, threshold=threshold)
-
     wp_ref_lla = np.array([[0.0, 0.0, 0.0]])
     wp_ref_lat_lon = np.array([[0.0, 0.0]])
 
@@ -538,7 +535,7 @@ if __name__ == '__main__':
     wp_prev_en = np.zeros((1, 2))
     vehi_pt_en = np.zeros((1, 2))
     uc_vehi_en = np.zeros((1, 2))
-    wp_next_en = wpq.getNext()
+    wp_next_en = path_planner.get_wp_next_en()
     uc_prev_en = np.zeros((1, 2))
     uc_next_en = np.zeros((1, 2))
 

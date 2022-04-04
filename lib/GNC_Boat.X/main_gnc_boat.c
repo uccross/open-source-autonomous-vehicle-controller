@@ -46,8 +46,8 @@
 #define SCALED 2
 
 #define K_ACT ((float) 0.01)
-#define UPPER_ACT_BOUND ((float) 75.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
-#define LOWER_ACT_BOUND ((float) -75.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
+#define UPPER_ACT_BOUND ((float) 50.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
+#define LOWER_ACT_BOUND ((float) -50.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
 #define SERVO_PAD 0.0
 #define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))
@@ -55,7 +55,7 @@
 #define TRANSMIT_PRD 500 // Time to wait to check reference waypoint in milliseconds
 #define STATE_MACHINE_PRD 2 // Time to wait to check reference waypoint in milliseconds
 #define TOL 0.0001
-#define MAX_ACCEPTABLE_CTE ((float) 10.0)
+#define MAX_ACCEPTABLE_CTE ((float) 3.0)
 
 #define COG_YAW_MAX_DIFF (5.0 / 180.0 * M_PI)
 #define RAD_2_DEG (180.0 / M_PI)
@@ -205,16 +205,6 @@ int main(void) {
     //    float pitch_rate = 0.0;
     //    float yaw_rate = 0.0;
 
-    // Controller
-    pid_controller_t trajectory_tracker;
-    pid_controller_init(&trajectory_tracker,
-            SAMPLE_TIME, // dt The sample time
-            0.0,//0.5, // kp The initial proportional gain
-            0.0, // ki The initial integral gain
-            10.0, // kd The initial derivative gain [HIL:0.1]
-            1000.0, // The maximum 
-            -1000.0); // The minimum 
-
 #ifdef USB_DEBUG
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
 #endif
@@ -225,7 +215,19 @@ int main(void) {
     uint32_t msg_id = 0;
     uint16_t cmd = 0;
     float wp_type = -1.0;
-    float wp_yaw = 0.0;
+    float omega_yaw = 0.0;
+    float kp_track = 1.0;
+    float kd_track = 10.0;
+
+    // Controller
+    pid_controller_t trajectory_tracker;
+    pid_controller_init(&trajectory_tracker,
+            SAMPLE_TIME, // dt The sample time
+            kp_track, //0.5, // kp The initial proportional gain
+            0.0, // ki The initial integral gain
+            kd_track, // kd The initial derivative gain [HIL:0.1]
+            1000.0, // The maximum 
+            -1000.0); // The minimum 
     //    float m[3] = {0.0};
 
     enum waypoints_state {
@@ -273,7 +275,7 @@ int main(void) {
         if (cur_time - mav_serial_start_time >= MAV_SERIAL_READ_PERIOD) {
             mav_serial_start_time = cur_time; //reset the timer
             is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
-                    &cmd, &wp_type, &wp_yaw);
+                    &cmd, &wp_type, &omega_yaw, &kp_track, &kd_track);
 
             if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
 
@@ -316,7 +318,7 @@ int main(void) {
                     vehi_pt_en[0] = wp_received_en[0];
                     vehi_pt_en[1] = wp_received_en[1];
 
-                    yaw = wp_yaw;
+                    yaw = omega_yaw;
                 }
             }
 
@@ -326,8 +328,8 @@ int main(void) {
             }
 #else
             is_new_imu = check_IMU_events(SCALED, &imu);
-            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
-                    &cmd, &wp_type, &wp_yaw);
+            //            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
+            //                    &cmd, &wp_type, &omega_yaw);
             check_RC_events(); //check incoming RC commands
 
             /* Update aiding vectors and gyro angular rates */
@@ -343,7 +345,6 @@ int main(void) {
 #endif
             }
 
-            //            if (is_new_gps == TRUE) {
             publisher_get_gps_rmc_position(vehi_pt_ll);
 
             if (current_wp_state == FINDING_REF_WP) {
@@ -371,7 +372,6 @@ int main(void) {
 
             vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
             vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
-            //            }
 #endif
         }
 
@@ -414,7 +414,8 @@ int main(void) {
 #ifdef CF_AHRS
                     /* Z-axis Found experimentally, others are greatly 
                      * corrected by gravity */
-                    lin_alg_set_v(0.0, 0.0, -0.0062, gyro_bias); /* Control period: 20ms*/
+                    //lin_alg_set_v(0.0, 0.0, -0.0062, gyro_bias); /* Control period: 20ms*/
+                    lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias); /* Control period: 20ms*/
                     cf_ahrs_set_gyro_biases(gyro_bias);
 
                     //                    cf_ahrs_set_mag_vi(m);
@@ -436,7 +437,8 @@ int main(void) {
 
 
                     // State exit case
-                    if ((cur_time - startup_wait_time) >= GPS_FIX_TIME) {
+                    if (((cur_time - startup_wait_time) >= GPS_FIX_TIME) &&
+                            (current_mode == MAV_MODE_AUTO_ARMED)) {
                         if ((ref_ll[0] != 0.0) && (ref_ll[1] != 0.0)) {
                             current_wp_state = SENDING_PREV;
                         }
@@ -477,22 +479,32 @@ int main(void) {
 
                 case TRACKING:
                     /**********************************************************/
+                    lin_alg_set_v(0.0, 0.0, omega_yaw, gyro_bias);
+                    cf_ahrs_set_gyro_biases(gyro_bias);
+
+                    pid_controller_init(&trajectory_tracker,
+                            SAMPLE_TIME, // dt The sample time
+                            kp_track, //0.5, // kp The initial proportional gain
+                            0.0, // ki The initial integral gain
+                            kd_track, // kd The initial derivative gain [HIL:0.1]
+                            1000.0, // The maximum 
+                            -1000.0); // The minimum 
 
                     /* Edge case if too far out */
-                    if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
-                            (is_far_out == FALSE)) {
-                        wp_prev_en[0] = vehi_pt_en[0];
-                        wp_prev_en[1] = vehi_pt_en[1];
-                        cross_track_error_last = cross_track_error;
-                        is_far_out = TRUE;
-                    }
-
-                    if ((fabs(cross_track_error_last + cross_track_error) <
-                            MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
-                        //                        wp_prev_en_last[0] = wp_prev_en[0];
-                        //                        wp_prev_en_last[1] = wp_prev_en[1];
-                        is_far_out = FALSE;
-                    }
+                    //                    if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
+                    //                            (is_far_out == FALSE)) {
+                    //                        wp_prev_en[0] = vehi_pt_en[0];
+                    //                        wp_prev_en[1] = vehi_pt_en[1];
+                    //                        cross_track_error_last = cross_track_error;
+                    //                        is_far_out = TRUE;
+                    //                    }
+                    //
+                    //                    if ((fabs(cross_track_error_last + cross_track_error) <
+                    //                            MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
+                    //                        //                        wp_prev_en_last[0] = wp_prev_en[0];
+                    //                        //                        wp_prev_en_last[1] = wp_prev_en[1];
+                    //                        is_far_out = FALSE;
+                    //                    }
 
                     /* Exit cases: */
                     if (is_new_prev_wp == TRUE) {
@@ -619,13 +631,13 @@ int main(void) {
                     }
                 }
 
-                u = delta_angle;
+                u = -delta_angle;
 
                 // Scale resulting control input
                 u *= (SERVO_DELTA - SERVO_PAD);
                 u /= UPPER_ACT_BOUND;
                 u += ((float) RC_SERVO_CENTER_PULSE);
-                u_intermediate = (int)u;
+                u_intermediate = (int) u;
                 u_pulse = ((uint16_t) u_intermediate);
 
                 RC_servo_set_pulse(u_pulse, RC_STEERING);

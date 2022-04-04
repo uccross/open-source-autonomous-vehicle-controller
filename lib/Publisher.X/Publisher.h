@@ -190,7 +190,7 @@ void publish_RC_signals_raw(void);
  * @author Pavlo Vlastos
  */
 char check_mavlink_serial_events(float wp[DIM], uint32_t *msgid,
-        uint16_t *command, float *wp_type, float *yaw);
+        uint16_t *command, float *wp_type, float *yaw, float *kp, float *kd);
 
 /**
  * @function publish_GPS(void)

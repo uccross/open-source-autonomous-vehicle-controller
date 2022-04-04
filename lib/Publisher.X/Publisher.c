@@ -364,7 +364,7 @@ void publish_RC_signals_raw(void) {
 }
 
 char check_mavlink_serial_events(float wp[DIM], uint32_t *msgid,
-        uint16_t *command, float *wp_type, float *yaw) {
+        uint16_t *command, float *wp_type, float *yaw, float *kp, float *kd) {
     char status = FALSE;
 
     wp[0] = 0.0; // latitude
@@ -388,6 +388,8 @@ char check_mavlink_serial_events(float wp[DIM], uint32_t *msgid,
                         //                        break;
 
                     case MAV_CMD_NAV_WAYPOINT:
+                        *kp = mavlink_msg_command_long_get_param1(&rec_msg);
+                        *kd = mavlink_msg_command_long_get_param2(&rec_msg);
                         *yaw = mavlink_msg_command_long_get_param3(&rec_msg);
                         
                         wp[0] = mavlink_msg_command_long_get_param4(&rec_msg);

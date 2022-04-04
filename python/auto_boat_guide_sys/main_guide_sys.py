@@ -261,7 +261,7 @@ if __name__ == '__main__':
         raise ValueError("main_guide_sys.py: Invalid path planner!")
 
     # Shift and rotate waypoints
-    path_planner.move_waypoints(ox0, oy0, wp_angle)
+    path_planner.move_wp(ox0, oy0, wp_angle)
 
     ###########################################################################
     # Spatiel Estimation Setup

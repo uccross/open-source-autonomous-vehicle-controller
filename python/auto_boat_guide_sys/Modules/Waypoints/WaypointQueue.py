@@ -87,6 +87,25 @@ class WaypointQueue():
     def get_index(self):
         return self.index
 
+    def move_waypoints(self, angle, ox, oy):
+        """
+        :param angle: The orientation of the grid with respect to the LTP
+        :param ox: The desired 'x' offset for all points
+        :param oy: The desired 'y' offset for all points
+        """
+
+        m, _ = self.waypoint_queue.shape
+
+        # Shift in x and y
+        for i in range(m):
+            self.waypoint_queue[i][0] += ox
+            self.waypoint_queue[i][1] += oy
+
+        # Rotate grid
+        R = np.array([[np.cos(angle), -np.sin(angle)],
+                        [np.sin(angle), np.cos(angle)]])
+
+        self.waypoint_queue = self.waypoint_queue @ R  
 
 ###############################################################################
 # MODULE TEST EXAMPLE

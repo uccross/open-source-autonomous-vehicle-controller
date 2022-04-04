@@ -157,6 +157,9 @@ class Myopic():
     def get_slct_cnd_wp(self):
         return self.slct_cnd_wp
 
+    def move_wp(self, ox, oy, angle):
+        self.wp_queue.move_waypoints(ox, oy, angle)
+
 
 class RandomizedWaypoints():
     def __init__(self, field=Field.Field()):
@@ -187,6 +190,9 @@ class RandomizedWaypoints():
 
     def get_wp_queue(self):
         return self.wp_queue.get_waypoints()
+
+    def move_wp(self, ox, oy, angle):
+        self.wp_queue.move_waypoints(ox, oy, angle)
 
 
 class HighestVariance():
@@ -226,6 +232,9 @@ class HighestVariance():
 
     def get_wp_queue(self):
         return self.wp_queue.get_waypoints()
+
+    def move_wp(self, ox, oy, angle):
+        self.wp_queue.move_waypoints(ox, oy, angle)
 
 
 class Zigzag():
@@ -310,6 +319,8 @@ class Zigzag():
     def get_wp_queue(self):
         return self.wp_queue.get_waypoints()
 
+    def move_wp(self, ox, oy, angle):
+        self.wp_queue.move_waypoints(ox, oy, angle)
 
 class BellmanFord():
     def __init__(self, field=Field.Field(), distance_weight=1.0,
@@ -544,3 +555,6 @@ class BellmanFord():
 
     def get_sol_arrows(self):
         return self.sol_arrows_x, self.sol_arrows_y, self.sol_arrows_dx, self.sol_arrows_dy
+
+    def move_wp(self, ox, oy, angle):
+        self.wp_queue.move_waypoints(ox, oy, angle)

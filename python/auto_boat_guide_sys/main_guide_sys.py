@@ -95,10 +95,14 @@ parser.add_argument('--ox0', type=float, dest='ox0',
                     help='Grid shift in meters in the body-x axis')
 
 parser.add_argument('--oy0', type=float, dest='oy0',
-                    default=-0.0,
+                    default=0.0,
                     help='Grid shift in meters in the body-y axis')
 
-parser.add_argument('--grid_angle', type=float, dest='grid_angle',
+parser.add_argument('--omega_yaw', type=float, dest='omega_yaw',
+                    default=0.0,
+                    help='Yaw rate bias in radians per second')
+
+parser.add_argument('--wp_angle', type=float, dest='wp_angle',
                     default=30.0*np.pi/180.0,
                     help='The orientation of the grid on the LTP in degrees')
 
@@ -149,13 +153,11 @@ csv_file = arguments.csv_file
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
 node_separation = arguments.node_separation
+omega_yaw = arguments.omega_yaw
 path_planner_type = arguments.path_planner
 simulation_flag = arguments.simulation_flag
 tracker_flag = arguments.tracker_flag
 vizualize_attitude_flag = arguments.vizualize_attitude_flag
-ox0 = arguments.ox0
-oy0 = arguments.oy0
-grid_angle = arguments.grid_angle*np.pi/180.0
 
 resolution = arguments.resolution
 max_recur = arguments.max_recur
@@ -168,6 +170,9 @@ xf = arguments.xf
 y0 = arguments.y0
 yf = arguments.yf
 
+ox0 = arguments.ox0
+oy0 = arguments.oy0
+wp_angle = arguments.wp_angle*np.pi/180.0
 
 ###############################################################################
 if __name__ == '__main__':
@@ -212,10 +217,6 @@ if __name__ == '__main__':
     else:
         msg_list = []
 
-    # Grid
-    # Grid = Grid.Grid(width=grid_width, length=grid_length, x0=ox0, y0=oy0)
-    # Grid.form_grid(grid_separation, grid_angle)
-
     ###########################################################################
     # Blank field setup
     field = Field.Field(ds=resolution, x0=x0, y0=y0, xf=xf, yf=yf,
@@ -258,6 +259,9 @@ if __name__ == '__main__':
 
     else:
         raise ValueError("main_guide_sys.py: Invalid path planner!")
+
+    # Shift and rotate waypoints
+    path_planner.move_waypoints(ox0, oy0, wp_angle)
 
     ###########################################################################
     # Spatiel Estimation Setup
@@ -556,7 +560,7 @@ if __name__ == '__main__':
     check2 = 0.0
     tolerance = 0.00001
 
-    was_waypoint_flag = False
+    # was_waypoint_flag = False
 
     ###########################################################################
     # Simulation
@@ -573,7 +577,7 @@ if __name__ == '__main__':
     # Main Loop
     while True:
 
-        was_waypoint_flag = False
+        # was_waypoint_flag = False
 
         # Timing
         t_new = time.time()
@@ -687,11 +691,11 @@ if __name__ == '__main__':
                         (np.abs(check2 - 0.6) <= tolerance)):
 
                     if (prev_next_vehi-1.0) <= tolerance:
-                        was_waypoint_flag = True
+                        # was_waypoint_flag = True
                         uc_prev_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-1.5) <= tolerance:
-                        was_waypoint_flag = True
+                        # was_waypoint_flag = True
                         uc_next_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-2.0) <= tolerance:
@@ -705,6 +709,7 @@ if __name__ == '__main__':
                     t_transmit = t_new
                     prev_or_next_tx = 1.0
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
+                                                    omega_yaw,
                                                     prev_or_next_tx)
 
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
@@ -717,6 +722,7 @@ if __name__ == '__main__':
                     t_transmit = t_new
                     prev_or_next_tx = 1.5
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
+                                                    omega_yaw,
                                                     prev_or_next_tx)
 
                 if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
@@ -1040,8 +1046,8 @@ if __name__ == '__main__':
         if (t_new - t_old) >= dt_log:
             t_old = t_new
 
-            if was_waypoint_flag == False:
-                status = logger.log(msg)
+            # if was_waypoint_flag == False:
+            status = logger.log(msg)
 
             if echo_sensor or (sensor_com == "x"):
                 if status == 'GPS_RAW_INT':  # log depth if we just got a GPS MAVLink message

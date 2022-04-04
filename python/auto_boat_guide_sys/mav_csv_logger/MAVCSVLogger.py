@@ -173,9 +173,10 @@ class MAVCSVLogger():
             wp_type,  # altitude being used as 'previous' if 0.0 or 'next' if 1.0
             0.0)
 
-    def send_mav_ltp_en_waypoint(self, wp_en, prev_or_next=0.0):
+    def send_mav_ltp_en_waypoint(self, wp_en, omega_yaw, prev_or_next=0.0):
         """
         :param wp_en: np.zeros((1, 2)) East, North
+        :param omega_yaw: Yaw rate bias
         :param prev_or_next: 0.0 is any, 1.0 is previous, 1.5  is next
         """
         self.mav_conn.mav.command_long_send(
@@ -185,7 +186,7 @@ class MAVCSVLogger():
             0,  # Hold
             0.0,  # Accept Radius
             0.0,  # Pass Radius
-            0.0,  # Yaw
+            omega_yaw,  # Yaw -> using as yaw rate bias
             wp_en[0, 0],  # East
             wp_en[0, 1],  # North
             prev_or_next,  # altitude being used as 0.0 is any, 1.0 is previous, 1.5 is next

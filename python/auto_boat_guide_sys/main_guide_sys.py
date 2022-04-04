@@ -378,7 +378,9 @@ if __name__ == '__main__':
                      'servo7_raw', 'servo6_raw', 'servo5_raw', 'servo4_raw',
                      'servo3_raw', 'servo2_raw', 'servo1_raw',
                      'roll', 'yaw', 'pitch', 'rollspeed', 'pitchspeed',
-                     'yawspeed', 'cog', 'fix_type', 'lat']
+                     'yawspeed', 'cog', 'fix_type', 'lat', 'alt_ellipsoid',
+                     'eph', 'alt', 'h_acc', 'satellites_visible', 'hdg_acc',
+                     'v_acc', 'epv', 'vel', 'lon', 'vel_acc']
 
     # Data logger
     logger = MCL.MAVCSVLogger(

@@ -66,6 +66,14 @@ parser.add_argument('--csv_file', type=str, dest='csv_file',
                     default='./log_file.csv',
                     help='log file path')
 
+parser.add_argument('--kp', type=float, dest='kp',
+                    default=1.0,
+                    help='Proportional gain for waypoint tracking')
+
+parser.add_argument('--kd', type=float, dest='kd',
+                    default=1.0,
+                    help='Derivative gain for waypoint tracking')
+
 parser.add_argument('--log_file', type=str, dest='log_file',
                     default='./log_file.log',
                     help='log file path')
@@ -150,6 +158,8 @@ estimate_interval = arguments.estimate_interval
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
+kp = arguments.kp
+kd = arguments.kd
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
 node_separation = arguments.node_separation
@@ -712,6 +722,7 @@ if __name__ == '__main__':
                     prev_or_next_tx = 1.0
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     omega_yaw,
+                                                    kp, kd,
                                                     prev_or_next_tx)
 
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
@@ -725,6 +736,7 @@ if __name__ == '__main__':
                     prev_or_next_tx = 1.5
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     omega_yaw,
+                                                    kp, kd,
                                                     prev_or_next_tx)
 
                 if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):

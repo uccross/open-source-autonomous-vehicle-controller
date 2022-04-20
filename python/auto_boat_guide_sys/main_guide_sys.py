@@ -934,10 +934,7 @@ if __name__ == '__main__':
             if not (q in spatial_estimator.get_observed_yxs().tolist()):
                 spatial_estimator.update_observed_yxs(iqy, iqx)
 
-                z = field.getTrueFieldValue(y, x)
-                z += sigma_w * np.random.randn()
-
-                spatial_estimator.update_observed_zs(z)
+                spatial_estimator.update_observed_zs(echo_sensor_distance)
 
                 est_updt_meas_cnt += 1
 

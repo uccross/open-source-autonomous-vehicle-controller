@@ -229,8 +229,13 @@ if __name__ == '__main__':
 
     ###########################################################################
     # Blank field setup
-    field = Field.Field(ds=resolution, x0=x0, y0=y0, xf=xf, yf=yf,
+
+    # Double check this vvvvvvvvvvvvvvvvv``
+
+    field = Field.Field(ds=resolution, x0=x0+ox0, y0=y0+oy0, xf=xf+ox0, yf=yf+oy0,
                         alpha=-3.0, mMin=-10, mMax=0)
+
+    # Double check this ^^^^^^^^^^^^^^^^^
 
     ###########################################################################
     # Position Setup
@@ -595,9 +600,6 @@ if __name__ == '__main__':
         if (t_new - t_trajectory) >= dt_trajectory:
             t_trajectory = t_new
 
-            trajectory.setPreviousWaypoint(wp_prev_en)
-            trajectory.setNextWaypoint(wp_next_en)
-
             trajectory.udpate(vehi_pt_en)
 
             path_angle_checked = trajectory.getPathAngle()
@@ -805,8 +807,27 @@ if __name__ == '__main__':
                 if (trajectory.is_closest_point_near_next_wp(threshold)):
                     # or (trajectory.is_closest_point_beyond_next(
                     #     threshold))):
-                    wp_prev_en = wp_next_en
-                    wp_next_en = path_planner.get_wp_next_en()
+                    wp_next_en_old = trajectory.getNextWaypoint()
+
+                    ######################################################
+                    ######################################################
+                    ######################################################
+
+                    # wp_next_en = path_planner.get_wp_next_en()
+                    wp_next_en = path_planner.path_planner.get_wp_next_en(
+                        iqy, iqx,
+                        V_Zhat,
+                        new_est_flag_internal,
+                        heading_angle=yaw*deg2rad)
+
+                    new_est_flag_internal = False
+                    
+                    trajectory.setNextWaypoint(wp_next_en)
+
+                    if (np.linalg.norm(wp_next_en-wp_next_en_old) > 1.0):
+                        wp_prev_en = wp_next_en
+                        trajectory.setPreviousWaypoint(wp_next_en_old)
+                    
                     # state = 'SENDING_NEXT_WP'
 
             # ###################################################################
@@ -897,6 +918,66 @@ if __name__ == '__main__':
                         print("MAVLink base_mode changed: {}".format(
                             current_base_mode))
 
+        ###################################################################
+        # Can a new field measurement be taken?
+        y = vehi_pt_en[0][1]
+        x = vehi_pt_en[0][0]
+        [iqy, iqx] = field.getTrueFieldIndices(y, x)
+        # [iqy, iqx] = field.quantizePosition(y, x)
+        q = [iqy, iqx]
+
+        # Gaussian Process Regression and Partitioned Gaussian Process
+        # Regression
+        if ((spatial_est_type == "GPR") or
+                (spatial_est_type == "PGPR")):
+
+            if not (q in spatial_estimator.get_observed_yxs().tolist()):
+                spatial_estimator.update_observed_yxs(iqy, iqx)
+
+                z = field.getTrueFieldValue(y, x)
+                z += sigma_w * np.random.randn()
+
+                spatial_estimator.update_observed_zs(z)
+
+                est_updt_meas_cnt += 1
+
+            # If we are using dynamic hyperparameters based on the
+            # variogram
+            if (dynamic_hyperparams or
+                (spatial_est_type == "PGPR")):
+
+                qy, qx = field.quantizePosition(y, x)
+                qxy = [qx, qy]
+
+                if not (qxy in kriging_zxy[:, 1:].tolist()):
+                    z = field.getTrueFieldValue(y, x)
+                    z += sigma_w * np.random.randn()
+
+                    zxy = np.array([[z, qx, qy]])
+
+                    kriging_zxy = np.concatenate(
+                        (kriging_zxy, zxy), axis=0)
+
+        # Ordinary Kriging, Iterative Inverse Ordinary Kriging and
+        # Partitioned Ordinary Kriging
+        elif ((spatial_est_type == "OK") or
+                (spatial_est_type == "IIOK") or
+                (spatial_est_type == "POK")):
+
+            qy, qx = field.quantizePosition(y, x)
+            qxy = [qx, qy]
+
+            if not (qxy in kriging_zxy[:, 1:].tolist()):
+                z = field.getTrueFieldValue(y, x)
+                z += sigma_w * np.random.randn()
+
+                zxy = np.array([[z, qx, qy]])
+
+                kriging_zxy = np.concatenate(
+                    (kriging_zxy, zxy), axis=0)
+
+                est_updt_meas_cnt += 1
+
 
         ###################################################################
         # Is it time to update the empirical variogram
@@ -986,8 +1067,7 @@ if __name__ == '__main__':
                 qx = field.get_width()
                 qy = field.get_length()
 
-                l_max = (
-                    int(np.floor(np.sqrt((qx**2 + qy**2))/(rng))) - 1)
+                l_max = (int(np.floor(np.sqrt((qx**2 + qy**2))/(rng))) - 1)
 
                 l_max = np.min([max_recursion_level, l_max])
 
@@ -1022,6 +1102,86 @@ if __name__ == '__main__':
 
             #
             empirical_formed = True
+
+        ###################################################################
+        # Is it time to update the spatial estimate?
+        if ((np.mod(est_updt_meas_cnt, est_update_interval) == 0)
+                and (est_updt_meas_cnt_last != est_updt_meas_cnt)
+                and empirical_formed):
+
+            # Prevent repeat estimates within a single interval
+            est_updt_meas_cnt_last = est_updt_meas_cnt
+
+            if est_updt_meas_cnt > 0:
+
+                # Gaussian Process Regression and Partitioned Gaussian
+                # Process Regression
+                if ((spatial_est_type == "GPR") or
+                        (spatial_est_type == "PGPR")):
+                    spatial_estimator.find_unobserved_yxs()
+
+                    Zhat, V_Zhat = spatial_estimator.predict()
+
+                # Ordinary Kriging and Partitioned Ordinary Kriging
+                if ((spatial_est_type == "OK") or
+                    (spatial_est_type == "IIOK") or
+                        (spatial_est_type == "POK")):
+
+                    # Ordinary Kriging (OK)
+                    if spatial_est_type == "OK":
+
+                        C = spatial_estimator.calcCovMatFromVario(
+                            sensorLog=kriging_zxy)
+
+                        # Cinv = spatial_estimator.getInvCovarianceMatrix()
+
+                        Zhat, V_Zhat = spatial_estimator.predict(
+                            C, sensorLog=kriging_zxy)
+
+                    # Iterative Inverse Ordinary Kriging (IIOK)
+                    elif (spatial_est_type == "IIOK"):
+
+                        # maxlag = 200
+                        # lagsize = 1
+                        # lagvec = np.arange(0, maxlag, lagsize)
+                        # lagvec = np.reshape(lagvec, (len(lagvec), 1))
+
+                        Cinv = spatial_estimator.getInvCovarianceMatrix()
+
+                        C = spatial_estimator.calcCovMatFromVario(
+                            sensorLog=kriging_zxy)
+
+                        # # Fit the local variogram from immediate sub-field
+                        # spatial_estimator.fit2EmpiricalScipy(
+                        #     lagvec[:len(E)], E)
+
+                        Zhat, V_Zhat = spatial_estimator.predict1Step(
+                            C=C, Cinv=Cinv, sensorLog=kriging_zxy,
+                            field=field)
+
+                        # print("Zhat:\n{}".format(Zhat))
+
+                    # Partitioned Ordinary Kriging (POK)
+                    elif (spatial_est_type == "POK"):
+
+                        C = spatial_estimator.calcCovMatFromVario(
+                            kriging_zxy, endlevel=l_max)
+
+                        # Cinv = spatial_estimator.getInvCovarianceMatrix()
+
+                        Zhat, V_Zhat = spatial_estimator.predict(
+                            C=C,
+                            sensorLog=kriging_zxy,
+                            endlevel=l_max,
+                            x_field=field.get_x_vector(),
+                            y_field=field.get_y_vector())
+
+                    ######################################################
+                    ######################################################
+                    ######################################################
+
+                # new_est_flag = True
+                new_est_flag_internal = True
 
         #######################################################################
         # Simulation Update Vehicle

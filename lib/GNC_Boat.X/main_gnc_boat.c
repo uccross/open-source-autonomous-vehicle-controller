@@ -328,8 +328,8 @@ int main(void) {
             }
 #else
             is_new_imu = check_IMU_events(SCALED, &imu);
-            //            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
-            //                    &cmd, &wp_type, &omega_yaw);
+            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
+                    &cmd, &wp_type, &omega_yaw, &kp_track, &kd_track);
             check_RC_events(); //check incoming RC commands
 
             /* Update aiding vectors and gyro angular rates */

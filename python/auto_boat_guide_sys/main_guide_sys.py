@@ -8,7 +8,6 @@
 import numpy as np
 import argparse
 from mav_csv_logger import MAVCSVLogger as MCL
-from path_planner import WaypointQueue as WQ
 from utilities import LTPconvert as LTP
 from utilities import AttitudeVisualization as AV
 from utilities import Tracker as TR
@@ -814,7 +813,7 @@ if __name__ == '__main__':
                     ######################################################
 
                     # wp_next_en = path_planner.get_wp_next_en()
-                    wp_next_en = path_planner.path_planner.get_wp_next_en(
+                    wp_next_en = path_planner.get_wp_next_en(
                         iqy, iqx,
                         V_Zhat,
                         new_est_flag_internal,

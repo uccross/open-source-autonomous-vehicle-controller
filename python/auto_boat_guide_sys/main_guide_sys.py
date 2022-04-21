@@ -305,6 +305,8 @@ if __name__ == '__main__':
     lagvec = np.arange(0, maxlag, lagsize)
     lagvec = np.reshape(lagvec, (len(lagvec), 1))
     nLags = len(lagvec)
+    E = np.zeros((nLags,1))
+
 
     k_sill=1.0
     k_rng=100.0

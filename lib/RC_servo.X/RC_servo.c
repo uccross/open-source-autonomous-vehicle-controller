@@ -245,7 +245,7 @@ void main(void) {
         RC_servo_delay(320000);
 
     }
-    RC_servo_set_pulse(RC_SERVO_MIN_PULSE, RC_LEFT_WHEEL);
+    // RC_servo_set_pulse(RC_SERVO_MIN_PULSE, RC_LEFT_WHEEL);
 }
 
 #endif //RCSERVO_TESTING

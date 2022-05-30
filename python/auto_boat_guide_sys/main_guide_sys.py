@@ -549,6 +549,8 @@ if __name__ == '__main__':
 
     msg_type = None
     current_base_mode = -1
+    
+    empirical_formed = False
 
     ###########################################################################
     # State Machine Transitions
@@ -826,7 +828,7 @@ if __name__ == '__main__':
                     trajectory.setNextWaypoint(wp_next_en)
 
                     if (np.linalg.norm(wp_next_en-wp_next_en_old) > 1.0):
-                        wp_prev_en = wp_next_en
+                        wp_prev_en = wp_next_en_old
                         trajectory.setPreviousWaypoint(wp_next_en_old)
                     
                     # state = 'SENDING_NEXT_WP'

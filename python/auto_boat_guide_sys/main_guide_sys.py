@@ -897,8 +897,11 @@ if __name__ == '__main__':
 
                     cog = nav_msg['cog']
 
-                    # Using differently on purpose (temporarily)
-                    cte_uc = nav_msg['v_acc']
+                    # Using differently on purpose (temporarily) and convet to signed
+                    if nav_msg['v_acc'] > 100000:
+                        cte_uc = nav_msg['v_acc'] + 2**32
+                    else:
+                        cte_uc = nav_msg['v_acc'] 
 
                     if is_first_gps:
                         wp_ref_lla = np.array([[lat, lon, 0.0]])

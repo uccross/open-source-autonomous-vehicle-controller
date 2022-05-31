@@ -66,19 +66,20 @@ parser.add_argument('--estimate_interval', dest='estimate_interval',
 
 parser.add_argument('--EKF', dest='EKF_flag',
                     action='store_true', help='Flag to use EKF in navigation')
+
 parser.add_argument('--EKF_simga_r', type=float, dest='EKF_simga_r',
                     default=0.1,
                     help='EKF_simga_r')
-parser.add_argument('--sigma_v', type=float, dest='sigma_v',
+parser.add_argument('--sigma_v', type=float, dest='EKF_sigma_v',
                     default=0.1,
                     help='sigma_v')
-parser.add_argument('--vrpsi', type=float, dest='vrpsi',
+parser.add_argument('--vrpsi', type=float, dest='EKF_vrpsi',
                     default=0.1,
                     help='vrpsi')
-parser.add_argument('--vrp', type=float, dest='vrp',
+parser.add_argument('--vrp', type=float, dest='EKF_vrp',
                     default=0.1,
                     help='vrp')
-parser.add_argument('--vrv', type=float, dest='vrv',
+parser.add_argument('--vrv', type=float, dest='EKF_vrv',
                     default=0.1,
                     help='vrv')
 
@@ -177,6 +178,11 @@ debug_flag = arguments.debug_flag
 echo_sensor = arguments.echo_sensor
 estimate_interval = arguments.estimate_interval
 EKF_flag = arguments.EKF_flag
+EKF_simga_r = arguments.EKF_simga_r
+EKF_sigma_v = arguments.EKF_sigma_v
+EKF_vrpsi = arguments.EKF_vrpsi
+EKF_vrp = arguments.EKF_vrp
+EKF_vrv = arguments.EKF_vrv
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file

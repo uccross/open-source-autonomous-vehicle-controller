@@ -460,13 +460,13 @@ if __name__ == '__main__':
                            [0.0]])
 
         # sigma_psi = 0.2
-        simga_r = 0.1
-        sigma_v = 0.1
+        simga_r = EKF_simga_r
+        sigma_v = EKF_sigma_v
 
-        vrpsi = 0.1
+        vrpsi = EKF_vrpsi
         vrr = vrpsi
-        vrp = 0.1
-        vrv = 0.1
+        vrp = EKF_vrp
+        vrv = EKF_vrv
 
         EKF = SE.NomotoStateEstimator(dt=dt_EKF, X_0=X0_EKF,
                                       sigma_v=sigma_v,

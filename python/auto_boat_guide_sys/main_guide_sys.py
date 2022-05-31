@@ -459,6 +459,8 @@ if __name__ == '__main__':
                            [0.0],
                            [0.0]])
 
+        Xh = X0_EKF
+
         # sigma_psi = 0.2
         simga_r = EKF_simga_r
         sigma_v = EKF_sigma_v
@@ -900,7 +902,7 @@ if __name__ == '__main__':
                     # Using differently on purpose (temporarily) and convet to signed
                     cte_uc = nav_msg['v_acc'] & 0xFFFFFFFF
                     if (nav_msg['v_acc'] & 0x80000000):
-                            cte_uc = -0x100000000 + cte_uc
+                        cte_uc = -0x100000000 + cte_uc
 
                     if is_first_gps:
                         wp_ref_lla = np.array([[lat, lon, 0.0]])
@@ -915,6 +917,13 @@ if __name__ == '__main__':
                     vehi_pt_en[0][0] = vehi_pt_ned[0][1]  # East
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
+                ###############################################################
+                if EKF_flag:
+                    vehi_pt_en[0][0] = Xh[2][0] # East
+                    vehi_pt_en[0][1] = Xh[3][0] # North
+
+                ###############################################################
+                # Transition logic
                 if (trajectory.is_closest_point_near_next_wp(threshold)):
                     # or (trajectory.is_closest_point_beyond_next(
                     #     threshold))):

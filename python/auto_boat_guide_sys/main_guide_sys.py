@@ -898,8 +898,8 @@ if __name__ == '__main__':
                     cog = nav_msg['cog']
 
                     # Using differently on purpose (temporarily) and convet to signed
-                    if nav_msg['v_acc'] > 100000:
-                        cte_uc = nav_msg['v_acc'] + 2**32
+                    if (nav_msg['v_acc'] & 0x80000000):
+                            cte_uc = -0x100000000 + nav_msg['v_acc']
                     else:
                         cte_uc = nav_msg['v_acc'] 
 

@@ -18,6 +18,7 @@ from Modules.Utilities import GaussianProcess as GP
 from Modules.Utilities import Kriging as KG
 from Modules.Utilities import Graph as Graph
 from Modules.Utilities import PathPlanner as PATH
+from Modules.Utilities import StateEstimator as SE
 from pymavlink import mavutil
 import time
 from signal import signal, SIGINT
@@ -41,6 +42,8 @@ parser.add_argument('-b', '--baudrate', type=int, dest='baudrate',
 parser.add_argument('-c', '--com', type=str, dest='com', default="COM4",
                     help='Specify COM port number for serial \
                     communication with micro. Default is 4, as in COM4')  # /dev/ttyUSB1
+parser.add_argument('--cte_type', dest='cte_type',
+                    action='store_true', help='Record CTE from micro if true, or from RPI4B if not')
 parser.add_argument('--dynamic_hyperparams', dest='dynamic_hyperparams',
                     action='store_true', help='Flag to approximate GPR/PGPR hyperparameters')
 parser.add_argument('-d', '--debug', dest='debug_flag',
@@ -60,6 +63,24 @@ parser.add_argument('--ecom', type=str, dest='ecom', default="COM3",
 parser.add_argument('--estimate_interval', dest='estimate_interval',
                     type=int, default=10,
                     help='Interval for estimating the field every n-new measurements')
+
+parser.add_argument('--EKF', dest='EKF_flag',
+                    action='store_true', help='Flag to use EKF in navigation')
+parser.add_argument('--EKF_simga_r', type=float, dest='EKF_simga_r',
+                    default=0.1,
+                    help='EKF_simga_r')
+parser.add_argument('--sigma_v', type=float, dest='sigma_v',
+                    default=0.1,
+                    help='sigma_v')
+parser.add_argument('--vrpsi', type=float, dest='vrpsi',
+                    default=0.1,
+                    help='vrpsi')
+parser.add_argument('--vrp', type=float, dest='vrp',
+                    default=0.1,
+                    help='vrp')
+parser.add_argument('--vrv', type=float, dest='vrv',
+                    default=0.1,
+                    help='vrv')
 
 parser.add_argument('--csv_file', type=str, dest='csv_file',
                     default='./log_file.csv',
@@ -120,7 +141,7 @@ parser.add_argument('--w_threshold', type=float, dest='threshold',
 
 parser.add_argument('-r', '--resolution', type=float, dest='resolution',
                     default=ds, help='The distance between discrete points')
-                    
+
 parser.add_argument('--max_recur', dest='max_recur',
                     type=int, default=2,
                     help='Maximum level of recursion for POK and PGPR')
@@ -150,10 +171,12 @@ arguments = parser.parse_args()
 
 baudrate = arguments.baudrate
 com = arguments.com
+cte_type = arguments.cte_type
 dynamic_hyperparams = arguments.dynamic_hyperparams
 debug_flag = arguments.debug_flag
 echo_sensor = arguments.echo_sensor
 estimate_interval = arguments.estimate_interval
+EKF_flag = arguments.EKF_flag
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
@@ -305,11 +328,10 @@ if __name__ == '__main__':
     lagvec = np.arange(0, maxlag, lagsize)
     lagvec = np.reshape(lagvec, (len(lagvec), 1))
     nLags = len(lagvec)
-    E = np.zeros((nLags,1))
+    E = np.zeros((nLags, 1))
 
-
-    k_sill=1.0
-    k_rng=100.0
+    k_sill = 1.0
+    k_rng = 100.0
 
     # Gaussian Process Regression and Partitioned Gaussian Process
     # Regression
@@ -318,20 +340,20 @@ if __name__ == '__main__':
         dynamic_hyperparams = dynamic_hyperparams
 
         spatial_estimator = GP.TwoDimensional(m_field=field.get_yLen(),
-                                                    n_field=field.get_xLen(),
-                                                    sigma_f=1.0,
-                                                    ell=5.5,
-                                                    sigma_w=0.1,
-                                                    rlvl=max_recursion_level,
-                                                    type=spatial_est_type)
+                                              n_field=field.get_xLen(),
+                                              sigma_f=1.0,
+                                              ell=5.5,
+                                              sigma_w=0.1,
+                                              rlvl=max_recursion_level,
+                                              type=spatial_est_type)
 
         if dynamic_hyperparams or (spatial_est_type == "PGPR"):
             x = starting_position[0][0]
             y = starting_position[0][1]
             kriging_zxy = np.array([[0.0, x, y]])
             variogrammer = KG.OrdinaryKriging(field=field,
-                                                    tol=field.ds, 
-                                                    nLags=nLags)
+                                              tol=field.ds,
+                                              nLags=nLags)
 
     # Ordinary Kriging and Partitioned Ordinary Kriging
     elif ((spatial_est_type == "OK") or (spatial_est_type == "IIOK") or
@@ -345,12 +367,12 @@ if __name__ == '__main__':
 
         if (spatial_est_type == "OK"):
             spatial_estimator = KG.OrdinaryKriging(field=field,
-                                                        tol=field.ds,
-                                                        nLags=nLags)
+                                                   tol=field.ds,
+                                                   nLags=nLags)
         elif (spatial_est_type == "IIOK"):
             spatial_estimator = KG.OrdinaryKriging(field=field,
-                                                        tol=field.ds,
-                                                        nLags=nLags)
+                                                   tol=field.ds,
+                                                   nLags=nLags)
 
         elif (spatial_est_type == "POK"):
             spatial_estimator = KG.PartitionedKriging(
@@ -415,6 +437,43 @@ if __name__ == '__main__':
                              x_bound=field.get_width()*1.10,
                              y_bound=field.get_length()*1.10)
 
+    # EKF for navigation
+    if EKF_flag:
+        dt_gps = 1.0
+        dt_EKF = 0.2
+        EKF_interval = int(dt_gps/dt_EKF)
+
+        x0_EKF = 0.0
+        y0_EKF = 0.0
+
+        X0_EKF = np.array([[0.0],
+                           [0.0],
+                           [x0_EKF],
+                           [y0_EKF],
+                           [0.0],
+                           [0.0]])
+
+        # sigma_psi = 0.2
+        simga_r = 0.1
+        sigma_v = 0.1
+
+        vrpsi = 0.1
+        vrr = vrpsi
+        vrp = 0.1
+        vrv = 0.1
+
+        EKF = SE.NomotoStateEstimator(dt=dt_EKF, X_0=X0_EKF,
+                                      sigma_v=sigma_v,
+                                      sigma_r=simga_r,
+                                      vrpx=vrp,
+                                      vrpy=vrp,
+                                      vrpsi=vrpsi,
+                                      vrv=vrv, vrr=vrr)
+
+        EKF_initialized = False
+
+        y_EKF = np.zeros((2, 1))
+
     ###########################################################################
     # Helper method, based on
     # https://www.devdungeon.com/content/python-catch-sigint-ctrl-c
@@ -454,6 +513,8 @@ if __name__ == '__main__':
     t_graph = time.time()
     t_hard_write = time.time()
     t_info = time.time()
+    if EKF_flag:
+        t_EKF = time.time()
 
     dt_sim = 0.001  # seconds
     dt_uc = 0.01  # seconds
@@ -496,6 +557,7 @@ if __name__ == '__main__':
     delta_angle = 0.0
     tvc_angle = 0.0
     cte = 0.0
+    cte_uc = 0.0
 
     xacc = 0.0
     yacc = 0.0
@@ -549,7 +611,7 @@ if __name__ == '__main__':
 
     msg_type = None
     current_base_mode = -1
-    
+
     empirical_formed = False
 
     ###########################################################################
@@ -591,10 +653,19 @@ if __name__ == '__main__':
                                            reference_speed=0.0)
 
     ###########################################################################
+    ###########################################################################
+    ###########################################################################
+    #
+    #
     # Main Loop
+    #
+    #
+    ###########################################################################
+    ###########################################################################
+    ###########################################################################
     while True:
 
-        # was_waypoint_flag = False
+        was_waypoint_flag = False
 
         # Timing
         t_new = time.time()
@@ -705,15 +776,41 @@ if __name__ == '__main__':
                         (np.abs(check2 - 0.6) <= tolerance)):
 
                     if (prev_next_vehi-1.0) <= tolerance:
-                        # was_waypoint_flag = True
+                        was_waypoint_flag = True
                         uc_prev_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-1.5) <= tolerance:
-                        # was_waypoint_flag = True
+                        was_waypoint_flag = True
                         uc_next_en = np.array([[e, n]])
 
                     elif (prev_next_vehi-2.0) <= tolerance:
                         uc_vehi_en = np.array([[e, n]])
+
+                        # If first time init EKF
+                        # EKF for navigation
+                        if EKF_flag:
+                            if (not EKF_initialized):
+                                EKF_initialized = True  # Only run once
+                                EKF_interval = int(dt_gps/dt_EKF)
+
+                                X0_EKF = np.array([[yaw],
+                                                   [0.0],
+                                                   [e],
+                                                   [n],
+                                                   [0.0],
+                                                   [0.0]])
+
+                                EKF = SE.NomotoStateEstimator(dt=dt_EKF,
+                                                              X_0=X0_EKF,
+                                                              sigma_v=sigma_v,
+                                                              sigma_r=simga_r,
+                                                              vrpx=vrp,
+                                                              vrpy=vrp,
+                                                              vrpsi=vrpsi,
+                                                              vrv=vrv, vrr=vrr)
+
+                            y_EKF[0][0] = e # East
+                            y_EKF[1][0] = n # North
 
             ##################################################################
             # START OF STATE MACHINE
@@ -748,7 +845,7 @@ if __name__ == '__main__':
 
             ##################################################################
             elif state == 'TRACKING':
-                
+
                 ##############################################################
                 # EXIT CASE: PREVIOUS
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) > tolerance):
@@ -794,6 +891,9 @@ if __name__ == '__main__':
 
                     cog = nav_msg['cog']
 
+                    # Using differently on purpose (temporarily)
+                    cte_uc = nav_msg['v_acc']
+
                     if is_first_gps:
                         wp_ref_lla = np.array([[lat, lon, 0.0]])
                         is_first_gps = False
@@ -824,13 +924,13 @@ if __name__ == '__main__':
                         heading_angle=yaw*deg2rad)
 
                     new_est_flag_internal = False
-                    
+
                     trajectory.setNextWaypoint(wp_next_en)
 
                     if (np.linalg.norm(wp_next_en-wp_next_en_old) > 1.0):
                         wp_prev_en = wp_next_en_old
                         trajectory.setPreviousWaypoint(wp_next_en_old)
-                    
+
                     # state = 'SENDING_NEXT_WP'
 
             # ###################################################################
@@ -865,7 +965,10 @@ if __name__ == '__main__':
                 print("    ^__checked:      {0:.6g}".format(
                     path_angle_checked))
                 # print("    angle_diff:      {0:.6g}".format(angle_diff))
-                print("    cte:             {0:.6g}".format(cte))
+                if cte_type:
+                    print("    cte_uc:          {0:.6g}".format(cte_uc))
+                else:
+                    print("    cte:             {0:.6g}".format(cte))
                 print("    servo4_raw:      {0:.6g}".format(servo4_raw))
                 print("    delta_angle:     {0:.6g}".format(delta_angle))
                 print("    tvc_angle:       {0:.6g}".format(tvc_angle*rad2deg))
@@ -944,7 +1047,7 @@ if __name__ == '__main__':
             # If we are using dynamic hyperparameters based on the
             # variogram
             if (dynamic_hyperparams or
-                (spatial_est_type == "PGPR")):
+                    (spatial_est_type == "PGPR")):
 
                 qy, qx = field.quantizePosition(y, x)
                 qxy = [qx, qy]
@@ -978,7 +1081,6 @@ if __name__ == '__main__':
 
                 est_updt_meas_cnt += 1
 
-
         ###################################################################
         # Is it time to update the empirical variogram
         # Currently setup to update once, but can be changed for multiple
@@ -995,7 +1097,7 @@ if __name__ == '__main__':
             # GPR general cases
             if ((spatial_est_type == "GPR") or
                     (spatial_est_type == "PGPR")):
-                    
+
                 if (dynamic_hyperparams or
                         (spatial_est_type == "PGPR")):
 
@@ -1017,8 +1119,6 @@ if __name__ == '__main__':
                     # 2) the variance scale factor
                     spatial_estimator.set_ell(k_rng*rng)
                     spatial_estimator.set_sigma_f(k_sill*sill)
-                    
-
 
             ###############################################################
             # OK, IIOK, and POK variogram cases
@@ -1071,13 +1171,11 @@ if __name__ == '__main__':
 
                 l_max = np.min([max_recursion_level, l_max])
 
-
                 if l_max < min_recursion_level:
                     l_max = min_recursion_level
 
                 if l_max > max_recursion_level:
                     l_max = max_recursion_level
-
 
                 # Recursion level cases for PGPR and POK
 
@@ -1193,6 +1291,14 @@ if __name__ == '__main__':
                 tvc_angle = Slug3.get_tvc_angle()
 
         #######################################################################
+        # EKF update
+        if EKF_flag:
+            if (t_new - t_EKF) >= dt_EKF:
+                Xh, P, K, t_yaw_h = EKF.run(y_EKF, 0.0)
+                uc_vehi_en[0][0] = Xh[2][0] # East
+                uc_vehi_en[0][1] = Xh[3][0] # North
+
+        #######################################################################
         # Graphing
         if (t_new - t_graph) >= dt_graph:
             t_graph = t_new
@@ -1217,8 +1323,9 @@ if __name__ == '__main__':
         if (t_new - t_old) >= dt_log:
             t_old = t_new
 
-            # if was_waypoint_flag == False:
-            status = logger.log(msg)
+            # Don't log waypoint coordinates themselves
+            if was_waypoint_flag == False:
+                status = logger.log(msg)
 
             if echo_sensor or (sensor_com == "x"):
                 if status == 'GPS_RAW_INT':  # log depth if we just got a GPS MAVLink message
@@ -1231,7 +1338,10 @@ if __name__ == '__main__':
                         echo_confidence = echo_data["confidence"]
 
                     # using orentation for recording cross track error for simple test
-                    echo_sensor_orientation = int(cte*10)
+                    if cte_type:
+                        echo_sensor_orientation = int(cte_uc)
+                    else:
+                        echo_sensor_orientation = int(cte*10)
                     if echo_sensor_orientation > 255:
                         echo_sensor_orientation = 255
 

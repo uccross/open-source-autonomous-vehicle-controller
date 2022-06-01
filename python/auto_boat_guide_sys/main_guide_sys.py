@@ -1311,6 +1311,7 @@ if __name__ == '__main__':
         # EKF update
         if EKF_flag:
             if (t_new - t_EKF) >= dt_EKF:
+                t_EKF = t_new
                 Xh, P, K, t_yaw_h = EKF.run(y_EKF, 0.0)
                 uc_vehi_en[0][0] = Xh[2][0] # East
                 uc_vehi_en[0][1] = Xh[3][0] # North

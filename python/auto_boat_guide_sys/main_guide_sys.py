@@ -640,7 +640,7 @@ if __name__ == '__main__':
     pic32_wp_state = 'FINDING_REF_WP'  # The Pic32's current waypoint state
 
     i_tx = 0
-    prev_or_next_tx = 0.0
+    prev_next_ekf = 0.0
     prev_next_vehi = 0.0
     check0 = 0.0
     check1 = 0.0
@@ -805,7 +805,6 @@ if __name__ == '__main__':
                                                    [0.0],
                                                    [e],
                                                    [n],
-                                                   [0.0],
                                                    [0.0]])
 
                                 EKF = SE.NomotoStateEstimator2(dt=dt_EKF,
@@ -826,11 +825,11 @@ if __name__ == '__main__':
                 # Send the previous waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
-                    prev_or_next_tx = 1.0
+                    prev_next_ekf = 1.0
                     logger.send_mav_ltp_en_waypoint(wp_prev_en,
                                                     omega_yaw,
                                                     kp, kd,
-                                                    prev_or_next_tx)
+                                                    prev_next_ekf)
 
                 if (np.linalg.norm(uc_prev_en-wp_prev_en) <= tolerance):
                     state = 'TRACKING'
@@ -840,11 +839,11 @@ if __name__ == '__main__':
                 # Send the next waypoint for the linear trajectory tracking
                 if (t_new - t_transmit) >= dt_transmit:
                     t_transmit = t_new
-                    prev_or_next_tx = 1.5
+                    prev_next_ekf = 1.5
                     logger.send_mav_ltp_en_waypoint(wp_next_en,
                                                     omega_yaw,
                                                     kp, kd,
-                                                    prev_or_next_tx)
+                                                    prev_next_ekf)
 
                 if (np.linalg.norm(uc_next_en-wp_next_en) <= tolerance):
                     if simulation_flag:
@@ -926,11 +925,11 @@ if __name__ == '__main__':
                     # Send the EKF position for the linear trajectory tracking
                     if (t_new - t_transmit) >= dt_transmit:
                         t_transmit = t_new
-                        prev_or_next_tx = 3.0
+                        prev_next_ekf = 3.0
                         logger.send_mav_ltp_en_waypoint(vehi_pt_en,
                                                         omega_yaw,
                                                         kp, kd,
-                                                        prev_or_next_tx)
+                                                        prev_next_ekf)
 
                 ###############################################################
                 # Transition logic
@@ -1026,7 +1025,7 @@ if __name__ == '__main__':
                 # print("    check1 =     {}".format(check1))
                 # print("    check2 =     {}".format(check2))
 
-                print("    prevNextTx    = {}".format(prev_or_next_tx))
+                print("    prevNextTx    = {}".format(prev_next_ekf))
                 print("    prev_next_vehi = {}".format(prev_next_vehi))
 
                 print("    wp_prev_en    = {}".format(wp_prev_en))

@@ -808,7 +808,7 @@ if __name__ == '__main__':
                                                    [0.0],
                                                    [0.0]])
 
-                                EKF = SE.NomotoStateEstimator(dt=dt_EKF,
+                                EKF = SE.NomotoStateEstimator2(dt=dt_EKF,
                                                               X_0=X0_EKF,
                                                               sigma_v=sigma_v,
                                                               sigma_r=simga_r,
@@ -919,8 +919,18 @@ if __name__ == '__main__':
 
                 ###############################################################
                 if EKF_flag:
+
                     vehi_pt_en[0][0] = Xh[2][0] # East
                     vehi_pt_en[0][1] = Xh[3][0] # North
+
+                    # Send the EKF position for the linear trajectory tracking
+                    if (t_new - t_transmit) >= dt_transmit:
+                        t_transmit = t_new
+                        prev_or_next_tx = 3.0
+                        logger.send_mav_ltp_en_waypoint(vehi_pt_en,
+                                                        omega_yaw,
+                                                        kp, kd,
+                                                        prev_or_next_tx)
 
                 ###############################################################
                 # Transition logic
@@ -1313,8 +1323,6 @@ if __name__ == '__main__':
             if (t_new - t_EKF) >= dt_EKF:
                 t_EKF = t_new
                 Xh, P, K, t_yaw_h = EKF.run(y_EKF, 0.0)
-                uc_vehi_en[0][0] = Xh[2][0] # East
-                uc_vehi_en[0][1] = Xh[3][0] # North
 
         #######################################################################
         # Graphing

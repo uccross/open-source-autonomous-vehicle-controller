@@ -69,7 +69,14 @@
 #define LTP_BOUND_X ((float) 60.0)/* meters */
 #define LTP_BOUND_Y ((float) 80.0) /* meters */
 
+#define MIN_TURNING_RADIUS 2.5
+
 #define HEADING_ANGLE_BUF 10
+
+
+// A very dumb, but temporary method of switching arc modes after compile time
+#define KP_CIRC_HACK 10.0 
+#define KP_EKF_HACK 9.0
 
 /******************************************************************************
  * MAIN                                                                       *
@@ -138,8 +145,9 @@ int main(void) {
 
     // Trajectory 
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
-    //    float wp_prev_en_last[DIM]; // [EAST (meters), NORTH (meters)]
+    float wp_prev_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
+    float closest_pnt[DIM]; // [EAST (meters), NORTH (meters)]
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
     float ref_ll[DIM]; // [latitude, longitude]
@@ -149,7 +157,7 @@ int main(void) {
     float vehi_pt_lla_last[DIM + 1] = {0.0}; // [latitude, longitude, altitude]
     float vehi_pt_ned[DIM + 1]; // [NORTH, EAST, DOWN] (METERS)
 
-
+    float curve_thresh = 1.0;
     float cross_track_error = 0.0;
     float cross_track_error_last = 0.0;
     float path_angle = 0.0;
@@ -283,12 +291,12 @@ int main(void) {
                         WP_CONFIRM_PERIOD) {
                     if (fabs(wp_type - WP_PREV) <= TOL) {
 
+                        wp_prev_prev_en[0] = wp_prev_en[0];
+                        wp_prev_prev_en[1] = wp_prev_en[1];
+
                         /* Update the new 'prev' waypoint */
                         wp_prev_en[0] = wp_received_en[0];
                         wp_prev_en[1] = wp_received_en[1];
-
-                        //                        wp_prev_en_last[0] = wp_prev_en[0];
-                        //                        wp_prev_en_last[1] = wp_prev_en[1];
 
                         last_prev_wp_en_time = cur_time;
 
@@ -373,6 +381,14 @@ int main(void) {
             vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
             vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
 #endif
+        }
+
+        /* EKF LTP East and North Position from Raspberry Pi */
+        if (fabs(kp_track - KP_EKF_HACK) < TOL) {
+            if (fabs(wp_type - EKF_PT) <= TOL) {
+                vehi_pt_en[0] = wp_received_en[0];
+                vehi_pt_en[1] = wp_received_en[1];
+            }
         }
 
         // Check if mode switch event occurred
@@ -501,8 +517,8 @@ int main(void) {
                     //
                     //                    if ((fabs(cross_track_error_last + cross_track_error) <
                     //                            MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
-                    //                        //                        wp_prev_en_last[0] = wp_prev_en[0];
-                    //                        //                        wp_prev_en_last[1] = wp_prev_en[1];
+                    //                        //                        wp_prev_prev_en[0] = wp_prev_en[0];
+                    //                        //                        wp_prev_prev_en[1] = wp_prev_en[1];
                     //                        is_far_out = FALSE;
                     //                    }
 
@@ -607,6 +623,42 @@ int main(void) {
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
 
+                /**************************************************************
+                 * For circular arcs                                          *
+                 *************************************************************/
+                if (fabs(kp_track - KP_CIRC_HACK) < TOL) {
+                    lin_tra_get_closest_point_lin(wp_prev_prev_en, wp_prev_en,
+                            vehi_pt_en, closest_pnt);
+
+                    curve_thresh = (MIN_TURNING_RADIUS /
+                            (tan(lin_tra_get_relative_angle(wp_prev_prev_en,
+                            wp_prev_en,
+                            wp_next_en) / 2.0)));
+                    curve_thresh = lin_tra_minimum(curve_thresh, MIN_TURNING_RADIUS);
+
+                    // Build curve points if the closest point is in proximity to the next
+                    if (lin_tra_get_dist(closest_pnt, wp_prev_en) < curve_thresh) {
+                        if ((wp_prev_prev_en[0] <= TOL) && (wp_prev_prev_en[1] <= TOL) &&
+                                (fabs(wp_prev_prev_en[0] - wp_prev_en[0]) <= TOL) &&
+                                (fabs(wp_prev_prev_en[1] - wp_prev_en[1]) <= TOL)) {
+
+                            lin_tra_get_angle_error_and_cte_curve(
+                                    path_angle,
+                                    heading_angle,
+                                    wp_prev_prev_en,
+                                    wp_prev_en,
+                                    wp_next_en,
+                                    vehi_pt_en,
+                                    curve_thresh,
+                                    &heading_angle_diff,
+                                    &cross_track_error);
+
+                            heading_angle_diff = fmod(
+                                    (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
+                        }
+                    }
+                }
+
                 /* Trajectory tracking controller */
                 acc_cmd = pid_controller_update(
                         &trajectory_tracker,
@@ -662,7 +714,9 @@ int main(void) {
                             delta_angle, // pitch-rate, /* Using differently on purpose */
                             (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
 
-                    LATCbits.LATC1 ^= 1; /* Toggle LED5 */
+                    if (fabs(kp_track - KP_CIRC_HACK) < TOL) {
+                        LATCbits.LATC1 ^= 1; /* Toggle LED5 */
+                    }
                     break;
                 case 1:
                     publish_RC_signals_raw();
@@ -681,7 +735,7 @@ int main(void) {
                 case 5:
 #ifndef HIL
                     if (current_wp_state != FINDING_REF_WP) {
-                        publish_GPS();
+                        publish_GPS(cross_track_error);
                     }
 #endif 
                     break;

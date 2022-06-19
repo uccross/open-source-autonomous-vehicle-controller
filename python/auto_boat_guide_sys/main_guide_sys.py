@@ -186,8 +186,10 @@ EKF_vrv = arguments.EKF_vrv
 sensor_com = arguments.ecom
 sensor_baudrate = arguments.ebaudrate
 csv_file = arguments.csv_file
-kp = arguments.kp
-kd = arguments.kd
+kp_init = arguments.kp
+kd_init = arguments.kd
+kp = kp_init
+kd = kd_init
 log_file = arguments.log_file
 mode_print_flag = arguments.mode_print_flag
 node_separation = arguments.node_separation
@@ -534,6 +536,8 @@ if __name__ == '__main__':
     dt_graph = 0.5
     dt_hard_write = 5.0  # seconds
     dt_info = 1.0  # seconds
+    if EKF_flag:
+        dt_EKF = 0.2
 
     point_mass_state_vec = np.zeros((6, 1))
     orientation_state_vec = np.zeros((6, 1))
@@ -917,21 +921,6 @@ if __name__ == '__main__':
                     vehi_pt_en[0][1] = vehi_pt_ned[0][0]  # North
 
                 ###############################################################
-                if EKF_flag:
-
-                    vehi_pt_en[0][0] = Xh[2][0] # East
-                    vehi_pt_en[0][1] = Xh[3][0] # North
-
-                    # Send the EKF position for the linear trajectory tracking
-                    if (t_new - t_transmit) >= dt_transmit:
-                        t_transmit = t_new
-                        prev_next_ekf = 3.0
-                        logger.send_mav_ltp_en_waypoint(vehi_pt_en,
-                                                        omega_yaw,
-                                                        kp, kd,
-                                                        prev_next_ekf)
-
-                ###############################################################
                 # Transition logic
                 if (trajectory.is_closest_point_near_next_wp(threshold)):
                     # or (trajectory.is_closest_point_beyond_next(
@@ -957,7 +946,10 @@ if __name__ == '__main__':
                         wp_prev_en = wp_next_en_old
                         trajectory.setPreviousWaypoint(wp_next_en_old)
 
-                    # state = 'SENDING_NEXT_WP'
+                    kp = 0.0 # temporarily set kp to zero to help make smoother circular arcing
+                
+                else:
+                    kp = kp_init # set kp back to initially specified value
 
             # ###################################################################
             # # Print the state transition
@@ -1322,6 +1314,17 @@ if __name__ == '__main__':
             if (t_new - t_EKF) >= dt_EKF:
                 t_EKF = t_new
                 Xh, P, K, t_yaw_h = EKF.run(y_EKF, 0.0)
+
+                vehi_pt_en[0][0] = Xh[2][0] # East
+                vehi_pt_en[0][1] = Xh[3][0] # North
+
+                # Send the EKF position for the linear trajectory tracking
+                if (state != 'UPDATING_NEXT') and (state != 'UPDATING_PREV'):
+                    prev_next_ekf = 3.0
+                    logger.send_mav_ltp_en_waypoint(vehi_pt_en,
+                                                    omega_yaw,
+                                                    kp, kd,
+                                                    prev_next_ekf)
 
         #######################################################################
         # Graphing

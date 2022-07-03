@@ -12,7 +12,7 @@
  ******************************************************************************/
 #define DT 0.01 // Sample time
 #define SSZ 5 // Maximum size of state and statically allocated arrays 
-#define T_D_YAW -0.0001 // Yaw-rate time-constant
+#define T_D_YAW -0.01 // Yaw-rate time-constant
 #define K_D_YAW 0.9 // Yaw-rate gain 
 
 /*******************************************************************************

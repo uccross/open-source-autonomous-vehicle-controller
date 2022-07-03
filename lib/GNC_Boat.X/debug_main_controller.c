@@ -52,7 +52,7 @@
 #define RAD_2_DEG (180.0 / M_PI)
 #define DEG_2_RAD (M_PI / 180.0) 
 
-#define WP_THRESHOLD 2.0
+#define WP_THRESHOLD 3.0
 #define MIN_TURNING_RADIUS 2.5
 
 /******************************************************************************
@@ -72,7 +72,6 @@ int main(void) {
     Sys_timer_init(); //start the system timer
     nomoto_init(SIM_TIME);
     
-    RC_channels_init(); //set channels to midpoint of RC system
     RC_servo_init(); // start the servo subsystem
 
     TRISAbits.TRISA3 = 0; /* Set pin as output. This is also LED4 on Max32 */
@@ -126,14 +125,14 @@ int main(void) {
 
     // State
     float state_out[SSZ] = {0.0};
-    state_out[2] = wp_prev_en[0];
-    state_out[3] = wp_prev_en[1];
+    state_out[2] = wp_prev_en[0] + 7.0;
+    state_out[3] = wp_prev_en[1] - 5.0;
     state_out[4] = 0.67;
 
     float state_in[SSZ] = {0.0};
-    state_in[2] = wp_prev_en[0];
-    state_in[3] = wp_prev_en[1];
-    state_in[4] = 0.67;
+    state_in[2] = state_out[2];
+    state_in[3] = state_out[3];
+    state_in[4] = state_out[4];
 
     lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
 
@@ -147,6 +146,7 @@ int main(void) {
     float heading_angle_diff = 0.0;
     float ha_report = 0.0;
     float u = 0.0; // Resulting control effort
+    float u_partial = 0.0; // Resulting control effort
     float delta_angle = 0.0; // Resulting control effort
     float u_sign = 1.0;
     float acc_cmd = 0.0;
@@ -191,7 +191,7 @@ int main(void) {
 
     /* Data to print */
     float t_msec = 0.0;
-    printf("%%t_msec,psi,r,x,y,v,u\r\n");
+    printf("%%t_msec, psi, r, x, y, v, u, u_pulse\r\n");
 
     int i_state = 0;
 
@@ -299,13 +299,14 @@ int main(void) {
                 }
 
                 u = -delta_angle;
+                u_partial = -delta_angle;
 
                 // Scale resulting control input
-                //                u *= (SERVO_DELTA - SERVO_PAD);
-                //                u /= UPPER_ACT_BOUND;
-                //                u += ((float) RC_SERVO_CENTER_PULSE);
-                //                u_intermediate = (int) u;
-                //                u_pulse = ((uint16_t) u_intermediate);
+                u_partial *= (SERVO_DELTA - SERVO_PAD);
+                u_partial /= UPPER_ACT_BOUND;
+                u_partial += ((float) RC_SERVO_CENTER_PULSE);
+                u_intermediate = (int) u_partial;
+                u_pulse = ((uint16_t) u_intermediate);
 
                 delta_angle = (float) u_pulse;
                 RC_servo_set_pulse(u_pulse, RC_STEERING);
@@ -329,15 +330,16 @@ int main(void) {
 
             t_msec = ((float) cur_time) / 1000.0;
 
-            /* t_msec, psi, r, x, y, v */
-            printf("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
+            /* t_msec, psi, r, x, y, v, u, u_pulse */
+            printf("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
                     t_msec,
                     state_out[0],
                     state_out[1],
                     state_out[2],
                     state_out[3],
                     state_out[4],
-                    u);
+                    u,
+                    (float) u_pulse);
 
             LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         }

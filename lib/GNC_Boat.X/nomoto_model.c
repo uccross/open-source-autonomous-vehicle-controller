@@ -16,11 +16,12 @@
 /******************************************************************************
  * PRIVATE #DEFINES
  *****************************************************************************/
+#define TWO_PI (2.0 * M_PI)
 
 /******************************************************************************
  * PRIVATE DATATYPES 
  *****************************************************************************/
-float A[SSZ][SSZ] = {
+static float A[SSZ][SSZ] = {
     {1.0, DT, 0.0, 0.0, 0.0},
     {0.0, T_D_YAW, 0.0, 0.0, 0.0},
     {0.0, 0.0, 1.0, 0.0, 0.0},
@@ -28,7 +29,7 @@ float A[SSZ][SSZ] = {
     {0.0, 0.0, 0.0, 0.0, 1.0}
 };
 
-float B[SSZ] = {
+static float B[SSZ] = {
     0.0,
     K_D_YAW,
     0.0,
@@ -36,12 +37,23 @@ float B[SSZ] = {
     0.0
 };
 
-float x_partial[SSZ] = {0.0};
-float u_partial[SSZ] = {0.0};
+static float x_partial[SSZ] = {0.0};
+static float u_partial[SSZ] = {0.0};
+
+static float dt = 0.0;
 
 /******************************************************************************
  * Public Function Implementations
  *****************************************************************************/
+
+/**
+ * @function nomoto_init()
+ * @param dt_desired The desired sample time in seconds
+ */
+void nomoto_init(float dt_desired) {
+    dt = dt_desired;
+}
+
 /**
  * @function nomoto_update()
  * Multiplies a matrix with a vector
@@ -56,8 +68,8 @@ char nomoto_update(float x_in[SSZ], float u, float x_out[SSZ]) {
     psi = x_in[0];
     
     /* Update A matrix since it is non-linear */
-    A[2][4] = DT*sin(psi);
-    A[3][4] = DT*cos(psi);
+    A[2][4] = dt*sin(psi);
+    A[3][4] = dt*cos(psi);
     
     /* Ax_{k} */
     nomoto_mult_m_v(A, x_in, x_partial);
@@ -68,6 +80,8 @@ char nomoto_update(float x_in[SSZ], float u, float x_out[SSZ]) {
     /* x_{k+1} = Ax_{k} + Bu_{k}*/
     nomoto_v_v_add(x_partial, u_partial, x_out);
     
+    /* Angle wrap heading angle */
+    x_out[0] = fmod((x_out[0] + M_PI), TWO_PI) - M_PI;
     return SUCCESS;
 }
 

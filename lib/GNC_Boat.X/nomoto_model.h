@@ -12,12 +12,18 @@
  ******************************************************************************/
 #define DT 0.01 // Sample time
 #define SSZ 5 // Maximum size of state and statically allocated arrays 
-#define T_D_YAW -0.1 // Yaw-rate time-constant
+#define T_D_YAW -0.0001 // Yaw-rate time-constant
 #define K_D_YAW 0.9 // Yaw-rate gain 
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES
  ******************************************************************************/
+
+/**
+ * @function nomoto_init()
+ * @param dt_desired The desired sample time in seconds
+ */
+void nomoto_init(float dt_desired);
 
 /**
  * @function nomoto_update()

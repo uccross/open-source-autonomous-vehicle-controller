@@ -16,6 +16,7 @@
 #include "common/mavlink.h"
 #include "RC_servo.h"
 #include "Lin_alg_float.h"
+#include "nomoto_model.h"
 
 
 /******************************************************************************
@@ -31,6 +32,7 @@
 #define SIM_PERIOD 2 //Period for control loop in msec
 #define CONTROL_PERIOD 20 //Period for control loop in msec
 #define PRINT_PERIOD 200
+#define SIM_TIME (((float) SIM_PERIOD)*(0.001))
 #define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
@@ -53,7 +55,6 @@
 #define WP_THRESHOLD 2.0
 #define MIN_TURNING_RADIUS 2.5
 
-
 /******************************************************************************
  * MAIN                                                                       *
  *****************************************************************************/
@@ -67,7 +68,12 @@ int main(void) {
      * Initialization routines                                                *
      *************************************************************************/
     Board_init(); //board configuration
+    Serial_init();
     Sys_timer_init(); //start the system timer
+    nomoto_init(SIM_TIME);
+    
+    RC_channels_init(); //set channels to midpoint of RC system
+    RC_servo_init(); // start the servo subsystem
 
     TRISAbits.TRISA3 = 0; /* Set pin as output. This is also LED4 on Max32 */
     TRISCbits.TRISC1 = 0; /* LED5 */
@@ -79,7 +85,7 @@ int main(void) {
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
-    
+
     // Trajectory 
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
@@ -100,35 +106,37 @@ int main(void) {
     w_mat[3][0] = 10.0;
     w_mat[3][1] = 25.0;
 
-    w_mat[3][0] = 20.0;
-    w_mat[3][1] = 15.0;
-    
+    w_mat[4][0] = 20.0;
+    w_mat[4][1] = 15.0;
+
     int i_w = 0;
-    
+
     /* Set initial vehicle position */
     vehi_pt_en[0] = w_mat[i_w][0];
     vehi_pt_en[1] = w_mat[i_w][1];
-    
+
     /* Set initial previous and next waypoints*/
     wp_prev_en[0] = w_mat[i_w][0];
     wp_prev_en[1] = w_mat[i_w][1];
-    
+
     i_w += 1;
-    
+
     wp_next_en[0] = w_mat[i_w][0];
     wp_next_en[1] = w_mat[i_w][1];
 
-    float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
-
     // State
     float state_out[SSZ] = {0.0};
+    state_out[2] = wp_prev_en[0];
+    state_out[3] = wp_prev_en[1];
+    state_out[4] = 0.67;
+
     float state_in[SSZ] = {0.0};
     state_in[2] = wp_prev_en[0];
     state_in[3] = wp_prev_en[1];
     state_in[4] = 0.67;
-    
+
     lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
-            
+
     float cross_track_error = 0.0;
     float path_angle = 0.0;
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
@@ -176,10 +184,6 @@ int main(void) {
         WAITING_FOR_NEXT_WP, /* Get rid of this */
         TRACKING
     };
-    typedef enum waypoints_state waypoints_state_t;
-
-
-    current_wp_state = FINDING_REF_WP;
 
     unsigned int control_loop_count = 0;
 
@@ -187,19 +191,19 @@ int main(void) {
 
     /* Data to print */
     float t_msec = 0.0;
-    print("%%t_msec, psi, r, x, y, v\r\n");
-    
+    printf("%%t_msec,psi,r,x,y,v,u\r\n");
+
     int i_state = 0;
-    
+
     // Controller
     pid_controller_init(&trajectory_tracker,
-                            SAMPLE_TIME, // dt The sample time
-                            kp_track, //0.5, // kp The initial proportional gain
-                            0.0, // ki The initial integral gain
-                            kd_track, // kd The initial derivative gain [HIL:0.1]
-                            1000.0, // The maximum 
-                            -1000.0); // The minimum 
-    
+            SAMPLE_TIME, // dt The sample time
+            kp_track, //0.5, // kp The initial proportional gain
+            0.0, // ki The initial integral gain
+            kd_track, // kd The initial derivative gain [HIL:0.1]
+            1000.0, // The maximum 
+            -1000.0); // The minimum 
+
     /**************************************************************************
      * Primary Loop                                                           *
      *************************************************************************/
@@ -212,17 +216,17 @@ int main(void) {
         /* Waypoint transition logic that can otherwise be sent by the 
          * Raspberry Pi (or other comparable companion computer) */
         if (lin_tra_get_dist(vehi_pt_en, wp_next_en) <= WP_THRESHOLD) {
-            
+
             /* Update previous */
             wp_prev_en[0] = wp_next_en[0];
             wp_prev_en[1] = wp_next_en[1];
-            
+
             i_w += 1;
-            
+
             /* Update next */
-            wp_next_en[0] = w_mat[i_w][0];
-            wp_next_en[1] = w_mat[i_w][1];
-            
+            wp_next_en[0] = w_mat[i_w % 5][0];
+            wp_next_en[1] = w_mat[i_w % 5][1];
+
             lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
         }
 
@@ -231,14 +235,14 @@ int main(void) {
          *********************************************************************/
         if ((cur_time - sim_start_time) >= SIM_PERIOD) {
             sim_start_time = cur_time; //reset control loop timer
-            
+
             for (i_state = 0; i_state < SSZ; i_state++) {
                 state_in[i_state] = state_out[i_state];
             }
-            
+
             nomoto_update(state_in, u, state_out);
         }
-        
+
         /**********************************************************************
          * CONTROL: Control and publish data                                  *
          *********************************************************************/
@@ -250,7 +254,7 @@ int main(void) {
              *****************************************************************/
             if ((current_mode == MAV_MODE_AUTO_ARMED) &&
                     (lin_tra_is_initialized() == TRUE)) {
-                
+
                 heading_angle = state_out[0]; /* psi */
                 vehi_pt_en[0] = state_out[2]; /* x (East) */
                 vehi_pt_en[1] = state_out[3]; /* y (North) */
@@ -297,13 +301,14 @@ int main(void) {
                 u = -delta_angle;
 
                 // Scale resulting control input
-                u *= (SERVO_DELTA - SERVO_PAD);
-                u /= UPPER_ACT_BOUND;
-                u += ((float) RC_SERVO_CENTER_PULSE);
-                u_intermediate = (int) u;
-                u_pulse = ((uint16_t) u_intermediate);
+                //                u *= (SERVO_DELTA - SERVO_PAD);
+                //                u /= UPPER_ACT_BOUND;
+                //                u += ((float) RC_SERVO_CENTER_PULSE);
+                //                u_intermediate = (int) u;
+                //                u_pulse = ((uint16_t) u_intermediate);
 
                 delta_angle = (float) u_pulse;
+                RC_servo_set_pulse(u_pulse, RC_STEERING);
             }
 
 
@@ -315,24 +320,25 @@ int main(void) {
 
             LATAbits.LATA3 ^= 1; /* Toggle LED4 */
         }
-        
+
         /**********************************************************************
          * PRINT                                                              *
          *********************************************************************/
         if ((cur_time - print_start_time) >= PRINT_PERIOD) {
             print_start_time = cur_time;
-            
+
             t_msec = ((float) cur_time) / 1000.0;
-            
+
             /* t_msec, psi, r, x, y, v */
-            print("%f, %f, %f, %f, %f, %f\r\n", 
-                    cur_time, 
-                    state_out[0], 
-                    state_out[1], 
-                    state_out[2], 
-                    state_out[3], 
-                    state_out[4]);
-            
+            printf("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
+                    t_msec,
+                    state_out[0],
+                    state_out[1],
+                    state_out[2],
+                    state_out[3],
+                    state_out[4],
+                    u);
+
             LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         }
     }

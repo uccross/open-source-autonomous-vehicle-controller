@@ -10,7 +10,10 @@
 /*******************************************************************************
  * #DEFINES
  ******************************************************************************/
+#define DT 0.01 // Sample time
 #define SSZ 5 // Maximum size of state and statically allocated arrays 
+#define T_D_YAW -0.1 // Yaw-rate time-constant
+#define K_D_YAW 0.9 // Yaw-rate gain 
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES
@@ -43,5 +46,14 @@ char nomoto_mult_m_v(float m[SSZ][SSZ], float v[SSZ], float v_out[SSZ]);
  * @param v_out Vector as sum of two vectors
  */
 void nomoto_v_v_add(float v1[SSZ], float v2[SSZ], float v_out[SSZ]);
+
+/**
+ * @function nomoto_s_v_mult()
+ * Scales vector
+ * @param s Scalar to scale vector with
+ * @param v Vector to be scaled
+ * @param v_out
+ */
+void nomoto_s_v_mult(float s, float v[SSZ], float v_out[SSZ]);
 
 #endif	/* NOMOTO_MODEL_H */

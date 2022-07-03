@@ -1,7 +1,7 @@
 /*
- * File:   main_gnc_boat.c
+ * File:   debug_main_controller.c
  * Author: Pavlo Vlastos
- * Brief:  Guidance, navigation, and control (GNC) library for a boat
+ * Brief:  A small helper program to help debug models and controllers. 
  * Created on September 30, 2021, 4:09 PM
  */
 
@@ -11,22 +11,10 @@
 #include "xc.h"
 #include "Board.h"
 #include "System_timer.h"
-#include "common/mavlink.h"
-#include "MavSerial.h"
-#include "ICM_20948.h"
 #include "linear_trajectory.h"
 #include "pid_controller.h"
-#include "RC_RX.h"
+#include "common/mavlink.h"
 #include "RC_servo.h"
-#include "Publisher.h"
-#include "nmea0183v4.h"
-
-#ifdef CF_AHRS
-#include "cf_ahrs.h"
-#endif
-#ifdef TRIAD_AHRS
-#include "triad_ahrs.h"
-#endif
 #include "Lin_alg_float.h"
 
 
@@ -40,7 +28,9 @@
 #define WP_CONFIRM_PERIOD 1000
 //#define GPS_PERIOD 1000 //1 Hz update rate (For the time being)
 #define NUM_MSG_SEND_CONTROL_PERIOD 6
+#define SIM_PERIOD 2 //Period for control loop in msec
 #define CONTROL_PERIOD 20 //Period for control loop in msec
+#define PRINT_PERIOD 200
 #define SAMPLE_TIME (((float) CONTROL_PERIOD)*(0.001))
 #define RAW 1
 #define SCALED 2
@@ -57,46 +47,21 @@
 #define TOL 0.0001
 #define MAX_ACCEPTABLE_CTE ((float) 3.0)
 
-#define COG_YAW_MAX_DIFF (5.0 / 180.0 * M_PI)
 #define RAD_2_DEG (180.0 / M_PI)
 #define DEG_2_RAD (M_PI / 180.0) 
-#define GYRO_SCALE DEG_2_RAD
-#define GYRO_BUF_LEN 1000
-#define GYRO_N ((float) GYRO_BUF_LEN)
 
-#define LTP_X0 ((float) 10.0)
-#define LTP_Y0 ((float) -10.0)
-#define LTP_BOUND_X ((float) 60.0)/* meters */
-#define LTP_BOUND_Y ((float) 80.0) /* meters */
-
+#define WP_THRESHOLD 2.0
 #define MIN_TURNING_RADIUS 2.5
 
-#define HEADING_ANGLE_BUF 10
-
-
-// A very dumb, but temporary method of switching arc modes after compile time
-#define KP_CIRC_HACK 10.0 
-#define KP_EKF_HACK 9.0
 
 /******************************************************************************
  * MAIN                                                                       *
  *****************************************************************************/
 int main(void) {
     uint32_t cur_time = 0;
-    uint32_t startup_wait_time = 0;
-    uint32_t last_prev_wp_en_time = 0;
-    uint32_t last_next_wp_en_time = 0;
+    uint32_t sim_start_time = 0;
     uint32_t control_start_time = 0;
-    uint32_t heartbeat_start_time = 0;
-    uint32_t mav_serial_start_time = 0;
-    uint32_t sm_start_time = 0; /* Waypoint state machine time count */
-
-    int8_t IMU_state = ERROR;
-    int8_t IMU_retry = 5;
-    uint32_t IMU_error = 0;
-    uint8_t error_report = 50;
-
-    //    uint32_t ha_buf_i = 0;
+    uint32_t print_start_time = 0;
 
     /**************************************************************************
      * Initialization routines                                                *
@@ -110,67 +75,69 @@ int main(void) {
     LATCbits.LATC1 = 1; /* Set LED5 */
     LATAbits.LATA3 = 1; /* Set LED4 */
 
-    MavSerial_Init();
-
-    publisher_init(MAV_TYPE_SURFACE_BOAT);
-
-    nmea_serial_init();
-
-    RCRX_init(); //initialize the radio control system
-    RC_channels_init(); //set channels to midpoint of RC system
-    RC_servo_init(); // start the servo subsystem
-
-#ifndef HIL
-    IMU_state = IMU_init(IMU_SPI_MODE);
-
-    if (IMU_state == ERROR && IMU_retry > 0) {
-        IMU_state = IMU_init(IMU_SPI_MODE);
-
-#ifdef USB_DEBUG
-        printf("IMU failed init, retrying %f \r\n", IMU_retry);
-#endif
-        IMU_retry--;
-    }
-#endif
     cur_time = Sys_timer_get_msec();
-    startup_wait_time = cur_time;
-    //    while ((cur_time - startup_wait_time) < 5000) {
-    //        cur_time = Sys_timer_get_msec();
-    //    }
 
     LATCbits.LATC1 = 0; /* Set LED5 low */
     LATAbits.LATA3 = 0; /* Set LED4 low */
-
-    float wp_received_en[DIM]; // [EAST (meters), NORTH (meters)]
-
+    
     // Trajectory 
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float wp_prev_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
+    float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float closest_pnt[DIM]; // [EAST (meters), NORTH (meters)]
+
+    float w_mat[5][DIM]; // Matrix of waypoints
+
+    // Zig-zag
+    w_mat[0][0] = 0.0;
+    w_mat[0][1] = 5.0;
+
+    w_mat[1][0] = 20.0;
+    w_mat[1][1] = 5.0;
+
+    w_mat[2][0] = 0.0;
+    w_mat[2][1] = 25.0;
+
+    w_mat[3][0] = 10.0;
+    w_mat[3][1] = 25.0;
+
+    w_mat[3][0] = 20.0;
+    w_mat[3][1] = 15.0;
+    
+    int i_w = 0;
+    
+    /* Set initial vehicle position */
+    vehi_pt_en[0] = w_mat[i_w][0];
+    vehi_pt_en[1] = w_mat[i_w][1];
+    
+    /* Set initial previous and next waypoints*/
+    wp_prev_en[0] = w_mat[i_w][0];
+    wp_prev_en[1] = w_mat[i_w][1];
+    
+    i_w += 1;
+    
+    wp_next_en[0] = w_mat[i_w][0];
+    wp_next_en[1] = w_mat[i_w][1];
 
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
-    float ref_ll[DIM]; // [latitude, longitude]
-    float ref_lla[DIM + 1]; // [latitude, longitude, altitude]
-    float vehi_pt_ll[DIM]; // [latitude, longitude]
-    float vehi_pt_lla[DIM + 1] = {0.0}; // [latitude, longitude, altitude]
-    float vehi_pt_lla_last[DIM + 1] = {0.0}; // [latitude, longitude, altitude]
-    float vehi_pt_ned[DIM + 1]; // [NORTH, EAST, DOWN] (METERS)
 
-    float curve_thresh = 1.0;
+    // State
+    float state_out[SSZ] = {0.0};
+    float state_in[SSZ] = {0.0};
+    state_in[2] = wp_prev_en[0];
+    state_in[3] = wp_prev_en[1];
+    state_in[4] = 0.67;
+    
+    lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
+            
     float cross_track_error = 0.0;
-    float cross_track_error_last = 0.0;
     float path_angle = 0.0;
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
                                 * heading vector within the local tangent plane
                                 * (LTP) */
-    float angle_correction = 0.0; /* To correct the heading angle from the CF 
-                                   * AHRS */
-    float cog = 0.0; /* Course over ground angle from GPS */
     //    float cog_last = 0.0; /* Course over ground angle from GPS */
-    float ha_report = 0.0;
     //    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
+    float ha_report = 0.0;
     float u = 0.0; // Resulting control effort
     float delta_angle = 0.0; // Resulting control effort
     float u_sign = 1.0;
@@ -180,38 +147,7 @@ int main(void) {
     int u_intermediate = 0; // Pulse from converted control effort
     uint16_t u_pulse = 0; // Pulse from converted control effort
 
-    // Attitude
-    struct IMU_output imu;
-    imu.acc.x = 0.0;
-    imu.acc.y = 0.0;
-    imu.acc.z = 0.0;
 
-    imu.mag.x = 0.0;
-    imu.mag.y = 0.0;
-    imu.mag.z = 0.0;
-
-    imu.gyro.x = 0.0;
-    imu.gyro.y = 0.0;
-    imu.gyro.z = 0.0;
-
-    float acc[MSZ] = {0.1};
-    float mag[MSZ] = {0.1};
-
-#ifdef CF_AHRS
-    float gyro_bias[MSZ] = {0.0};
-    float gyro[MSZ] = {0.0};
-#endif
-
-#ifdef TRIAD_AHRS
-    triad_ahrs_init(SAMPLE_TIME);
-#endif
-
-    float roll = 0.0;
-    float pitch = 0.0;
-    float yaw = 0.0;
-    //    float roll_rate = 0.0;
-    //    float pitch_rate = 0.0;
-    //    float yaw_rate = 0.0;
 
 #ifdef USB_DEBUG
     printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
@@ -219,11 +155,6 @@ int main(void) {
 
     // MAVLink and State Machine
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
-    uint8_t last_mode = current_mode;
-    uint32_t msg_id = 0;
-    uint16_t cmd = 0;
-    float wp_type = -1.0;
-    float omega_yaw = 0.0;
     float kp_track = 1.0;
     float kd_track = 10.0;
 
@@ -236,7 +167,6 @@ int main(void) {
             kd_track, // kd The initial derivative gain [HIL:0.1]
             1000.0, // The maximum 
             -1000.0); // The minimum 
-    //    float m[3] = {0.0};
 
     enum waypoints_state {
         ERROR_WP = 0,
@@ -248,365 +178,82 @@ int main(void) {
     };
     typedef enum waypoints_state waypoints_state_t;
 
-    waypoints_state_t current_wp_state;
-    char is_new_imu = FALSE;
-    char is_new_msg = FALSE;
-    char is_new_prev_wp = FALSE;
-    char is_new_next_wp = FALSE;
-    char is_far_out = FALSE;
-    char is_new_gps = FALSE;
 
     current_wp_state = FINDING_REF_WP;
-
-    publisher_set_mode(MAV_MODE_MANUAL_ARMED);
-    publisher_set_state(MAV_STATE_ACTIVE);
 
     unsigned int control_loop_count = 0;
 
     uint8_t i_tx_mav_msg = 0;
 
-
-    /**************************************************************************
-     * Primary Loop                                                           *
-     *************************************************************************/
-    while (1) {
-        cur_time = Sys_timer_get_msec();
-
-        /**********************************************************************
-         * Check for all events:                                              *
-         * - HIL                                                              *
-         * - Real sensors                                                     *
-         *********************************************************************/
-
-        is_new_gps = check_GPS_events(); //check and process incoming GPS messages
-
-        if (cur_time - mav_serial_start_time >= MAV_SERIAL_READ_PERIOD) {
-            mav_serial_start_time = cur_time; //reset the timer
-            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
-                    &cmd, &wp_type, &omega_yaw, &kp_track, &kd_track);
-
-            if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-
-                if ((cur_time - last_prev_wp_en_time) >=
-                        WP_CONFIRM_PERIOD) {
-                    if (fabs(wp_type - WP_PREV) <= TOL) {
-
-                        wp_prev_prev_en[0] = wp_prev_en[0];
-                        wp_prev_prev_en[1] = wp_prev_en[1];
-
-                        /* Update the new 'prev' waypoint */
-                        wp_prev_en[0] = wp_received_en[0];
-                        wp_prev_en[1] = wp_received_en[1];
-
-                        last_prev_wp_en_time = cur_time;
-
-                        is_new_prev_wp = TRUE;
-                    }
-                }
-
-                if ((cur_time - last_next_wp_en_time) >=
-                        WP_CONFIRM_PERIOD) {
-                    if (fabs(wp_type - WP_NEXT) <= TOL) {
-
-                        /* Update the new 'next' waypoint */
-                        wp_next_en[0] = wp_received_en[0];
-                        wp_next_en[1] = wp_received_en[1];
-
-                        last_next_wp_en_time = cur_time;
-
-                        is_new_next_wp = TRUE;
-                    }
-                }
-            }
-
-#ifdef HIL
-            if ((is_new_msg == TRUE) && (cmd == MAV_CMD_NAV_WAYPOINT)) {
-                is_new_gps = TRUE;
-                if (fabs(wp_type - VEHI_PT) <= TOL) {
-                    vehi_pt_en[0] = wp_received_en[0];
-                    vehi_pt_en[1] = wp_received_en[1];
-
-                    yaw = omega_yaw;
-                }
-            }
-
-            /* Receive IMU Events from computer */
-            if (msg_id == MAVLINK_MSG_ID_HIL_SENSOR) {
-                check_HIL_IMU_events(&imu);
-            }
-#else
-            is_new_imu = check_IMU_events(SCALED, &imu);
-            is_new_msg = check_mavlink_serial_events(wp_received_en, &msg_id,
-                    &cmd, &wp_type, &omega_yaw, &kp_track, &kd_track);
-            check_RC_events(); //check incoming RC commands
-
-            /* Update aiding vectors and gyro angular rates */
-            if (is_new_imu == TRUE) {
-                lin_alg_set_v(imu.acc.x, imu.acc.y, imu.acc.z, acc);
-                lin_alg_set_v(imu.mag.x, -imu.mag.y, -imu.mag.z, mag);
-                //                m[0] = imu.mag.x;
-                //                m[1] = imu.mag.y;
-                //                m[2] = imu.mag.z;
-#ifdef CF_AHRS
-                lin_alg_set_v(-imu.gyro.x, -imu.gyro.y, -imu.gyro.z, gyro);
-                lin_alg_v_scale(GYRO_SCALE, gyro);
-#endif
-            }
-
-            publisher_get_gps_rmc_position(vehi_pt_ll);
-
-            if (current_wp_state == FINDING_REF_WP) {
-                ref_ll[0] = vehi_pt_ll[0];
-                ref_ll[1] = vehi_pt_ll[1];
-
-                ref_lla[0] = vehi_pt_ll[0];
-                ref_lla[1] = vehi_pt_ll[1];
-                ref_lla[2] = 0.0;
-            }
-
-            vehi_pt_lla[0] = vehi_pt_ll[0];
-            vehi_pt_lla[1] = vehi_pt_ll[1];
-            vehi_pt_lla[2] = 0.0;
-
-            /* Convert the gps position to the Local Tangent Plane (LTP) */
-            if ((vehi_pt_lla[0] != vehi_pt_lla_last[0]) &&
-                    (vehi_pt_lla[1] != vehi_pt_lla_last[1])) {
-
-                vehi_pt_lla_last[0] = vehi_pt_lla[0];
-                vehi_pt_lla_last[1] = vehi_pt_lla[1];
-
-                lin_tra_lla_to_ned(vehi_pt_lla, ref_lla, vehi_pt_ned);
-            }
-
-            vehi_pt_en[0] = vehi_pt_ned[1]; // EAST 
-            vehi_pt_en[1] = vehi_pt_ned[0]; // NORTH
-#endif
-        }
-
-        /* EKF LTP East and North Position from Raspberry Pi */
-        if (fabs(kp_track - KP_EKF_HACK) < TOL) {
-            if (fabs(wp_type - EKF_PT) <= TOL) {
-                vehi_pt_en[0] = wp_received_en[0];
-                vehi_pt_en[1] = wp_received_en[1];
-            }
-        }
-
-        // Check if mode switch event occurred
-        current_mode = check_mavlink_mode();
-
-#ifdef AUTONOMOUS_MODE_TEST
-        current_mode = MAV_MODE_AUTO_ARMED;
-#endif
-
-        if (current_mode != last_mode) {
-            last_mode = current_mode;
-        }
-
-        /**********************************************************************
-         * Wayopint State Machine Logic                                       *
-         *********************************************************************/
-        if ((cur_time - sm_start_time) > WP_STATE_MACHINE_PERIOD) {
-            sm_start_time = cur_time;
-            switch (current_wp_state) {
-                case ERROR_WP:
-                    break;
-
-                    /* Wait until a GPS fix is achieved. The starting  GPS position is
-                     * reference waypoint for the LTP. This may take up to about 20 
-                     * minutes for the first try after power on. */
-                case FINDING_REF_WP:
-                    /**********************************************************/
-
-#ifdef HIL
-                    vehi_pt_en[0] = 0.0;
-                    vehi_pt_en[1] = 0.0;
-#endif
-                    wp_prev_en[0] = 0.0;
-                    wp_prev_en[1] = 0.0;
-
-                    /* Complementary Filter Attitude and Heading Reference 
-                     * System (AHRS) Initialization. For now use the starting 
-                     * rates assuming the vehicle is stationary */
-#ifdef CF_AHRS
-                    /* Z-axis Found experimentally, others are greatly 
-                     * corrected by gravity */
-                    //lin_alg_set_v(0.0, 0.0, -0.0062, gyro_bias); /* Control period: 20ms*/
-                    lin_alg_set_v(0.0, 0.0, 0.0, gyro_bias); /* Control period: 20ms*/
-                    cf_ahrs_set_gyro_biases(gyro_bias);
-
-                    //                    cf_ahrs_set_mag_vi(m);
-
-                    cf_ahrs_set_kp_acc(10.0);
-                    //                    cf_ahrs_set_kp_mag(0.075);
-                    cf_ahrs_set_kp_mag(0.01); /* Control period: 20ms*/
-                    cf_ahrs_set_ki_gyro(0.0);
-
-                    cf_ahrs_init(SAMPLE_TIME, gyro_bias);
-#endif
-
-#ifdef HIL
-                    current_wp_state = SENDING_NEXT;
-#else
-
-
-                    //                        publisher_get_gps_rmc_position(vehi_pt_ll);
-
-
-                    // State exit case
-                    if (((cur_time - startup_wait_time) >= GPS_FIX_TIME) &&
-                            (current_mode == MAV_MODE_AUTO_ARMED)) {
-                        if ((ref_ll[0] != 0.0) && (ref_ll[1] != 0.0)) {
-                            current_wp_state = SENDING_PREV;
-                        }
-                    }
-#endif
-
-
-                    break;
-
-                case SENDING_PREV:
-                    /**********************************************************/
-                    // Send what the vehicle calculated as its 'prev' waypoint
-                    publish_waypoint_en(wp_prev_en, WP_PREV);
-
-                    if ((cur_time - last_prev_wp_en_time) >=
-                            WP_CONFIRM_PERIOD) {
-
-                        lin_tra_set_prev_wp(wp_prev_en);
-
-                        current_wp_state = TRACKING;
-                    }
-
-                    break;
-
-                case SENDING_NEXT:
-                    /**********************************************************/
-                    // Send what the vehicle calculated as its 'next' waypoint
-                    publish_waypoint_en(wp_next_en, WP_NEXT);
-
-                    if ((cur_time - last_next_wp_en_time) >=
-                            WP_CONFIRM_PERIOD) {
-
-                        lin_tra_set_next_wp(wp_next_en);
-
-                        current_wp_state = TRACKING;
-                    }
-                    break;
-
-                case TRACKING:
-                    /**********************************************************/
-                    lin_alg_set_v(0.0, 0.0, omega_yaw, gyro_bias);
-                    cf_ahrs_set_gyro_biases(gyro_bias);
-
-                    pid_controller_init(&trajectory_tracker,
+    /* Data to print */
+    float t_msec = 0.0;
+    print("%%t_msec, psi, r, x, y, v\r\n");
+    
+    int i_state = 0;
+    
+    // Controller
+    pid_controller_init(&trajectory_tracker,
                             SAMPLE_TIME, // dt The sample time
                             kp_track, //0.5, // kp The initial proportional gain
                             0.0, // ki The initial integral gain
                             kd_track, // kd The initial derivative gain [HIL:0.1]
                             1000.0, // The maximum 
                             -1000.0); // The minimum 
+    
+    /**************************************************************************
+     * Primary Loop                                                           *
+     *************************************************************************/
+    while (1) {
+        cur_time = Sys_timer_get_msec();
 
-                    /* Edge case if too far out */
-                    //                    if ((fabs(cross_track_error) > MAX_ACCEPTABLE_CTE) &&
-                    //                            (is_far_out == FALSE)) {
-                    //                        wp_prev_en[0] = vehi_pt_en[0];
-                    //                        wp_prev_en[1] = vehi_pt_en[1];
-                    //                        cross_track_error_last = cross_track_error;
-                    //                        is_far_out = TRUE;
-                    //                    }
-                    //
-                    //                    if ((fabs(cross_track_error_last + cross_track_error) <
-                    //                            MAX_ACCEPTABLE_CTE) && (is_far_out == TRUE)) {
-                    //                        //                        wp_prev_prev_en[0] = wp_prev_en[0];
-                    //                        //                        wp_prev_prev_en[1] = wp_prev_en[1];
-                    //                        is_far_out = FALSE;
-                    //                    }
+        // Check if mode switch event occurred
+        current_mode = MAV_MODE_AUTO_ARMED;
 
-                    /* Exit cases: */
-                    if (is_new_prev_wp == TRUE) {
-                        current_wp_state = SENDING_PREV;
-                        is_new_prev_wp = FALSE;
-                    }
-
-                    if (is_new_next_wp == TRUE) {
-                        current_wp_state = SENDING_NEXT;
-                        is_new_next_wp = FALSE;
-                    }
-
-                    lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
-                    break;
-            }
+        /* Waypoint transition logic that can otherwise be sent by the 
+         * Raspberry Pi (or other comparable companion computer) */
+        if (lin_tra_get_dist(vehi_pt_en, wp_next_en) <= WP_THRESHOLD) {
+            
+            /* Update previous */
+            wp_prev_en[0] = wp_next_en[0];
+            wp_prev_en[1] = wp_next_en[1];
+            
+            i_w += 1;
+            
+            /* Update next */
+            wp_next_en[0] = w_mat[i_w][0];
+            wp_next_en[1] = w_mat[i_w][1];
+            
+            lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
         }
 
-
+        /**********************************************************************
+         * SIM: Update model                                                  *
+         *********************************************************************/
+        if ((cur_time - sim_start_time) >= SIM_PERIOD) {
+            sim_start_time = cur_time; //reset control loop timer
+            
+            for (i_state = 0; i_state < SSZ; i_state++) {
+                state_in[i_state] = state_out[i_state];
+            }
+            
+            nomoto_update(state_in, u, state_out);
+        }
+        
         /**********************************************************************
          * CONTROL: Control and publish data                                  *
          *********************************************************************/
         if ((cur_time - control_start_time) >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
 
-            set_control_output(); // set actuator outputs
-#ifndef HIL
-            IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-
-            if (IMU_state == ERROR) {
-                IMU_error++;
-                if (IMU_error % error_report == 0) {
-
-#ifdef USB_DEBUG
-                    printf("IMU error count %d\r\n", IMU_error);
-#endif
-
-                }
-            }
-#endif
-
-            /******************************************************************
-             * Complementary filter attitude and heading reference system     *
-             *****************************************************************/
-            /* Update */
-#ifndef HIL
-#ifdef CF_AHRS
-            cf_ahrs_update(acc, mag, gyro, &yaw, &pitch, &roll);
-
-            heading_angle = yaw;
-
-            // Using cog for now, but still publishing the ATTITUDE message
-            cog = (nmea_get_rmc_cog() * DEG_2_RAD);
-
-            //            if (fabs(cog - cog_last) > M_PI_2) {
-            //                cog = cog_last;
-            //            }
-            //
-            //            cog_last = cog;
-
-#endif
-#ifdef TRIAD_AHRS
-            mag[2] = 0.0; /* Not using z component of magnetometer with TRIAD */
-            triad_ahrs_update(acc, mag, &yaw, &pitch, &roll);
-
-            /* Average the TRIAD yaw angle */
-            heading_angle_buffer[control_loop_count % HEADING_ANGLE_BUF] = yaw;
-            heading_angle = 0;
-            for (ha_buf_i = 0; ha_buf_i < HEADING_ANGLE_BUF; ha_buf_i++) {
-                heading_angle += heading_angle_buffer[ha_buf_i];
-            }
-
-            heading_angle /= ((float) HEADING_ANGLE_BUF);
-
-            /* Correction offset */
-            //            heading_angle += (M_PI);
-            //            heading_angle = fmod(
-            //                    (heading_angle + M_PI), 2.0 * M_PI) - M_PI;
-#endif
-#endif
-
             /******************************************************************
              * Control                                                        *
              *****************************************************************/
             if ((current_mode == MAV_MODE_AUTO_ARMED) &&
                     (lin_tra_is_initialized() == TRUE)) {
-                //            if (lin_tra_is_initialized() == TRUE) {
+                
+                heading_angle = state_out[0]; /* psi */
+                vehi_pt_en[0] = state_out[2]; /* x (East) */
+                vehi_pt_en[1] = state_out[3]; /* y (North) */
 
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
@@ -621,42 +268,6 @@ int main(void) {
                     //                    heading_angle_diff = cog - path_angle;
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
-                }
-
-                /**************************************************************
-                 * For circular arcs                                          *
-                 *************************************************************/
-                if (fabs(kp_track - KP_CIRC_HACK) < TOL) {
-                    lin_tra_get_closest_point_lin(wp_prev_prev_en, wp_prev_en,
-                            vehi_pt_en, closest_pnt);
-
-                    curve_thresh = (MIN_TURNING_RADIUS /
-                            (tan(lin_tra_get_relative_angle(wp_prev_prev_en,
-                            wp_prev_en,
-                            wp_next_en) / 2.0)));
-                    curve_thresh = lin_tra_minimum(curve_thresh, MIN_TURNING_RADIUS);
-
-                    // Build curve points if the closest point is in proximity to the next
-                    if (lin_tra_get_dist(closest_pnt, wp_prev_en) < curve_thresh) {
-                        if ((wp_prev_prev_en[0] <= TOL) && (wp_prev_prev_en[1] <= TOL) &&
-                                (fabs(wp_prev_prev_en[0] - wp_prev_en[0]) <= TOL) &&
-                                (fabs(wp_prev_prev_en[1] - wp_prev_en[1]) <= TOL)) {
-
-                            lin_tra_get_angle_error_and_cte_curve(
-                                    path_angle,
-                                    heading_angle,
-                                    wp_prev_prev_en,
-                                    wp_prev_en,
-                                    wp_next_en,
-                                    vehi_pt_en,
-                                    curve_thresh,
-                                    &heading_angle_diff,
-                                    &cross_track_error);
-
-                            heading_angle_diff = fmod(
-                                    (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
-                        }
-                    }
                 }
 
                 /* Trajectory tracking controller */
@@ -692,71 +303,37 @@ int main(void) {
                 u_intermediate = (int) u;
                 u_pulse = ((uint16_t) u_intermediate);
 
-                RC_servo_set_pulse(u_pulse, RC_STEERING);
-
                 delta_angle = (float) u_pulse;
-
             }
 
 
             // Information from trajectory
 
-
-            /******************************************************************
-             * Publish data                                                   *
-             *****************************************************************/
-            switch (i_tx_mav_msg) {
-                case 0:
-                    publish_attitude(roll,
-                            pitch,
-                            ha_report, //heading_angle, /* Using differently on purpose */
-                            path_angle, // roll-rate, /* Using differently on purpose */
-                            delta_angle, // pitch-rate, /* Using differently on purpose */
-                            (float) current_wp_state); // yaw-rate /* Using differently on purpose */ /* @TODO: add rates */
-
-                    if (fabs(kp_track - KP_CIRC_HACK) < TOL) {
-                        LATCbits.LATC1 ^= 1; /* Toggle LED5 */
-                    }
-                    break;
-                case 1:
-                    publish_RC_signals_raw();
-                    break;
-                case 2:
-                    publish_IMU_data(SCALED);
-                    break;
-                case 3:
-                    publisher_set_mode(current_mode); // Sets mode in heartbeat
-                    break;
-                case 4:
-#ifndef HIL
-                    publish_waypoint_en(vehi_pt_en, VEHI_PT);
-#endif 
-                    break;
-                case 5:
-#ifndef HIL
-                    if (current_wp_state != FINDING_REF_WP) {
-                        publish_GPS(cross_track_error);
-                    }
-#endif 
-                    break;
-            }
             control_loop_count++;
             i_tx_mav_msg++;
             i_tx_mav_msg %= NUM_MSG_SEND_CONTROL_PERIOD;
+
+            LATAbits.LATA3 ^= 1; /* Toggle LED4 */
         }
-
-        //#endif
-        // Publish heartbeat
-        if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
-            heartbeat_start_time = cur_time; //reset the timer
-            publish_heartbeat(); // TODO: add argument to update the mode
-
-#ifdef HIL
-            publish_HIL_servo_output_raw(u_pulse);
-#endif 
-
-            LATAbits.LATA3 ^= 1; /* Set LED4 */
-
+        
+        /**********************************************************************
+         * PRINT                                                              *
+         *********************************************************************/
+        if ((cur_time - print_start_time) >= PRINT_PERIOD) {
+            print_start_time = cur_time;
+            
+            t_msec = ((float) cur_time) / 1000.0;
+            
+            /* t_msec, psi, r, x, y, v */
+            print("%f, %f, %f, %f, %f, %f\r\n", 
+                    cur_time, 
+                    state_out[0], 
+                    state_out[1], 
+                    state_out[2], 
+                    state_out[3], 
+                    state_out[4]);
+            
+            LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         }
     }
 

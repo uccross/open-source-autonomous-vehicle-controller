@@ -5,10 +5,43 @@
  * Created on March 11, 2021, 1:48 PM
  */
 
+/******************************************************************************
+ * #INCLUDES
+ *****************************************************************************/
 #include "nomoto_model.h"
 #include "Lin_alg_float.h"
 #include "Board.h"
+#include <math.h>
 
+/******************************************************************************
+ * PRIVATE #DEFINES
+ *****************************************************************************/
+
+/******************************************************************************
+ * PRIVATE DATATYPES 
+ *****************************************************************************/
+float A[SSZ][SSZ] = {
+    {1.0, DT, 0.0, 0.0, 0.0},
+    {0.0, T_D_YAW, 0.0, 0.0, 0.0},
+    {0.0, 0.0, 1.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0, 1.0, 0.0},
+    {0.0, 0.0, 0.0, 0.0, 1.0}
+};
+
+float B[SSZ] = {
+    0.0,
+    K_D_YAW,
+    0.0,
+    0.0,
+    0.0
+};
+
+float x_partial[SSZ] = {0.0};
+float u_partial[SSZ] = {0.0};
+
+/******************************************************************************
+ * Public Function Implementations
+ *****************************************************************************/
 /**
  * @function nomoto_update()
  * Multiplies a matrix with a vector
@@ -18,7 +51,24 @@
  * @return SUCCESS or ERROR
  */
 char nomoto_update(float x_in[SSZ], float u, float x_out[SSZ]) {
+    float psi;
     
+    psi = x_in[0];
+    
+    /* Update A matrix since it is non-linear */
+    A[2][4] = DT*sin(psi);
+    A[3][4] = DT*cos(psi);
+    
+    /* Ax_{k} */
+    nomoto_mult_m_v(A, x_in, x_partial);
+    
+    /* Bu_{k} */
+    nomoto_s_v_mult(u, B, u_partial);
+    
+    /* x_{k+1} = Ax_{k} + Bu_{k}*/
+    nomoto_v_v_add(x_partial, u_partial, x_out);
+    
+    return SUCCESS;
 }
 
 /**
@@ -50,11 +100,25 @@ char nomoto_mult_m_v(float m[SSZ][SSZ], float v[SSZ], float v_out[SSZ]) {
  * @param v2 Vector to have a vector added to it
  * @param v_out Vector as sum of two vectors
  */
-void lin_alg_v_v_add(float v1[SSZ], float v2[SSZ], float v_out[SSZ]) {
+void nomoto_v_v_add(float v1[SSZ], float v2[SSZ], float v_out[SSZ]) {
     int row;
 
     for (row = 0; row < SSZ; row++) {
         v_out[row] = v1[row] + v2[row];
     }
 }
-    
+
+/**
+ * @function nomoto_s_v_mult()
+ * Scales vector
+ * @param s Scalar to scale vector with
+ * @param v Vector to be scaled
+ * @param v_out
+ */
+void nomoto_s_v_mult(float s, float v[SSZ], float v_out[SSZ]) {
+    int row;
+
+    for (row = 0; row < SSZ; row++) {
+        v_out[row] = s * v[row];
+    }
+}

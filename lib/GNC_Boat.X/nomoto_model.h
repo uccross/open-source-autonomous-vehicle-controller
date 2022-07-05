@@ -14,6 +14,7 @@
 #define SSZ 5 // Maximum size of state and statically allocated arrays 
 #define T_D_YAW -0.01 // Yaw-rate time-constant
 #define K_D_YAW 0.9 // Yaw-rate gain 
+#define TWO_PI (2.0 * M_PI)
 
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES

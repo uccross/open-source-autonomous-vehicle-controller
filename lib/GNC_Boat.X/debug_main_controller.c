@@ -17,6 +17,7 @@
 #include "RC_servo.h"
 #include "Lin_alg_float.h"
 #include "nomoto_model.h"
+#include "SerialM32.h"
 
 
 /******************************************************************************
@@ -41,7 +42,7 @@
 #define UPPER_ACT_BOUND ((float) 50.0) * K_ACT //((float) 0.8) // The maximum rudder actuator limit in radians
 #define LOWER_ACT_BOUND ((float) -50.0) * K_ACT //((float)-0.8) // The minimum rudder actuator limit in radians
 #define RANGE_ACT (UPPER_ACT_BOUND - LOWER_ACT_BOUND) // Range of actuator
-#define SERVO_PAD 0.0
+#define SERVO_PAD 200
 #define SERVO_DELTA ((float) (RC_SERVO_CENTER_PULSE - RC_SERVO_MIN_PULSE))
 
 #define TRANSMIT_PRD 500 // Time to wait to check reference waypoint in milliseconds
@@ -53,6 +54,7 @@
 #define DEG_2_RAD (M_PI / 180.0) 
 
 #define WP_THRESHOLD 3.0
+#define ALIGNED_THRESHOLD ((1.0/180.0) * M_PI)
 #define MIN_TURNING_RADIUS 2.5
 
 /******************************************************************************
@@ -71,7 +73,7 @@ int main(void) {
     Serial_init();
     Sys_timer_init(); //start the system timer
     nomoto_init(SIM_TIME);
-    
+
     RC_servo_init(); // start the servo subsystem
 
     TRISAbits.TRISA3 = 0; /* Set pin as output. This is also LED4 on Max32 */
@@ -86,11 +88,14 @@ int main(void) {
     LATAbits.LATA3 = 0; /* Set LED4 low */
 
     // Trajectory 
+    float wp_prev_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
     float wp_prev_en[DIM]; // [EAST (meters), NORTH (meters)]
     float wp_next_en[DIM]; // [EAST (meters), NORTH (meters)]
     float vehi_pt_en[DIM]; // [EAST (meters), NORTH (meters)]
 
-    float w_mat[5][DIM]; // Matrix of waypoints
+    char in_wp_threshold = FALSE;
+
+    float w_mat[6][DIM]; // Matrix of waypoints
 
     // Zig-zag
     w_mat[0][0] = 0.0;
@@ -108,6 +113,9 @@ int main(void) {
     w_mat[4][0] = 20.0;
     w_mat[4][1] = 15.0;
 
+    w_mat[5][0] = 20.0;
+    w_mat[5][1] = 25.0;
+
     int i_w = 0;
 
     /* Set initial vehicle position */
@@ -115,6 +123,8 @@ int main(void) {
     vehi_pt_en[1] = w_mat[i_w][1];
 
     /* Set initial previous and next waypoints*/
+    wp_prev_prev_en[0] = w_mat[i_w][0];
+    wp_prev_prev_en[1] = w_mat[i_w][1];
     wp_prev_en[0] = w_mat[i_w][0];
     wp_prev_en[1] = w_mat[i_w][1];
 
@@ -125,9 +135,10 @@ int main(void) {
 
     // State
     float state_out[SSZ] = {0.0};
+    state_out[0] = M_PI / 2.0;
     state_out[2] = wp_prev_en[0] + 7.0;
-    state_out[3] = wp_prev_en[1] - 5.0;
-    state_out[4] = 0.67;
+    state_out[3] = wp_prev_en[1] - 0.0;
+    state_out[4] = 1.67;
 
     float state_in[SSZ] = {0.0};
     state_in[2] = state_out[2];
@@ -138,12 +149,14 @@ int main(void) {
 
     float cross_track_error = 0.0;
     float path_angle = 0.0;
+    float path_angle_old = 0.0;
     float heading_angle = 0.0; /* Heading angle between North unit vector and 
                                 * heading vector within the local tangent plane
                                 * (LTP) */
     //    float cog_last = 0.0; /* Course over ground angle from GPS */
     //    float heading_angle_buffer[HEADING_ANGLE_BUF];
     float heading_angle_diff = 0.0;
+    float heading_angle_diff_alt = 0.0;
     float ha_report = 0.0;
     float u = 0.0; // Resulting control effort
     float u_partial = 0.0; // Resulting control effort
@@ -163,7 +176,7 @@ int main(void) {
 
     // MAVLink and State Machine
     uint8_t current_mode = MAV_MODE_MANUAL_ARMED;
-    float kp_track = 1.0;
+    float kp_track = 3.0;
     float kd_track = 10.0;
 
     // Controller
@@ -191,7 +204,7 @@ int main(void) {
 
     /* Data to print */
     float t_msec = 0.0;
-    printf("%%t_msec, psi, r, x, y, v, u, u_pulse\r\n");
+    printf("%%t_msec, psi, r, x, y, v, u, u_pulse, u_sign, path_angle, heading_angle_diff\r\n");
 
     int i_state = 0;
 
@@ -203,6 +216,7 @@ int main(void) {
             kd_track, // kd The initial derivative gain [HIL:0.1]
             1000.0, // The maximum 
             -1000.0); // The minimum 
+
 
     /**************************************************************************
      * Primary Loop                                                           *
@@ -216,6 +230,12 @@ int main(void) {
         /* Waypoint transition logic that can otherwise be sent by the 
          * Raspberry Pi (or other comparable companion computer) */
         if (lin_tra_get_dist(vehi_pt_en, wp_next_en) <= WP_THRESHOLD) {
+            in_wp_threshold = TRUE;
+            path_angle_old = path_angle;
+
+            /* Update previous previous */
+            wp_prev_prev_en[0] = wp_prev_en[0];
+            wp_prev_prev_en[1] = wp_prev_en[1];
 
             /* Update previous */
             wp_prev_en[0] = wp_next_en[0];
@@ -224,10 +244,8 @@ int main(void) {
             i_w += 1;
 
             /* Update next */
-            wp_next_en[0] = w_mat[i_w % 5][0];
-            wp_next_en[1] = w_mat[i_w % 5][1];
-
-            lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
+            wp_next_en[0] = w_mat[i_w % 6][0];
+            wp_next_en[1] = w_mat[i_w % 6][1];
         }
 
         /**********************************************************************
@@ -259,17 +277,23 @@ int main(void) {
                 vehi_pt_en[0] = state_out[2]; /* x (East) */
                 vehi_pt_en[1] = state_out[3]; /* y (North) */
 
+                /* Re-initialize the trajectory */
+                lin_tra_init(wp_prev_en, wp_next_en, vehi_pt_en);
+
                 if (lin_tra_update(vehi_pt_en) == SUCCESS) {
                     cross_track_error = lin_tra_get_cte();
 
                     path_angle = lin_tra_get_path_angle();
 
                     ha_report = (heading_angle * RAD_2_DEG);
-                    //                    ha_report = cog * RAD_2_DEG;
-
 
                     heading_angle_diff = heading_angle - path_angle;
-                    //                    heading_angle_diff = cog - path_angle;
+
+                    heading_angle_diff_alt = (TWO_PI + heading_angle) - path_angle;
+
+                    if (fabs(heading_angle_diff) > fabs(heading_angle_diff_alt)) {
+                        heading_angle_diff = heading_angle_diff_alt;
+                    }
                     heading_angle_diff = fmod(
                             (heading_angle_diff + M_PI), 2.0 * M_PI) - M_PI;
                 }
@@ -286,29 +310,37 @@ int main(void) {
                     if (acc_cmd < 0.0) {
                         u_sign = -1.0;
                     }
-                    if (acc_cmd > 0.0) {
+                    if (acc_cmd >= 0.0) {
                         u_sign = 1.0;
                     }
 
                     rtemp = (speed * speed) / fabs(acc_cmd);
 
                     if (rtemp != 0.0) {
-                        delta_angle = u_sign * (sqrt(fabs(acc_cmd) / rtemp) *
+                        delta_angle = (sqrt(fabs(acc_cmd) / rtemp) *
                                 SAMPLE_TIME);
                     }
                 }
 
-                u = -delta_angle;
-                u_partial = -delta_angle;
+                u = -u_sign*delta_angle;
+                u_partial = -u_sign*delta_angle;
 
                 // Scale resulting control input
-                u_partial *= (SERVO_DELTA - SERVO_PAD);
+                u_partial *= SERVO_DELTA;
                 u_partial /= UPPER_ACT_BOUND;
                 u_partial += ((float) RC_SERVO_CENTER_PULSE);
                 u_intermediate = (int) u_partial;
                 u_pulse = ((uint16_t) u_intermediate);
 
-                delta_angle = (float) u_pulse;
+                /* Clip servo maxima */
+                if (u_pulse > (RC_SERVO_MAX_PULSE - SERVO_PAD)) {
+                    u_pulse = ((uint16_t) RC_SERVO_MAX_PULSE - SERVO_PAD);
+                }
+
+                if (u_pulse < (RC_SERVO_MIN_PULSE + SERVO_PAD)) {
+                    u_pulse = ((uint16_t) RC_SERVO_MIN_PULSE + SERVO_PAD);
+                }
+
                 RC_servo_set_pulse(u_pulse, RC_STEERING);
             }
 
@@ -321,6 +353,12 @@ int main(void) {
 
             LATAbits.LATA3 ^= 1; /* Toggle LED4 */
         }
+        /* Only turn off wp threshold flag if we get aligned */
+        if ((fabs(heading_angle_diff) <= ALIGNED_THRESHOLD) ||
+                (lin_tra_get_dist(vehi_pt_en, wp_prev_en) > WP_THRESHOLD)) {
+            in_wp_threshold = FALSE;
+            LATCbits.LATC1 = 0; /*   LED5 */
+        }
 
         /**********************************************************************
          * PRINT                                                              *
@@ -330,18 +368,19 @@ int main(void) {
 
             t_msec = ((float) cur_time) / 1000.0;
 
-            /* t_msec, psi, r, x, y, v, u, u_pulse */
-            printf("%.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f, %.3f\r\n",
-                    t_msec,
-                    state_out[0],
-                    state_out[1],
-                    state_out[2],
-                    state_out[3],
-                    state_out[4],
-                    u,
-                    (float) u_pulse);
+            /* t_msec, psi, r, x, y, v, u, u_pulse, path_angle*/
+            printf("%.3f, ", t_msec);
+            printf("%.3f, ", state_out[0]);
+            printf("%.3f, ", state_out[1]);
+            printf("%.3f, ", state_out[2]);
+            printf("%.3f, ", state_out[3]);
+            printf("%.3f, ", state_out[4]);
+            printf("%.3f, ", u);
+            printf("%.3f, ", (float) u_pulse);
+            printf("%.3f, ", u_sign);
+            printf("%.3f, ", path_angle);
+            printf("%.3f\r\n", heading_angle_diff);
 
-            LATCbits.LATC1 ^= 1; /* Toggle  LED5 */
         }
     }
 

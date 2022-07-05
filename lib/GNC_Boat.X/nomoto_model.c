@@ -16,7 +16,6 @@
 /******************************************************************************
  * PRIVATE #DEFINES
  *****************************************************************************/
-#define TWO_PI (2.0 * M_PI)
 
 /******************************************************************************
  * PRIVATE DATATYPES 
@@ -65,6 +64,13 @@ void nomoto_init(float dt_desired) {
 char nomoto_update(float x_in[SSZ], float u, float x_out[SSZ]) {
     float psi;
     
+    /* Angle wrap heading angle */
+    x_in[0] = fmod((x_in[0] + M_PI), TWO_PI) ;
+    if (x_in[0] < 0.0) {
+        x_in[0] += TWO_PI;
+    }
+    x_in[0] -= M_PI;
+    
     psi = x_in[0];
     
     /* Update A matrix since it is non-linear */
@@ -81,7 +87,11 @@ char nomoto_update(float x_in[SSZ], float u, float x_out[SSZ]) {
     nomoto_v_v_add(x_partial, u_partial, x_out);
     
     /* Angle wrap heading angle */
-    x_out[0] = fmod((x_out[0] + M_PI), TWO_PI) - M_PI;
+    x_out[0] = fmod((x_out[0] + M_PI), TWO_PI) ;
+    if (x_out[0] < 0.0) {
+        x_out[0] += TWO_PI;
+    }
+    x_out[0] -= M_PI;
     return SUCCESS;
 }
 

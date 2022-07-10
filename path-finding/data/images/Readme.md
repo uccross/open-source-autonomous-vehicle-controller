@@ -3,7 +3,7 @@ Each of the folders above have two types of files<br>
 - images(.jpg)
 - Annotations(.xml)
 
-The dataset has been pre-processed and augmented using the following steps
+The dataset has been pre-processed and augmented using the following steps. The entire dataset can be found [here](https://drive.google.com/drive/folders/1A3o8T2bHrwRLA4A5kCp0XCPeP-5Zgykv?usp=sharing)
 
 **PREPROCESSING**
 - Resize: Stretch to 224x224<br>

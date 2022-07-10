@@ -1,5 +1,7 @@
 ## <div align="center">Path Finding</div>
-![Cone Detection](data/demo/landmark_detection.png)<br>
+<p align="center">
+  <img src="data/demo/landmark_detection.png" alt="cone detection image" width=180/>
+</p>
 Detection of the course markers to help an autonomous vehicle find an optimal trajectory to complete the circuit. For detection of course markers(coloured cones), ML(object detection) and CV algorithms are used. Inference on embedded devices can be performed using the optimized TFlite models and accelerated using the Google Coral Edge TPU.<br><br>
 
 [Try it in Google Colaboratory](data/Notebook/OSAVC_Path_Finding.ipynb)<br><br>
@@ -42,4 +44,4 @@ A collection of pre-trained models, including EfficientDet0, EfficientDet-Lite0,
 Contains scripts required for training your own models, setting up your environment, installation of dependencies and performing inference with trained models
 
 ## Installation and Inference
-Choose the model you want to run from [models](models) and follow the instructions in the README. The recommended model is [EfficientDet0-Lite](models/EfficientDet0-Lite/) which can be run on a Raspberry Pi and optionally accelerated using a Coral Edge TPU.
+Choose the model you want to run from [models](models) and follow the instructions in the README of the respective model. The recommended model is EfficientDet0-Lite which can be run on a Raspberry Pi and optionally accelerated using a Coral Edge TPU following the [instructions given here](models/EfficientDet0-Lite/). 

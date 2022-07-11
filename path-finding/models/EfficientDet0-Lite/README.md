@@ -1,7 +1,11 @@
 ## <div align="center">Cone Detection on Raspberry Pi using EfficientDet0-Lite</div>
-Code for detecting cones on Raspberry Pi using the [EfficientDet-Lite0](https://www.tensorflow.org/lite/models/modify/model_maker/object_detection) algorithm. <br>
+Code for detecting cones on Raspberry Pi using the [EfficientDet-Lite0](https://www.tensorflow.org/lite/models/modify/model_maker/object_detection) algorithm. <br><br>
+**Note:** <br>
+- This model can be optionally accelerated using a Coral Edge TPU Accelerator.
+- The same instructions can be used to deploy EfficientDet-Lite0 on an x84 Linux based system
 
 ### Prerequisites
+- Raspberry Pi OS 11 (bullseye) 64bit
 - \>=Python 3.8
 - \>=virtualenv 20.12.1
 

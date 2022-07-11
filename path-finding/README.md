@@ -50,6 +50,6 @@ Choose the model you want to run from [models](models) and follow the instructio
 
 ## cone_mapper
 <p align="center">
-  <img src="data/demo/cone_map.png" alt="cone map image" width=180/>
-</p>
+  <img src="data/demo/cone_map.png" alt="cone map image" width=200/></p>
+
 A package that uses camera intrinsics and exploits known geometry of the landmarks to predict their 3D locations. Instructions to run this with [EfficientDet0-Lite](models/EfficientDet0-Lite/) can be found in the ```README.md``` in ```cone_mapper```.

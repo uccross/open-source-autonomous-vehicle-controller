@@ -22,17 +22,19 @@
 #define I2C_PORT i2c0                   /* to use default I2C0 pins on Pico, 
 * In default I2C0, GPIO4 will be SDA and GPIO5 will be SCL */
 #define I2C_SPEED 400 * KHZ             // data transfer speed for fast I2C
+#define SDA_PIN 4       // GPIO pin number where SDA line of I2C is connected
+#define SCL_PIN 5       // GPIO pin number where SCL line of I2C is connected
+
 #define ACQ_COMMAND 0x00                // Internal LiDAR register
 #define STATUS 0x01                     // Internal LiDAR register
 #define FULL_DELAY 0x0f                 // Internal LiDAR register
+
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            
  ******************************************************************************/
 
 static int lidar_address = 0x62;            // LiDAR I2C address from datasheet
-static int sda_gpio_pin = 4;                // default I2C0 SDA pin
-static int scl_gpio_pin = 5;                // default I2C0 SCL pin
 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 
@@ -52,15 +54,13 @@ static int scl_gpio_pin = 5;                // default I2C0 SCL pin
  */
 void i2c_initialize(void)
 {
-    stdio_init_all();                   // initializes Pico I/O pins
-    
     i2c_init(I2C_PORT, I2C_SPEED);      // initializes Pico I2C
 
-    gpio_set_function(sda_gpio_pin, GPIO_FUNC_I2C);
-    gpio_set_function(scl_gpio_pin, GPIO_FUNC_I2C);
+    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
+    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
 
-    gpio_pull_up(sda_gpio_pin);         // To enable the GPIO pull up function
-    gpio_pull_up(scl_gpio_pin);
+    gpio_pull_up(SDA_PIN);         // To enable the GPIO pull up function
+    gpio_pull_up(SCL_PIN);
 }
 
 /*
@@ -193,7 +193,7 @@ no_of_byte_to_read)
 
 int main()
 {
-    sleep_ms(5000);
+    stdio_init_all();                   // initializes Pico I/O pins
 
     i2c_initialize();
 

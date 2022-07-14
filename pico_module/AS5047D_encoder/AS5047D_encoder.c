@@ -5,7 +5,7 @@
  * Encoder. It contains multiple functions which can be used to measure the
  * absolute angle of any rotating motor. There are special functions written in
  * this driver to read angel specially for MG90S servo motor for rotation from 
- * -90 to +90 degree.
+ * -9000 to +9000 centidegree.
  * Created on 07/10/2022 11:00 am
 */
 
@@ -36,8 +36,6 @@
 #define ENCODER_RESOLUTION 16383    /* For AS5047D encoder, the encoded angle
 * value will be available in 14 bits. So, highest value a 14 bits can contain 
 * is 2^14 - 1 = 16383. */
-
-#define SPI_SPEED 5 * MHZ           // SPI communication baud rate
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            
@@ -78,19 +76,19 @@ void spi_initialize(int data_speed_hz)
 }
 
 /*
- * @Function float get_initial_angle(void)
+ * @Function uint16_t get_initial_angle(void)
  * @param None
  * @return an initial angle stored in an internal register of encoder. The 
- * return value will be between 0 and 360, including 0.
+ * return value will be between 0 and 36000, including 0.
  * @brief This function should be called just after powering up controller and 
  * initializing GPIO and SPI communication. An output initial angle will be used
  * to calculate the absolute angle afterwards.
  * @author Bhumil Depani
  */
-float get_initial_angle(void)
+uint16_t get_initial_angle(void)
 {
     uint8_t read_data[2];
-    float initial_angle;
+    uint16_t initial_angle;
 
     spi_read(ANGLEUNC_ADDRESS, read_data);  /* spi_read function will send back 
     * data in read_data array. */
@@ -100,28 +98,28 @@ float get_initial_angle(void)
 }
 
 /*
- * @Function float get_angle(float initial_angle)
+ * @Function int16_t get_angle(uint16_t initial_angle)
  * @param initial_angle, an initial angle when microcontroller has powered up.
- * @return a current angle of servo motor.
+ * @return a current angle of servo motor in centidegree (-18000 to +18000).
  * @brief This function should be called to get a current angle of a servo 
  * motor. This current angle will be calculated with current reading from
  * encoder and an initial_angle.
  * @author Bhumil Depani
  */
-float get_angle(float initial_angle)
+int16_t get_angle(uint16_t initial_angle)
 {
     uint8_t read_data[2];
-    float angle_degree;
+    int16_t angle_degree;
 
     spi_read(ANGLEUNC_ADDRESS, read_data);  /* spi_read function will send back 
     * data in read_data array. */
 
-    float raw_angle_degree = extract_angle(read_data);  /* this raw_angle_degree
-    * will be raw angle (from 0 to 360 degree) reading, residing in the 
-    * encoder. */
+    uint16_t raw_angle_degree = extract_angle(read_data);  /* this 
+    raw_angle_degree will be raw angle (from 0 to 36000 centidegree) reading, 
+    residing in the encoder. */
 
     angle_degree = angle_correction(raw_angle_degree, initial_angle);   /* to 
-    * get absolute angle between -180 to +180 degree. */
+    * get absolute angle between -18000 to +18000 centidegree. */
     return angle_degree;
 }
 
@@ -205,16 +203,16 @@ void spi_read(uint16_t register_address, uint8_t read_data[])
 }
 
 /*
- * @Function float extract_angle(uint8_t raw_sensor_data_array[])
+ * @Function uint16_t extract_angle(uint8_t raw_sensor_data_array[])
  * @param raw_sensor_data_array[], raw 16 bit dara read from encoder internal
  * register.
- * @return raw angle converted into degree (from 0 to 360).
+ * @return raw angle converted into centidegree (from 0 to 36000).
  * @brief this function accepts raw data read from encoder internal register,
  * extracts error bit, parity bit and 14 bit raw angle value. Even sends back 
- * raw angle value converted in degree (from 0 to 360).
+ * raw angle value converted in centidegree (from 0 to 36000).
  * @author Bhumil Depani
  */
-float extract_angle(uint8_t raw_sensor_data_array[])
+uint16_t extract_angle(uint8_t raw_sensor_data_array[])
 {
     uint16_t raw_sensor_data = raw_sensor_data_array[0] << 8 | 
     raw_sensor_data_array[1];
@@ -223,32 +221,38 @@ float extract_angle(uint8_t raw_sensor_data_array[])
     bool parity_bit = (raw_sensor_data_array[0] & 0b10000000) >> 7;
             
     uint16_t raw_sensor_angle = raw_sensor_data & 0x3FFF;
-    float raw_angle_degree = (raw_sensor_angle * 360.0) / ENCODER_RESOLUTION;
+    uint16_t raw_angle_degree = ((raw_sensor_angle * 360.0) / ENCODER_RESOLUTION) * 100;              //calculating centidegrees
 
     return raw_angle_degree;
 }
 
 /*
- * @Function float angle_correction(float raw_angle, float initial_angle)
+ * @Function int16_t angle_correction(uint16_t raw_angle, uint16_t
+ * initial_angle)
  * @param raw_angle, current raw data read from internal encoder register in 
- * degree (0 to 360).
+ * centidegree (0 to 36000).
  * @param initial_angle, initial angle read just after powering up controller
  * and initializing GPIO and SPI communication.
- * @return final angle in degree (between -180 to +180).
+ * @return final angle in degree (between -18000 to +18000).
  * @brief this function accepts raw angle read from encoder internal register
  * and an initial angle. This function will first compare the raw_angle with
- * initial_angle and then converts the corrected angle in the range of -180 to
- * +180.
+ * initial_angle and then converts the corrected angle in the range of -18000 to
+ * +18000.
  * @author Bhumil Depani
  */
-float angle_correction(float raw_angle, float initial_angle)
+int16_t angle_correction(uint16_t raw_angle, uint16_t initial_angle)
 {
-    float corrected_angle = raw_angle - initial_angle;
-
+    float raw_angle_float = raw_angle / 100.0;
+    float initial_angle_float = initial_angle / 100.0;
+    
+    float corrected_angle = initial_angle_float - raw_angle_float ; /* Here, we
+    * substracted initial_angle_float from raw_angle_float, because in internal
+    * register of encoder, angle count got decreased on clockwise rotation.*/
+   
     if (corrected_angle < 0)            // to convert angle into 0 to 360
         corrected_angle += 360;
     
-    float final_angle = 0;
+    int16_t final_angle = 0;
     
     if(corrected_angle >= 0 && corrected_angle <= 180)
         final_angle = -corrected_angle;
@@ -257,6 +261,8 @@ float angle_correction(float raw_angle, float initial_angle)
     else
         final_angle = corrected_angle;  /* always corrected_angle should be 
         * between 0 to 360. So, code will never enter in "else" condition. */
+    
+    final_angle = final_angle * 100;        // to convert into centidegree
     
     return final_angle;
 }
@@ -275,8 +281,8 @@ int main()
     {
         for(int i = 0; i < 10; i++)
         {
-            float angle_degree = get_angle(initial_angle);
-            printf("\nAngle is %10.3f", angle_degree);
+            int16_t angle_degree = get_angle(initial_angle);
+            printf("\nAngle is %d", angle_degree);
 
             sleep_ms(1000);
         }

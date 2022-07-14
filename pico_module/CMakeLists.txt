@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.13)
 include("C:/Users/Bhumil Depani/pico/Downloads/pico-sdk/external/pico_sdk_import.cmake")
 
 # Set name of the project (as PROJECT_NAME) and C/C++ Standard
-project(V3HP_lidar C CXX ASM)
+project(cross-project C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -12,12 +12,18 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(${PROJECT_NAME}
-        V3HP_lidar.c
+        range_at_angle/range_at_angle.c
+        MG90S_servo/MG90S_servo.c
+        V3HP_lidar/V3HP_lidar.c
+        AS5047D_encoder/AS5047D_encoder.c
         )
 
 # pull in common dependencies; libraries we included into our C Prohram
 target_link_libraries(${PROJECT_NAME}
+        hardware_spi
         hardware_i2c
+        pico_multicore
+        hardware_pwm
         pico_stdlib)
 
 # create map/bin/hex file etc.

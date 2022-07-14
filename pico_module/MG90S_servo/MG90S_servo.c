@@ -43,7 +43,7 @@
  * PRIVATE VARIABLES                                                            
  ******************************************************************************/
 
-float servo_angle;              // global variable for servo angle
+int16_t servo_angle;              // global variable for servo angle
 uint16_t pwm_wrap_count;        // global variable for PWM Wrap Count;
 
 /*******************************************************************************
@@ -87,16 +87,15 @@ void MG90S_servo_init(void)
 }
 
 /*
- * @Function void MG90S_servo_set_angle(float angle_degree)
+ * @Function void MG90S_servo_set_angle(int16_t angle_degree)
  * @param angle_degree, an angle, in degree, where we want servo to rotate, for
- * MG90S Servo Motor angle should be between -90 and 90 degree and can even 
- * give float angle as an input
+ * MG90S Servo Motor angle should be between -9000 and 9000 centidegree
  * @return None
  * @brief takes an angle in degree, finds PWM duty cycle required, set PWM duty
  * cycle to the MOTOR_PIN 
  * @author Bhumil Depani
  */
-void MG90S_servo_set_angle(float angle_degree)
+void MG90S_servo_set_angle(int16_t angle_degree)
 {   
     servo_angle = angle_degree;     /* save angle_degree to further use in 
     * MG90S_servo_get_angle function */
@@ -112,8 +111,8 @@ void MG90S_servo_set_angle(float angle_degree)
     float per_angle_microsecond = range_microsecond / ANGLE_RANGE;
 
     float required_microsecond = base_microsecond + (per_angle_microsecond * 
-    angle_degree); /* here, converting an input angle into width of high pulse 
-    * in PWM signal in microsecond */
+    (angle_degree)/100.0); /* here, converting an input centidegree into 
+    * degree.And degree into width of high pulse in PWM signal in microsecond */
     
     uint16_t pwm_count = microsecond_to_pwm_count(required_microsecond);
 
@@ -140,13 +139,13 @@ uint16_t microsecond_to_pwm_count(float microsecond)
 }
 
 /*
- * @Function float MG90S_servo_get_angle(void)
+ * @Function int16_t MG90S_servo_get_angle(void)
  * @param None
- * @return angle of the servo motor in degree
+ * @return angle of the servo motor in centidegree
  * @brief function can be called to know at which angle servo is remained
  * @author Bhumil Depani
  */
-float MG90S_servo_get_angle(void)
+int16_t MG90S_servo_get_angle(void)
 {
     return servo_angle;
 }
@@ -159,25 +158,25 @@ void main()
     while (1)
     {
         MG90S_servo_set_angle(0);
-        printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
-        MG90S_servo_set_angle(-90);
-        printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+        MG90S_servo_set_angle(-9000);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
-        MG90S_servo_set_angle(90);
-        printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+        MG90S_servo_set_angle(9000);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
-        MG90S_servo_set_angle(-45);
-        printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+        MG90S_servo_set_angle(-4500);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
         MG90S_servo_set_angle(0);
-        printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
 
-        for(int count = -90; count <= 90; count++)
+        for(int count = -9000; count <= 9000; count = count + 100)
         {
             MG90S_servo_set_angle(count);
-            printf("\nAngle at this time: %f", MG90S_servo_get_angle());
+            printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
             sleep_ms(5000);
         }
     }

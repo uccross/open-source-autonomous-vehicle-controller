@@ -21,6 +21,7 @@
  * PUBLIC #DEFINES                                                            *
  ******************************************************************************/
 
+#define SPI_SPEED 5 * MHZ           // SPI communication baud rate
 #define KHZ 1000
 #define MHZ 1000000
 
@@ -39,27 +40,27 @@
 void spi_initialize(int data_speed_hz);
 
 /*
- * @Function float get_initial_angle(void)
+ * @Function uint16_t get_initial_angle(void)
  * @param None
  * @return an initial angle stored in an internal register of encoder. The 
- * return value will be between 0 and 360, including 0.
+ * return value will be between 0 and 36000, including 0.
  * @brief This function should be called just after powering up controller and 
  * initializing GPIO and SPI communication. An output initial angle will be used
  * to calculate the absolute angle afterwards.
  * @author Bhumil Depani
  */
-float get_initial_angle(void);
+uint16_t get_initial_angle(void);
 
 /*
- * @Function float get_angle(float initial_angle)
+ * @Function int16_t get_angle(uint16_t initial_angle)
  * @param initial_angle, an initial angle when microcontroller has powered up.
- * @return a current angle of servo motor.
+ * @return a current angle of servo motor in centidegree (-18000 to +18000).
  * @brief This function should be called to get a current angle of a servo 
  * motor. This current angle will be calculated with current reading from
  * encoder and an initial_angle.
  * @author Bhumil Depani
  */
-float get_angle(float initial_angle);
+int16_t get_angle(uint16_t initial_angle);
 
 /*
  * @Function void generate_command_frame(uint16_t register_address, bool 
@@ -108,30 +109,31 @@ uint16_t attach_parity_bit(uint16_t data);
 void spi_read(uint16_t register_address, uint8_t read_data[]);
 
 /*
- * @Function float extract_angle(uint8_t raw_sensor_data_array[])
+ * @Function uint16_t extract_angle(uint8_t raw_sensor_data_array[])
  * @param raw_sensor_data_array[], raw 16 bit dara read from encoder internal
  * register.
- * @return raw angle converted into degree (from 0 to 360).
+ * @return raw angle converted into centidegree (from 0 to 36000).
  * @brief this function accepts raw data read from encoder internal register,
  * extracts error bit, parity bit and 14 bit raw angle value. Even sends back 
- * raw angle value converted in degree (from 0 to 360).
+ * raw angle value converted in centidegree (from 0 to 36000).
  * @author Bhumil Depani
  */
-float extract_angle(uint8_t raw_data[]);
+uint16_t extract_angle(uint8_t raw_sensor_data_array[]);
 
 /*
- * @Function float angle_correction(float raw_angle, float initial_angle)
+ * @Function int16_t angle_correction(uint16_t raw_angle, uint16_t
+ * initial_angle)
  * @param raw_angle, current raw data read from internal encoder register in 
- * degree (0 to 360).
+ * centidegree (0 to 36000).
  * @param initial_angle, initial angle read just after powering up controller
  * and initializing GPIO and SPI communication.
- * @return final angle in degree (between -180 to +180).
+ * @return final angle in degree (between -18000 to +18000).
  * @brief this function accepts raw angle read from encoder internal register
  * and an initial angle. This function will first compare the raw_angle with
- * initial_angle and then converts the corrected angle in the range of -180 to
- * +180.
+ * initial_angle and then converts the corrected angle in the range of -18000 to
+ * +18000.
  * @author Bhumil Depani
  */
-float angle_correction(float raw_angle, float initial_angle);
+int16_t angle_correction(uint16_t raw_angle, uint16_t initial_angle);
 
 #endif      // AS5047DENCODER_H

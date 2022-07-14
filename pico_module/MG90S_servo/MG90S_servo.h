@@ -39,16 +39,15 @@
 void MG90S_servo_init(void);
 
 /*
- * @Function void MG90S_servo_set_angle(float angle_degree)
+ * @Function void MG90S_servo_set_angle(int16_t angle_degree)
  * @param angle_degree, an angle, in degree, where we want servo to rotate, for
- * MG90S Servo Motor angle should be between -90 and 90 degree and can even 
- * give float angle as an input
+ * MG90S Servo Motor angle should be between -9000 and 9000 centidegree
  * @return None
  * @brief takes an angle in degree, finds PWM duty cycle required, set PWM duty
  * cycle to the MOTOR_PIN 
  * @author Bhumil Depani
  */
-void MG90S_servo_set_angle(float angle_degree);
+void MG90S_servo_set_angle(int16_t angle_degree);
 
 /*
  * @Function uint16_t microsecond_to_pwm_count(float microsecond)
@@ -62,12 +61,12 @@ uint16_t microsecond_to_pwm_count(float microsecond);
 
 
 /*
- * @Function float MG90S_servo_get_angle(void)
+ * @Function int16_t MG90S_servo_get_angle(void)
  * @param None
- * @return angle of the servo motor in degree
+ * @return angle of the servo motor in centidegree
  * @brief function can be called to know at which angle servo is remained
  * @author Bhumil Depani
  */
-float MG90S_servo_get_angle(void);
+int16_t MG90S_servo_get_angle(void);
 
 #endif  /*MG90SSERVO_H */

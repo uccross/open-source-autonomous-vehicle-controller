@@ -1,21 +1,29 @@
 import cv2
 import numpy as np
 
+
 class visualize:
     def __init__(self, positions):
         self.positions = positions
         self.height = 512
         self.width = 512
         self.map = np.zeros((self.height, self.width, 3), dtype="uint8")
+
+        # max value for depth
+        max_x = 5.3
+        # max value for horizontal FOV
+        max_y = 0.007
+
+        self.scale_cx = self.height / max_x
+        self.scale_cy = self.width / max_y
         self.visualize_cones()
 
     def visualize_cones(self):
         for pt in self.positions:
-            cx = int(pt[1] * 200)
-            cy = self.height - int(pt[0] * 100000)
-
+            cx = int(pt[1] * self.scale_cx)
+            cy = self.height - int(pt[0] * self.scale_cy)
             if pt[2] == 0:
-                cv2.circle(self.map, (cx, cy), 3, (0, 70, 255), 3)
+                cv2.circle(self.map, (cx, cy), 3, (0, 60, 255), 3)
             elif pt[2] == 1:
                 cv2.circle(self.map, (cx, cy), 3, (0, 255, 0), 3)
             elif pt[2] == 2:

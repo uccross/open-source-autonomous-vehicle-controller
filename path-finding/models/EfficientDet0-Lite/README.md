@@ -10,12 +10,20 @@ Code for detecting cones on Raspberry Pi using the [EfficientDet-Lite0](https://
 - \>=virtualenv 20.12.1
 
 ### Installation
-Run the following from the root of the cloned repository. Give permission and execute the environment setup and installation scripts 
+Run the following from the root of the cloned repository. Give permission and execute the environment setup and installation scripts.
 ```
 cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
 chmod u+x scripts/install/env.sh scripts/install/install.sh
 source scripts/install/env.sh
 source scripts/install/install.sh
+```
+
+### Inference
+To perform inference source your virtual environment and go to the directory with your model and weights:
+```
+cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
+source osavc_path_finding/bin/activate
+cd examples/lite/examples/object_detection/raspberry_pi/
 ```
 Perform Inference on Raspberry Pi with Coral Edge TPU disabled:<br>
 Video Stream from Camera

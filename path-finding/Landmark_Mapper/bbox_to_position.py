@@ -13,12 +13,12 @@ class bbox:
         self.ENABLE_VISUALIZER = True
 
         self.detection_result = detection_result
-        self.cone_height = 0.7
+        self.cone_height = 0.20
         self.position2d = []
 
         # Intrinsic Camera Params
-        self.camera_fx = 0.2
-        self.camera_fy = 0.2
+        self.camera_fx = 0.1
+        self.camera_fy = 0.1
         self.camera_cx = 0.0
         self.camera_cy = 0.0
 
@@ -44,11 +44,11 @@ class bbox:
         """
         depth_cone = cone_height * f_camera
                     ----------------------
-                    bounding_box_height
+                      bounding_box_height
         """
         depth_cone = (self.cone_height * self.camera_fx) / bbox.height
         x = depth_cone
         y = ((bbox.origin_x + bbox.width) / 2 -
-             self.camera_cx) * depth_cone / self.camera_fx
+             self.camera_cx) * depth_cone/ self.camera_fx
         z = 0  # Assume constant 0 height for simplicity
         self.position2d.append((x, y, class_.index))

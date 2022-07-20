@@ -23,6 +23,7 @@
 #define RC_SERVO_MIN_PULSE 1000
 #define RC_SERVO_CENTER_PULSE 1500
 #define RC_SERVO_MAX_PULSE 2000
+#define RC_ESC_TRIM -10
 
 #define RC_NUM_SERVOS 3
 #define RC_LEFT_WHEEL 0
@@ -38,7 +39,7 @@
  * @param None
  * @return SUCCESS or ERROR
  * @brief initializes hardware required and set it to the CENTER PULSE */
-uint8_t RC_servo_init(void);
+int8_t RC_servo_init(void);
 
 /**
  * @Function int RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo)
@@ -47,7 +48,16 @@ uint8_t RC_servo_init(void);
  * @return SUCCESS or ERROR
  * @brief takes in microsecond count, converts to ticks and updates the internal variables
  * @warning This will update the timing for the next pulse, not the current one */
-uint8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo);
+int8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo);
+
+/**
+ * @Function RC_servo_cmd_needed(void)
+ * @brief returns TRUE when the RC servo period register is ready for a new
+ * pulsewidth 
+ * @return TRUR or FALSE
+ * @author Aaron Hunter
+ */
+uint8_t RC_servo_cmd_needed(void);
 
 /**
  * @Function int RC_servo_get_pulse(uint8_t which_servo)

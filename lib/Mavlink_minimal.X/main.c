@@ -391,14 +391,14 @@ void publish_IMU_data(uint8_t data_type) {
     //    IMU_scaled.gyro.x,IMU_scaled.gyro.y,IMU_scaled.gyro.z, IMU_scaled.mag.x, IMU_scaled.mag.x, IMU_scaled.mag.z);
 }
 
-///**
-// * @Function publish_encoder_data()
-// * @param none
-// * @brief publishes motor data and steering angle data over MAVLink using 
-// * rc_channels_scaled. This is a bit of a hack until I can generate my own message
-// * @return none
-// * @author Aaron Hunter
-// */
+/**
+ * @Function publish_encoder_data()
+ * @param none
+ * @brief publishes motor data and steering angle data over MAVLink using 
+ * rc_channels_scaled. This is a bit of a hack until I can generate my own message
+ * @return none
+ * @author Aaron Hunter
+ */
 
 void publish_encoder_data(void) {
     mavlink_message_t msg_tx;

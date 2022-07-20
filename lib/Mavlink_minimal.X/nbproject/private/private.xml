@@ -6,8 +6,8 @@
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/AS5047D.X/AS5047D.h</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/Mavlink_minimal.X/main.c</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/AS5047D.X/AS5047D.c</file>
-            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/RC_servo.X/RC_servo.c</file>
-            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/RC_servo.X/RC_servo.h</file>
+            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/AS5047D.X/AS5047D.h</file>
+            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/NEO_M8N.X/NEO_M8N.c</file>
         </group>
     </open-files>
 </project-private>

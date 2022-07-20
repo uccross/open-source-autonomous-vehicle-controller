@@ -142,10 +142,7 @@ data_cal = ((A_cal @ data_raw.T) + B_cal).T
 
 plot_2d(data_raw, data_cal, 'Magnetometer 2D Calibration')
 
-#plot_3d(data_raw,data_cal, "Simulated Data")
-
 errors = np.linalg.norm(data_cal,axis=1)-1
-print(errors)
 mse = (errors@ errors.T)/data_cal.shape[0]
 
 

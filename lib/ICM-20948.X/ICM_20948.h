@@ -12,7 +12,7 @@
  * PUBLIC #INCLUDES                                                            *
  ******************************************************************************/
 #include <sys/types.h>
-#include <stdfix.h>
+#include <stdfix.h> //fixed point library
 #include "ICM_20948_registers.h"
 
 /*******************************************************************************
@@ -80,9 +80,18 @@ uint8_t IMU_is_data_ready(void);
 uint8_t IMU_get_raw_data(struct IMU_output* IMU_data);
 
 /**
+ * @Function IMU_get_norm_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief applies Dorveaux matrix and offset scaling to raw data
+ * @note 
+ * @author Aaron Hunter,
+ **/
+void IMU_get_norm_data(struct IMU_output* IMU_data);
+
+/**
  * @Function IMU_get_scaled_data(void)
  * @return pointer to IMU_output struct 
- * @brief returns most current scaled data from the IMU
+ * @brief returns most current data from the IMU scaled to eng units
  * @note 
  * @author Aaron Hunter,
  **/
@@ -112,53 +121,14 @@ int8_t IMU_set_mag_cal(accum A[MSZ][MSZ], accum b[MSZ]);
 int8_t IMU_set_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]);
 
 /**
- * @Function IMU_set_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A source matrix
- * @param b source offset
- * @brief sets scaling matrix and offset vector for gyroscope 
- * @note Scaling parameters on diagonal (x,y,z) if cross terms unknown. Also,
- * bias values are assumed in raw counts and get scaled to engineering units
+ * @Function IMU_set_gyro_cal(float scale[MSZ], float offset[MSZ]);
+ * @param scale: vector of scaling factors
+ * @param offset: vector of offset factors
+ * @brief sets scaling and offset vectors for gyroscope 
  * @return SUCCESS or ERROR
  * @author Aaron Hunter,
  **/
 int8_t IMU_set_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]);
-
-/**
- * @Function IMU_get_mag_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A destination matrix
- * @param b destination offset
- * @brief gets scaling matrix and offset vector for magnetometer 
- * @note bias is scaled to mGauss
- * @return SUCCESS or ERROR
- * @author Aaron Hunter,
- **/
-int8_t IMU_get_mag_cal(accum A[MSZ][MSZ], accum b[MSZ]);
-
-/**
- * @Function IMU_get_acc_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A destination matrix
- * @param b destination offset
- * @brief gets scaling matrix and offset vector for accelerometer 
- * @note bias is scaled by 1000mG, the expected value of the earth's 
- * gravitational field. 
- * @return SUCCESS or ERROR
- * @author Aaron Hunter,
- **/
-int8_t IMU_get_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]);
-
-/**
- * @Function IMU_get_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A destination matrix
- * @param b destination offset
- * @brief gets scaling matrix and offset vector for gyros 
- * @note bias is scaled to dps, not counts
- * @return SUCCESS or ERROR
- * @author Aaron Hunter,
- **/
-int8_t IMU_get_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]);
-
-
-
 
 #endif	/* ICM_20948_H */ // End of header guard
 

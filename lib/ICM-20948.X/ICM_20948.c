@@ -53,18 +53,18 @@
 #define IMU_CS_LAT LATEbits.LATE0
 
 /*IMU scaling factors*/
-#define ACCEL_SCALE 2000  // +/-2000mg
-#define ACCEL_DIV 15 // 1/2^15
-#define GYRO_SCALE 500 // +/- 500 deg/sec
-#define GYRO_DIV 15 // 1/2^15
-#define MAG_SCALE 49000 //49000 mGauss FS
-#define MAG_DIV 15 // 1/2^15
+#define ACCEL_SCALE 2k  //+/-2000mg
+#define ACCEL_DIV 32767k // 2^15-1
+#define GYRO_SCALE 500k // +/- 500 deg/sec
+#define GYRO_DIV 32767k // 2^15-1
+#define MAG_SCALE 4912k //4900 uTesla FS
+#define MAG_DIV 32752k // max reading
 #define E_g 1000 // expected value of gravity in mG
 #define G2MSS 9.80665k/1000 //conversion from g to m/s/s
 #define PI 3.141592653589793k
 #define DEG2RAD 0.017453292519943295k //conversion from degrees to rad
 #define DEG2MRAD  17.453292519943297k //conversion from degrees to mrad
-#define E_b 475 //expected value of earth's mag field in mGauss
+#define E_b 47.4148k //expected value of earth's mag field in uTesla
 #define MG2GAUSS 1/1000k  //milliGauss to Gauss
 #define T_BIAS 0
 #define T_SENSE 333.87k
@@ -96,19 +96,21 @@ typedef enum {
 static uint8_t IMU_raw_data[IMU_NUM_BYTES];
 static accum acc_v_raw[3] = {0, 0, 0};
 static accum acc_v_scaled[3] = {0, 0, 0};
-static accum acc_v_cald[3] = {0, 0, 0};
+static accum acc_v_norm[3] = {0, 0, 0};
 static accum mag_v_raw[3] = {0, 0, 0};
 static accum mag_v_scaled[3] = {0, 0, 0};
-static accum mag_v_cald[3] = {0, 0, 0};
+static accum mag_v_norm[3] = {0, 0, 0};
 static accum gyro_v_raw[3] = {0, 0, 0};
 static accum gyro_v_scaled[3] = {0, 0, 0};
-static accum gyro_v_cald[3] = {0, 0, 0};
 static accum temp_raw = 0;
 static accum temp_scaled = 0;
-static accum temp_cald = 0;
 static int16_t status = 0;
 
 static volatile uint8_t IMU_data_ready = 0;
+const accum acc_scale = ACCEL_SCALE / ACCEL_DIV;
+const accum mag_scale = MAG_SCALE / MAG_DIV;
+const accum gyro_scale = GYRO_SCALE / GYRO_DIV;
+static int8_t is_A_matrix = FALSE;
 
 static accum A_mag[3][3] = {
     {1, 0, 0},
@@ -145,6 +147,8 @@ static uint8_t SPI_read_reg(uint8_t reg_addr);
 static uint8_t SPI_set_reg(uint8_t reg_addr, uint8_t value);
 static uint8_t SPI_read_reg(uint8_t reg_addr);
 static void SPI_read_data(void);
+static void IMU_normalize_data();
+static void IMU_scale_data(void);
 
 /***********************************/
 static void delay(int cycles);
@@ -166,8 +170,8 @@ static void IMU_run_SPI_state_machine(uint8_t byte_read);
  * @brief converts raw register data into module variable data
  * @note mag data has reversed byte order
  * @author ahunter
- * @modified  */
-static uint8_t IMU_process_data(void);
+ * @modified  7/19/22*/
+static void IMU_process_data(void);
 
 /**
  * @Function IMU_assign_data_to_output(struct IMU_output* IMU_data);
@@ -357,7 +361,7 @@ uint8_t IMU_init(char interface_mode) {
 int8_t IMU_start_data_acq(void) {
     int8_t error = FALSE;
     if (IMU_CS_LAT == 0) {
-       // printf("IMU error found\r\n");
+        // printf("IMU error found\r\n");
         SPI1BUF; //read buffer
         IFS0bits.SPI1RXIF = 0; //clear any interrupt flag
         error = TRUE;
@@ -393,7 +397,7 @@ uint8_t IMU_is_data_ready(void) {
  * @author Aaron Hunter,
  * @modified  */
 uint8_t IMU_get_raw_data(struct IMU_output* IMU_data) {
-    /*only process data if it's new*/
+    /* process data if new data is available */
     if (IMU_data_ready == TRUE) {
         IMU_process_data();
         IMU_data_ready = FALSE; //clear the data ready flag
@@ -414,30 +418,60 @@ uint8_t IMU_get_raw_data(struct IMU_output* IMU_data) {
 }
 
 /**
+ * @Function IMU_get_norm_data(void)
+ * @return pointer to IMU_output struct 
+ * @brief applies Dorveaux matrix and offset scaling to raw data
+ * @note gyro data is left raw, as is temperature data because this function is 
+ * specific for Dorveaux calibration which only uses mag and gyro data
+ * @author Aaron Hunter,
+ **/
+void IMU_get_norm_data(struct IMU_output* IMU_data) {
+    /* process data if new data is available */
+    if (IMU_data_ready == TRUE) {
+        IMU_process_data(); // get raw data and return pointer
+        IMU_data_ready = FALSE; //clear the data ready flag
+    }
+    IMU_normalize_data(); //scale mag and acc by A matrix and b vector from Dorveaux
+    /* set output data to point at vector components*/
+    IMU_data->acc.x = acc_v_norm[0];
+    IMU_data->acc.y = acc_v_norm[1];
+    IMU_data->acc.z = acc_v_norm[2];
+    IMU_data->gyro.x = gyro_v_raw[0];
+    IMU_data->gyro.y = gyro_v_raw[1];
+    IMU_data->gyro.z = gyro_v_raw[2];
+    IMU_data->temp = temp_raw;
+    IMU_data->mag.x = mag_v_norm[0];
+    IMU_data->mag.y = mag_v_norm[1];
+    IMU_data->mag.z = mag_v_norm[2];
+    IMU_data->mag_status = status;
+}
+
+/**
  * @Function IMU_get_scaled_data(void)
  * @return pointer to IMU_output struct 
- * @brief returns most current scaled data from the IMU
+ * @brief returns scaled data from the IMU
  * @note 
  * @author Aaron Hunter,
  **/
 uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data) {
-    int row;
-    /*get raw data and store in module vectors*/
+    /* process data if new data is available */
     if (IMU_data_ready == TRUE) {
-        IMU_process_data();
+        IMU_process_data(); // get and store raw data
         IMU_data_ready = FALSE; //clear the data ready flag
     }
+    IMU_normalize_data(); // apply Dorveaux normalization
+    IMU_scale_data(); // scale the data to engineering units
     /* set output data to point at vector components*/
-    IMU_data->acc.x = acc_v_cald[0];
-    IMU_data->acc.y = acc_v_cald[1];
-    IMU_data->acc.z = acc_v_cald[2];
+    IMU_data->acc.x = acc_v_scaled[0];
+    IMU_data->acc.y = acc_v_scaled[1];
+    IMU_data->acc.z = acc_v_scaled[2];
     IMU_data->gyro.x = gyro_v_scaled[0];
     IMU_data->gyro.y = gyro_v_scaled[1];
     IMU_data->gyro.z = gyro_v_scaled[2];
     IMU_data->temp = temp_scaled;
-    IMU_data->mag.x = mag_v_cald[0];
-    IMU_data->mag.y = mag_v_cald[1];
-    IMU_data->mag.z = mag_v_cald[2];
+    IMU_data->mag.x = mag_v_scaled[0];
+    IMU_data->mag.y = mag_v_scaled[1];
+    IMU_data->mag.z = mag_v_scaled[2];
     IMU_data->mag_status = status;
     return SUCCESS;
 }
@@ -484,27 +518,6 @@ int8_t IMU_set_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]) {
 }
 
 /**
- * @Function IMU_set_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A source matrix
- * @param b source offset
- * @brief sets scaling matrix and offset vector for gyroscope 
- * @note Scaling parameters on diagonal (x,y,z) if cross terms unknown. Also,
- * bias values are assumed in raw counts and get scaled to engineering units
- * @return SUCCESS or ERROR
- * @author Aaron Hunter,
- **/
-int8_t IMU_set_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]) {
-    if (A != NULL && b != NULL) {
-        memcpy(A_gyro, A, sizeof (A_gyro));
-        memcpy(b_gyro, b, sizeof (b_gyro));
-        v_scale(GYRO_SCALE, b_gyro); // need to scale the offset into eng units
-        return SUCCESS;
-    } else {
-        return ERROR;
-    }
-}
-
-/**
  * @Function IMU_get_mag_cal(accum A[MSZ][MSZ], accum b[MSZ])
  * @param A destination matrix
  * @param b destination offset
@@ -543,24 +556,6 @@ int8_t IMU_get_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]) {
     }
 }
 
-/**
- * @Function IMU_get_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ])
- * @param A destination matrix
- * @param b destination offset
- * @brief gets scaling matrix and offset vector for gyros 
- * @note bias is scaled to dps, not counts
- * @return SUCCESS or ERROR
- * @author Aaron Hunter,
- **/
-int8_t IMU_get_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]) {
-    if (A != NULL && b != NULL) {
-        memcpy(A, A_gyro, sizeof (A_gyro));
-        memcpy(b, b_gyro, sizeof (b_gyro));
-        return SUCCESS;
-    } else {
-        return ERROR;
-    }
-}
 
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
@@ -944,8 +939,7 @@ static void IMU_run_SPI_state_machine(uint8_t byte_read) {
  * @note mag data has reversed byte order
  * @author ahunter
  * @modified  */
-static uint8_t IMU_process_data(void) {
-    int row;
+static void IMU_process_data(void) {
     /*store data in module vectors*/
     /*data needs to be converted to short then cast as fixed point */
     acc_v_raw[0] = (accum) (int16_t) (IMU_raw_data[0] << 8 | IMU_raw_data[1]);
@@ -962,33 +956,62 @@ static uint8_t IMU_process_data(void) {
     /*status 1 is high byte and status 2 is low byte*/
     /*status 2 indicates mag overflow only*/
     status = (IMU_raw_data[14] << 8 | IMU_raw_data[22] & 0x8);
+}
 
-    /*calibrate raw data and store in scaled vectors*/
-    /*scale outputs */
-    for (row = 0; row < MSZ; row++) {
-        acc_v_scaled[row] = (acc_v_raw[row] >> ACCEL_DIV) * ACCEL_SCALE;
-        mag_v_scaled[row] = (mag_v_raw[row] >> MAG_DIV) * MAG_SCALE;
-        gyro_v_scaled[row] = (gyro_v_raw[row] >> GYRO_DIV) * GYRO_SCALE;
+/**
+ * @Function IMU_normalize_data(void)
+ * @param none
+ * @return none
+ * @brief normalizes raw acc and mag data using Dorveaux A matrix and b vector
+ * @note mag data has reversed byte order
+ * @author ahunter
+ * @modified  */
+static void IMU_normalize_data(void) {
+    int8_t row;
+    if (is_A_matrix) { //only normalize is A matrix exists
+        /* Normalize inertial sensors using Dorveaux calibration*/
+        /* apply calibration matrix to raw values */
+        m_v_mult(A_acc, acc_v_raw, acc_v_norm);
+        m_v_mult(A_mag, mag_v_raw, mag_v_norm);
+        /* apply offset calibration */
+        v_v_add(acc_v_norm, b_acc, acc_v_norm);
+        v_v_add(mag_v_norm, b_mag, mag_v_norm);
+    } else { // otherwise just assign norm to raw values
+        for (row = 0; row < MSZ; row++) {
+            acc_v_norm[row] = acc_v_raw[row];
+            mag_v_norm[row] = mag_v_raw[row];
+        }
     }
-    temp_scaled = (temp_raw - T_BIAS) / T_SENSE + T_OFFSET;
-    temp_cald = temp_scaled;
-    /* Calibrate sensors */
-    /* apply calibration matrix to scaled values */
-    m_v_mult(A_acc, acc_v_scaled, acc_v_cald);
-    m_v_mult(A_mag, mag_v_scaled, mag_v_cald);
-    m_v_mult(A_gyro, gyro_v_scaled, gyro_v_cald);
-    /* apply offset calibration. scale mag and accelerometer into final units 
-     * first.  These are provided by calibration routines to be scaled by the
-     * Earth's mag and grav fields */
-    /*now add offsets to calibrated values*/
-    v_v_add(acc_v_cald, b_acc, acc_v_cald);
-    v_v_add(mag_v_cald, b_mag, mag_v_cald);
-    v_v_add(gyro_v_cald, b_gyro, gyro_v_cald);
-    /*calculate the high resolution values*/
-    v_scale(G2MSS,acc_v_cald);
-    v_scale(MG2GAUSS,mag_v_cald);
-    v_scale(DEG2MRAD, gyro_v_cald);
-    return SUCCESS;
+}
+
+/**
+ * @Function IMU_scale_data(void)
+ * @param none
+ * @return none
+ * @brief normalizes raw acc and mag data using Dorveaux A matrix and b vector
+ * @note mag data has reversed byte order
+ * @author ahunter
+ * @modified  */
+static void IMU_scale_data(void) {
+    int8_t row;
+    /*scale the normalized data using engineering units*/
+        if (is_A_matrix) { // if an A matrix has been set
+            /*if normalized, then accelerometer is already scaled to g*/
+            v_scale(E_b, mag_v_norm); //scale to uTesla
+        } else { // `norm' data is raw, so scale using scaling factors
+            for (row = 0; row < MSZ; row++) {
+                acc_v_scaled[row] = acc_v_raw[row];
+                mag_v_scaled[row] = mag_v_raw[row];
+            }
+            v_scale(acc_scale, acc_v_scaled); // convert to g
+            v_scale(mag_scale, mag_v_scaled); // convert to uTesla
+        }
+    /*copy gyro data to scaled vector*/
+    for (row = 0; row < MSZ; row++) {
+        gyro_v_scaled[row] = gyro_v_raw[row];
+    }
+    v_scale(gyro_scale, gyro_v_scaled); // convert to deg/sec
+    temp_scaled = (temp_raw - T_BIAS) / T_SENSE + T_OFFSET; //scale temperature
 }
 
 /**
@@ -1115,12 +1138,12 @@ int main(void) {
 
     Board_init();
     Serial_init();
+    printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
     IMU_err = IMU_init(INTERFACE_MODE);
     //set LEDs for troubleshooting
     TRISAbits.TRISA4 = 0; //pin 72 Max32
     TRISAbits.TRISA3 = 0; //built-in LED, pin 13
     LATACLR = 0x18;
-    printf("\r\nICM-20948 Test Harness %s, %s\r\n", __DATE__, __TIME__);
     if (INTERFACE_MODE == IMU_SPI_MODE) {
         printf("SPI interface enabled\r\n");
     } else {
@@ -1130,50 +1153,29 @@ int main(void) {
         printf("\r\nSensor failed init!\r\n");
         while (1);
     }
-
-    IMU_set_mag_cal(A_mag_fl, b_mag_fl);
-    printf(" Test set Calibration matrix and offset values\r\n");
-    printf("---------------------------------------------------------\r\n");
-    for (row = 0; row < MSZ; row++) {
-        for (col = 0; col < MSZ; col++) {
-            printf("%f\t", (float) A_mag[row][col]);
-        }
-        printf("%f\r\n", (float) b_mag[row]);
-    }
-    printf("---------------------------------------------------------\r\n");
-    IMU_get_acc_cal(A_test, b_test);
-    printf("Test get Calibration matrix and offset values\r\n");
-    printf("---------------------------------------------------------\r\n");
-    for (row = 0; row < MSZ; row++) {
-        for (col = 0; col < MSZ; col++) {
-            printf("%f\t", (float) A_test[row][col]);
-        }
-        printf("%f\r\n", (float) b_test[row]);
-    }
-    printf("---------------------------------------------------------\r\n");
-
-    IMU_get_mag_cal(A_test, b_test);
-    printf("Test get Calibration matrix and offset values\r\n");
-    printf("---------------------------------------------------------\r\n");
-    for (row = 0; row < MSZ; row++) {
-        for (col = 0; col < MSZ; col++) {
-            printf("%f\t", (float) A_test[row][col]);
-        }
-        printf("%f\r\n", (float) b_test[row]);
-    }
-    printf("---------------------------------------------------------\r\n");
+    //
+    //    IMU_set_mag_cal(A_mag_fl, b_mag_fl);
+    //    printf("Test set Calibration matrix and offset values\r\n");
+    //    printf("---------------------------------------------------------\r\n");
+    //    for (row = 0; row < MSZ; row++) {
+    //        for (col = 0; col < MSZ; col++) {
+    //            printf("%f\t", (float) A_mag[row][col]);
+    //        }
+    //        printf("%f\r\n", (float) b_mag[row]);
+    //    }
 
     while (1) {
         IMU_start_data_acq();
         if (IMU_is_data_ready() == TRUE) {
-            IMU_get_raw_data(&IMU_data_raw);
+            //            IMU_get_raw_data(&IMU_data_raw);
             //            printf("%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%x\r\n",
             //                    (float) IMU_data_raw.acc.x, (float) IMU_data_raw.acc.y, (float) IMU_data_raw.acc.z,
             //                    (float) IMU_data_raw.gyro.x, (float) IMU_data_raw.gyro.y, (float) IMU_data_raw.gyro.z,
             //                    (float) IMU_data_raw.mag.x, (float) IMU_data_raw.mag.y, (float) IMU_data_raw.mag.z,
             //                    (float) IMU_data_raw.temp, IMU_data_raw.mag_status);
+            //            IMU_get_norm_data(&IMU_data_scaled);
             IMU_get_scaled_data(&IMU_data_scaled);
-            printf("%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%0.1f\t%x\r\n",
+            printf("%+0.3f, %+0.3f, %+0.3f, %+0.3f, %+0.3f, %+0.3f, %+0.3f, %+0.3f, %+0.3f, %0.1f, %x\r\n",
                     (float) IMU_data_scaled.acc.x, (float) IMU_data_scaled.acc.y, (float) IMU_data_scaled.acc.z,
                     (float) IMU_data_scaled.gyro.x, (float) IMU_data_scaled.gyro.y, (float) IMU_data_scaled.gyro.z,
                     (float) (IMU_data_scaled.mag.x), (float) (IMU_data_scaled.mag.y), (float) (IMU_data_scaled.mag.z),

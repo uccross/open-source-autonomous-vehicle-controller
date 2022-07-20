@@ -28,15 +28,17 @@
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define CONTROL_PERIOD 50 //Period for control loop in msec
-#define ENCODER_PERIOD 10 //period for the encoder upate rate
+#define ENCODER_PERIOD 5 //period for the encoder upate rate in msec
 #define ONE_SEC 1000 //one second in msec
 #define ENCODER_MAX_CTS 16384.0 //2^14 counts/rev for the encoder
 #define ENCODER_TWO_PI 0.000383495197  //counts to 2 pi conversion = 2pi/0x4fff
 #define WHITESEQ_LENGTH 255
 #define TESTPULSE 100
+#define BASE_PULSE 25
 #define RC_ESC_TRIM -10 //microsecond offset for zero rotation
-#define STEP_TEST
-// #define ARX
+#define MIN_SPEED 25
+//#define STEP_TEST
+#define ARX
 
 
 /*******************************************************************************
@@ -109,15 +111,11 @@ int main(int argc, char** argv) {
 
     printf("Motor ARX app %s, %s \r\n", __DATE__, __TIME__);
     printf("Starting ESC \r\n");
-
-    control_start_time = Sys_timer_get_msec();
-    while ((cur_time - control_start_time) < warmup_time) { //give ESC time to start up
-        cur_time = Sys_timer_get_msec();
-    }
+    /*set all controls to midpoint*/
+    RC_servo_set_pulse(RC_SERVO_CENTER_PULSE, RC_STEERING);
     RC_servo_set_pulse(pulse_width + RC_ESC_TRIM, RC_LEFT_WHEEL);
     RC_servo_set_pulse(pulse_width + RC_ESC_TRIM, RC_RIGHT_WHEEL);
     printf("ESC pulsewidth set\r\n");
-
     control_start_time = Sys_timer_get_msec();
     while ((cur_time - control_start_time) < warmup_time) { //give ESC time to start up
         cur_time = Sys_timer_get_msec();
@@ -125,28 +123,20 @@ int main(int argc, char** argv) {
     printf("ESC startup complete.\r\n");
 
 #ifdef ARX
-    printf("testing...\r\n");
+    printf("ARX testing...\r\n");
     Gen_white_sequence();
-
     index = 0;
-    control_start_time = Sys_timer_get_msec();
-    encoder_start_time = control_start_time;
+    encoder_start_time = Sys_timer_get_msec();
     while (testing == TRUE) {
         cur_time = Sys_timer_get_msec(); //check the time
         /*if the control period is reached */
-        if (cur_time - control_start_time >= CONTROL_PERIOD) {
-            control_start_time = Sys_timer_get_msec(); //reset control timer
+        if (RC_servo_cmd_needed() == TRUE) { //servo needs new command
             /*update the motors*/
-            if (white_seq[index] == 0) {
-                pulse_direction = -1;
-            } else {
-                pulse_direction = 1;
-            }
-            RC_servo_set_pulse(RC_SERVO_CENTER_PULSE + (pulse_direction * TESTPULSE), RC_STEERING);
-            RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM) + (pulse_direction * TESTPULSE), RC_LEFT_WHEEL);
-            RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM) + (pulse_direction * TESTPULSE), RC_RIGHT_WHEEL);
-
-            /*publish RC_servo data*/
+            pulse_direction = white_seq[index];
+            pulse_width = RC_SERVO_CENTER_PULSE + BASE_PULSE + (pulse_direction * TESTPULSE);
+            RC_servo_set_pulse(pulse_width - BASE_PULSE, RC_STEERING);
+            RC_servo_set_pulse(pulse_width + RC_ESC_TRIM, RC_LEFT_WHEEL);
+            RC_servo_set_pulse(pulse_width + RC_ESC_TRIM, RC_RIGHT_WHEEL);
             index++;
             if (index >= WHITESEQ_LENGTH) {
                 testing = FALSE;
@@ -170,23 +160,31 @@ int main(int argc, char** argv) {
     RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM), RC_RIGHT_WHEEL);
     printf("ARX Test complete.\r\n");
 #endif //ARX
-    
+
 #ifdef STEP_TEST
     printf("Starting step test\r\n");
-    /* Allow motors time to stop*/
+    /* Allow motors time to settle*/
     control_start_time = Sys_timer_get_msec();
     testing = TRUE;
+    RC_servo_set_pulse(RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + MIN_SPEED, RC_LEFT_WHEEL);
+    RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + MIN_SPEED), RC_RIGHT_WHEEL);
     while (testing) {
         cur_time = Sys_timer_get_msec();
         if (cur_time - control_start_time >= ONE_SEC) testing = FALSE;
     }
-    testing = TRUE;
-    control_start_time = Sys_timer_get_msec();
+    /*setting the pulse timer clears the period register flag of the servo library*/
+    RC_servo_set_pulse(RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + MIN_SPEED, RC_LEFT_WHEEL);
+    RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + MIN_SPEED), RC_RIGHT_WHEEL);
+    while (RC_servo_cmd_needed() == FALSE) { //wait for next period rollover
+        ;
+    }
+    control_start_time = Sys_timer_get_msec(); //synchronize servo timer with the system time
     encoder_start_time = control_start_time;
     RC_servo_set_pulse(RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + TESTPULSE, RC_LEFT_WHEEL);
     RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM + TESTPULSE), RC_RIGHT_WHEEL);
+    testing = TRUE;
     while (testing) {
-        cur_time = Sys_timer_get_msec(); //check the time
+        cur_time = Sys_timer_get_msec() - control_start_time; //check the time
         /*initiate encoder data acquisition */
         if (cur_time - encoder_start_time >= ENCODER_PERIOD) {
             encoder_start_time = cur_time; //reset encoder timer
@@ -198,14 +196,14 @@ int main(int argc, char** argv) {
             /*publish encoder data*/
             printf("%d,%d,%d,%d,%d\r\n", cur_time, pulse_direction, encoder_data[RC_LEFT_WHEEL].next_theta, encoder_data[RC_RIGHT_WHEEL].next_theta, encoder_data[RC_STEERING].next_theta);
         }
-        if (cur_time - control_start_time > 2 * ONE_SEC) testing = FALSE;
+        if (cur_time > 1 * ONE_SEC) testing = FALSE;
     }
     /*stop the motors*/
     RC_servo_set_pulse(RC_SERVO_CENTER_PULSE + RC_ESC_TRIM, RC_LEFT_WHEEL);
     RC_servo_set_pulse((RC_SERVO_CENTER_PULSE + RC_ESC_TRIM), RC_RIGHT_WHEEL);
     printf("Testing complete\r\n");
 #endif //STEP_TEST
-    
+
     while (1);
     return (EXIT_SUCCESS);
 }

@@ -10,10 +10,11 @@ import sys
 import time
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import signal
 
 #Read raw data
 # filename = sys.argv[1]
-filename = 'AGV_sensor_dat.csv'
+filename = 'tumble_030122.csv'
 
 df_raw = pd.read_csv(filename)
 mag_df = df_raw[['xmag','ymag']]
@@ -111,22 +112,74 @@ def calc_heading(data, offset =12.98):
     n= data.shape[0]
     heading = np.zeros((n,1))
   # heading in degrees:
-    heading = np.degrees(np.arctan2(data[:,1],data[:,0]))
-  # add magnetic declination to measurement 
-    for i in range(n):
-        heading[i] = heading[i] + offset
-        if heading[i] > 180:
-            heading[i] = heading[i] - 180
-    
+    heading = np.degrees(np.arctan2(data[:,1],data[:,0])) + offset + 180
     return heading
+
+def unwrap_angle(data):
+    n = data.shape[0]
+    angle = np.zeros((n,))
+    tol = 300
+    wrap = 0
+    for i in range(1,n):
+        # print(i)
+        if (data[i] - data[i-1]) < -tol :
+            wrap = wrap + 360
+        if data[i] - data[i-1] > tol:
+            wrap = wrap - 360
+        angle[i]=data[i]+ wrap
+    return angle
         
+def plot_c(data):
+    fig,ax = plt.subplots(1)
+    ax.plot(data, color='red', label='correlation')
+    ax.legend()
+    ax.set_xlabel('Index')
+    ax.set_ylabel('Corr')
+    fig.suptitle('Correlation Between Magnetic Heading and GPS Course Over Ground', fontsize=10)
+    fig.show()
     
 [A_cal, B_cal] = imu_calibrate(y_i, 10)
 data_cal = ((A_cal @ y_i.T) + B_cal).T
 
-plot_2d(y_i, data_cal, 'Magnetometer 2D Calibration')
+# plot_2d(y_i, data_cal, 'Magnetometer 2D Calibration')
 heading = calc_heading(data_cal)
 ref = df_raw['cog'].values / 100
-plot_heading(heading + 180, ref)
+window = 2750
+trim = 175
+ref_unwrap = unwrap_angle(ref[trim:trim+window])
+heading_unwrap = unwrap_angle(heading[trim:trim+window])
+# plot_heading(ref,heading)
+# plot_heading(heading_unwrap,ref_unwrap)
 
+mag_df = pd.DataFrame(
+    {
+         'mag': heading_unwrap,
+         'COG': ref_unwrap,
+     }
+)
+
+mag_df2 = pd.DataFrame(
+    {
+         'mag': heading,
+         'COG': ref,
+     }
+)
+
+
+c = signal.correlate(ref, heading, 'full')
+plot_c(c)
+
+n = ref.shape[0]
+shift = heading.shape[0] - c.argmax()
+fig,ax = plt.subplots(2)
+ax[0].plot(heading_unwrap, color='green', label='Magnetic')
+ax[0].plot(ref_unwrap[87:n], color = 'blue', label='GPS COG')
+ax[0].legend()
+ax[0].set_xlabel('Index')
+ax[1].plot(heading, color='green', label='Magnetic')
+ax[1].plot(ref[133:n], color = 'blue', label='GPS COG')
+ax[1].legend()
+ax[1].set_xlabel('Index')
+fig.suptitle('GPS COG and Magnetometer Heading', fontsize=12)
+fig.show() 
 

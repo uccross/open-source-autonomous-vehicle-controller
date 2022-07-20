@@ -6,11 +6,14 @@ import matplotlib.pyplot as plt
 
 
 #Read raw data
-filename = sys.argv[1]
+# filename = sys.argv[1]
+filename = 'tumble_030122.csv'
 
 df_raw = pd.read_csv(filename)
 
-data_raw = df_raw.values[:,:]/0.43
+mag_df = df_raw[['xmag','ymag','zmag']]
+y_i = mag_df.values/1.0
+scale = ((mag_df['xmag'].max()-mag_df['xmag'].min())/2 + (mag_df['ymag'].max()-mag_df['ymag'].min())/2 +(mag_df['zmag'].max()-mag_df['zmag'].min())/2)/3
 
 #Dorveaux calibration (copy pasted from Aaron's code)
 
@@ -105,7 +108,7 @@ def imu_calibrate(points, num_iters=1):
 def plot_3d(data_raw, data_cal,title = 'Inertial Sensor Calibration Using Dorveaux'):
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-
+    fig.suptitle(title)
     ax.scatter(data_raw[:, 0], data_raw[:, 1], data_raw[:, 2],
                s=10, marker='.', color='red', label='raw data')
     ax.scatter(data_cal[:, 0], data_cal[:, 1], data_cal[:, 2],
@@ -114,27 +117,16 @@ def plot_3d(data_raw, data_cal,title = 'Inertial Sensor Calibration Using Dorvea
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
     ax.set_zlabel('Z')
-    ax.set_title(title)
-
 
 #Plot error
 def plot_errors(errors):
     """
-    Plots a moving average and histogram of np array errors
+    Plots a histogram of np array errors
     """
-    num_vals = int(errors.shape[0]/50)
-    error_avg = [np.mean((errors*errors)[i-num_vals:i]) for i in range(num_vals,errors.shape[0]-2)]
     
-    fig,ax = plt.subplots(2)
-    fig.suptitle("Dorveaux", fontsize=15)
-
-    #Running error
-    ax[0].plot([i for i in range(num_vals, errors.shape[0]-2)], error_avg)
-    ax[0].set_title("Squared error vs iteration")
-
-    #Histogram
-    ax[1].set_title("Error Histogram")
-    n, bins, __ = ax[1].hist(errors, 50)
+    fig,ax = plt.subplots()
+    fig.suptitle("Inertial Sensor Residual Error")
+    n, bins, __ = ax.hist(errors, 50)
 
     sigma = np.std(errors)
     mu = np.mean(errors)
@@ -142,14 +134,14 @@ def plot_errors(errors):
     print("Mean error: ", mu)
     print("Sigma: ",sigma)
   
-    ax[1].plot(bins, y, '--', color ='black')
+    ax.plot(bins, y, '--', color ='black')
     
     plt.show()
 
-[A_cal, B_cal] = imu_calibrate(data_raw, 10)
-data_cal = ((A_cal @ data_raw.T) + B_cal).T
+[A_cal, B_cal] = imu_calibrate(y_i, 10)
+data_cal = ((A_cal @ y_i.T) + B_cal).T
 
-#plot_3d(data_raw,data_cal, "Simulated Data")
+
 
 errors = np.linalg.norm(data_cal,axis=1)-1
 print(errors)
@@ -161,7 +153,7 @@ print("\nA = ", np.linalg.inv(A_cal))
 print("\nB = ", -B_cal)
 
 print("\nMSE: ",mse)
-plot_3d(data_raw,data_cal, "Simulated Data")
+plot_3d(y_i,data_cal*scale)
 plot_errors(errors)
 plt.show()
 

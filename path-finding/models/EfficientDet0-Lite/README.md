@@ -19,13 +19,28 @@ source scripts/install/install.sh
 ```
 
 ### Inference
-To perform inference source your virtual environment and go to the directory with your model and weights:
+
+#### Perform Inference on Raspberry Pi with Coral Edge TPU enabled:<br>
+```
+cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
+source osavc_path_finding/bin/activate
+cd examples/lite/examples/object_detection/raspberry_pi/pycoral/examples
+```
+Video Stream from Camera
+```
+python3 detect_camera.py --model cone_detection_edgetpu.tflite --labels cone_labels.txt
+```
+Using recorded demo video
+```
+python3 detect_image.py --model cone_detection_edgetpu.tflite --labels cone_labels.txt
+```
+
+#### Perform Inference on Raspberry Pi without the Coral Edge TPU:<br>
 ```
 cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
 source osavc_path_finding/bin/activate
 cd examples/lite/examples/object_detection/raspberry_pi/
 ```
-Perform Inference on Raspberry Pi with Coral Edge TPU disabled:<br>
 Video Stream from Camera
 ```
 python3 detect.py --model cone_detection.tflite 
@@ -33,13 +48,4 @@ python3 detect.py --model cone_detection.tflite
 Using recorded demo video
 ```
 python3 cone_detect.py --model cone_detection.tflite 
-```
-Perform Inference on Raspberry Pi with Coral Edge TPU enabled:<br>
-Video Stream from Camera
-```
-python3 detect.py --model cone_detection.tflite --enableEdgeTPU
-```
-Using recorded demo video
-```
-python3 cone_detect.py --model cone_detection.tflite --enableEdgeTPU
 ```

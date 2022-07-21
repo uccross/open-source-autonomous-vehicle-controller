@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Author: Pranay Mathur
+
 import cv2
 import numpy as np
-
 
 class visualize:
     def __init__(self, positions):
@@ -19,6 +22,9 @@ class visualize:
         self.visualize_cones()
 
     def visualize_cones(self):
+        """
+        Modify according to labels and color
+        """
         for pt in self.positions:
             cx = int(pt[1] * self.scale_cx)
             cy = self.height - int(pt[0] * self.scale_cy)

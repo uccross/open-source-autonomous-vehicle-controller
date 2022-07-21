@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# Adapted for use case by Pranay Mathur on 21 July, 2022
+
 """Main script to run the object detection routine."""
 import argparse
 import sys

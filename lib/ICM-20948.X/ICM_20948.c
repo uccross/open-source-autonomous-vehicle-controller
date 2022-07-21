@@ -423,9 +423,9 @@ void IMU_get_norm_data(struct IMU_out* IMU_data) {
     IMU_data->acc.x = acc_v_norm[0];
     IMU_data->acc.y = acc_v_norm[1];
     IMU_data->acc.z = acc_v_norm[2];
-    IMU_data->gyro.x = gyro_v_raw[0];
-    IMU_data->gyro.y = gyro_v_raw[1];
-    IMU_data->gyro.z = gyro_v_raw[2];
+    IMU_data->gyro.x = gyro_v_scaled[0];
+    IMU_data->gyro.y = gyro_v_scaled[1];
+    IMU_data->gyro.z = gyro_v_scaled[2];
     IMU_data->temp = temp_raw;
     IMU_data->mag.x = mag_v_norm[0];
     IMU_data->mag.y = mag_v_norm[1];
@@ -970,6 +970,11 @@ static void IMU_normalize_data(void) {
             mag_v_norm[row] = mag_v_raw[row];
         }
     }
+    /*copy gyro data to scaled vector*/
+    for (row = 0; row < MSZ; row++) {
+        gyro_v_scaled[row] = gyro_v_raw[row];
+    }
+    v_scale(gyro_scale, gyro_v_scaled); // convert to deg/sec
 }
 
 /**
@@ -998,11 +1003,6 @@ static void IMU_scale_data(void) {
         v_scale(acc_scale, acc_v_scaled); // convert to g
         v_scale(mag_scale, mag_v_scaled); // convert to uTesla
     }
-    /*copy gyro data to scaled vector*/
-    for (row = 0; row < MSZ; row++) {
-        gyro_v_scaled[row] = gyro_v_raw[row];
-    }
-    v_scale(gyro_scale, gyro_v_scaled); // convert to deg/sec
     temp_scaled = (temp_raw - T_BIAS) / T_SENSE + T_OFFSET; //scale temperature
 }
 

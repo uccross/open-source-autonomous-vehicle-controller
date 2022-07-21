@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <project>                                  
-  <executable name="dist/default/production/ICM-20948.X.production.elf">                 
+  <executable name="dist/default/production/IMU_tumble.X.production.elf">                 
     <memory name="program">                 
       <units>bytes</units>                 
       <length>531968</length>                 
-      <used>30200</used>                     
-      <free>501768</free>                     
+      <used>29512</used>                     
+      <free>502456</free>                     
     </memory>                              
     <memory name="data">              
       <units>bytes</units>                 
       <length>131072</length>                 
-      <used>4792</used>                     
-      <free>126280</free>                     
+      <used>4800</used>                     
+      <free>126272</free>                     
     </memory>                              
   </executable>                            
 </project>                                 

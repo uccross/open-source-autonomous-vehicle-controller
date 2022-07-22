@@ -333,7 +333,6 @@ int main(void) {
             // collect raw gyro data
             IMU_start_data_acq();
             start_time = current_time;
-
         }
         if (IMU_is_data_ready() == TRUE) {
             IMU_get_norm_data(&IMU_data);

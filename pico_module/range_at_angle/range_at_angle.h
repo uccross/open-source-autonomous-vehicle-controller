@@ -19,11 +19,11 @@
  * PUBLIC #DEFINES                                                            *
  ******************************************************************************/
 
-struct range_and_angle
+typedef struct angle_an_range
 {
     int16_t angle;
     uint16_t range;
-};
+}angle_and_range;
 
 /*******************************************************************************
  * PUBLIC FUNCTIONS                                                           *
@@ -35,24 +35,33 @@ struct range_and_angle
  * @return an initial angle of magnet, read by rotary encoder
  * @brief Initializes PWM in Pico for MG90S servo motor, initializes I2C 
  * communication for V3HP LiDAR and initialized SPI communication with required
- * speed and on particular GPIO pins of Pico. 
+ * speed and on particular GPIO pins of Pico.
  * @author Bhumil Depani
  */
 uint16_t initialize_system_components(void);
 
 /*
- * @Function struct range_and_angle get_range_at_angle(int16_t angle, uint16_t
- * initial_angle)
- * @param angle, an angle whre motor will rotate LiDAR to and LiDAR will measure
- * a range
- * @param initial_angle, initial magnet angle, read by rotary encoder
- * @return a structure variable, which contains angle and range information
- * @brief this function rotates servo motor at an angle, given by input, 
- * measures distance using LiDAR, measures angle using encoder and return 
- * distnace and angle
+ * @Function angle_and_range get_angle_and_range(uint16_t initial_angle)
+ * @param initial_angle, an initial angle measured by encoder, while booting up
+ * system
+ * @return a structure angle_and_range
+ * @brief measures a distnace using LiDAR, measures an angle using an encoder 
+ * at current position of the servo motor, and combine both measurements in the
+ * angle_and_range structure
  * @author Bhumil Depani
  */
-struct range_and_angle get_range_at_angle(int16_t angle, uint16_t 
-initial_angle);
+angle_and_range get_angle_and_range(uint16_t initial_angle);
+
+/*
+ * @Function void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
+ * @param angle, the angle at which want to measure a distance
+ * @param initial_angle, an initial angle measured by encoder, while booting up
+ * system
+ * @return None
+ * @brief this function implements one of the mode of a sensor driver module. A 
+ * function will first send command to motor, 
+ * @author Bhumil Depani
+ */
+void range_at_angle_mode(int16_t angle, uint16_t initial_angle);
 
 #endif      // RANGEATANGLE_H

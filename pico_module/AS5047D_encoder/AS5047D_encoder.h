@@ -30,7 +30,7 @@
  ******************************************************************************/
 
 /*
- * @Function void spi_initialization(int data_speed_hz)
+ * @Function void spi_initialize(int data_speed_hz)
  * @param data_speed_hz, SPI daud rate
  * @return None
  * @brief Initializes SPI communication with required speed and on particular 

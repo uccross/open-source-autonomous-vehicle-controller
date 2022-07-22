@@ -20,10 +20,10 @@
  ******************************************************************************/
 
 #define MOTOR_PIN 0                 // GPIO pin number where Motor is connected
-#define MIN_MICROSECOND 440         /* As per datasheet 2% of duty cycle
+#define MIN_MICROSECOND 440         /* As per datasheet 2.5% of duty cycle
 * should be needed to move servo motor at -90 degree angle. For 50 Hz Servo
-* motor, PWM period is 20,000 microsecond. So, 2% of 20,000 is 400. So, our
-* minimium PWM pulse width could be around 400. From experiment, we found pulse
+* motor, PWM period is 20,000 microsecond. So, 2.5% of 20,000 is 500. So, our
+* minimium PWM pulse width could be around 500. From experiment, we found pulse
 * width is 440 microsecond (2.20% duty cycle) */
 #define MAX_MICROSECOND 2560        /* As per datasheet 12.5% of duty cycle
 * should be needed to move servo motor at 90 degree angle. For 50 Hz Servo

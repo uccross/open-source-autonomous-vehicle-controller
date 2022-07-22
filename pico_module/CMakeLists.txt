@@ -22,8 +22,8 @@ add_executable(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
         hardware_spi
         hardware_i2c
-        pico_multicore
         hardware_pwm
+        pico_util
         pico_stdlib)
 
 # create map/bin/hex file etc.

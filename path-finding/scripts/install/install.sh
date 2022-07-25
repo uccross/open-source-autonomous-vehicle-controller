@@ -18,7 +18,7 @@ gdown 1O8sTOCbTI0bmJTaZhbOr40dgPJSWVNYz
 gdown 1-3ZxeGXyJhshmpE7Vrc8jxo_zkE0GKCB
 
 # Install PyCoral
-/usr/bin/python3 -m pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
+pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
 
 # Demo
 cp detect.py cone_detect.py

@@ -99,4 +99,3 @@ def append_objs_to_img(cv2_im, inference_size, objs, labels):
 
 if __name__ == '__main__':
     main()
-

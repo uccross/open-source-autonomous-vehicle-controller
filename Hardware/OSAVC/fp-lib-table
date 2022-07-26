@@ -1,0 +1,10 @@
+(fp_lib_table
+  (lib (name Connector_AMASS)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/Connector_AMASS.pretty)(options "")(descr ""))
+  (lib (name PTN78060W)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/PTN78060W/PTN78060W.pretty)(options "")(descr ""))
+  (lib (name "OSAVC interface shield")(type KiCad)(uri "C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/Hardware/OSAVC interface shield/OSAVC interface shield.pretty")(options "")(descr ""))
+  (lib (name SDM40E20LC-7)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/ul_SDM40E20LC-7/SDM40E20LC-7.pretty)(options "")(descr ""))
+  (lib (name LPC38690DT)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/ul_LPC38690/LPC38690DT.pretty)(options "")(descr ""))
+  (lib (name ul_2171750001)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/ul_2171750001/ul_2171750001.pretty)(options "")(descr ""))
+  (lib (name OSAVC)(type KiCad)(uri ${KIPRJMOD}/OSAVC.pretty)(options "")(descr ""))
+  (lib (name MIC293000)(type KiCad)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/MIC293000/MIC293000.pretty)(options "")(descr ""))
+)

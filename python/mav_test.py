@@ -32,14 +32,23 @@ def mav_print_imu():
 # Create the connection
 # Need to provide the serial port and baudrate
 print("Starting application\n")
-master = mavutil.mavlink_connection("COM5", baud=57600)
+master = mavutil.mavlink_connection("COM3", baud=115200)
 master.wait_heartbeat()
-print("target_system {}, target component {} \n", master.target_system,master.target_component)
-msg = None
-num_points = 500
-file = 'gyro_rotation_data.csv'
+print('target_system {}, target component {} \n'.format(master.target_system,master.target_component))
+# msg = None
+# num_points = 500
+# file = 'gyro_rotation_data.csv'
 
-mav_print_imu()
+# param_id = b'A11\0'
+# master.mav.param_request_read_send(master.target_system,master.target_component, param_id, -1)
+
+# try:
+#     msg = master.recv_match(type = 'PARAM_VALUE', blocking = True)
+#     print(msg)
+# except:
+#     print("msg type exception") 
+
+#mav_print_imu()
 
 # # log some data
 # mav_log_imu(num_points, file)

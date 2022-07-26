@@ -13,10 +13,10 @@
 #include "RC_servo.h" // The header file for this source file.
 #include "Board.h"   //Max32 setup
 #include "SerialM32.h"
-#include "xc.h"
+#include <xc.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/attribs.h>
+#include <sys/attribs.h>  //for ISR definitions
 #include <proc/p32mx795f512l.h>
 
 
@@ -32,6 +32,7 @@
  ******************************************************************************/
 static uint16_t pulse_width[RC_NUM_SERVOS]; //PW in microseconds
 static uint16_t raw_ticks[RC_NUM_SERVOS]; // raw ticks corresponding to pulse width
+static int8_t RC_SET_NEW_CMD = FALSE; //flag to indicate when the new command can be loaded 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
  ******************************************************************************/
@@ -53,7 +54,7 @@ void RC_servo_delay(int cycles);
  * @param None
  * @return SUCCESS or ERROR
  * @brief initializes hardware and sets all PWM periods to to RC_SERVO_CENTER_PULSE */
-uint8_t RC_servo_init(void) {
+int8_t RC_servo_init(void) {
     uint8_t i;
     uint16_t ticks_center = (RC_SERVO_CENTER_PULSE * USEC_NUM) >> USEC_LOG_DEN;
     for (i = 0; i < RC_NUM_SERVOS; i++) {
@@ -63,8 +64,15 @@ uint8_t RC_servo_init(void) {
     __builtin_disable_interrupts();
     /* timer 3 settings */
     T3CON = 0;
+    TMR3 = 0x0;
     T3CONbits.TCKPS = 0b101; // prescaler set to 1:32
     PR3 = 49999; //20 msec <=> 50 Hz
+    /*setup timer3 interrupt on period rollover*/
+    IPC3bits.T3IP = 0b110; //priority 6
+    IPC3bits.T3IS = 0b01; // subpriority 1
+    IFS0bits.T3IF = 0; // clear interrupt flag
+    IEC0bits.T3IE = 1; //enable interrupt
+
 
     /* Output Capture configuration*/
     OC2CON = 0x0000; //Turn off OC3 while doing setup.
@@ -77,7 +85,7 @@ uint8_t RC_servo_init(void) {
     OC2RS = raw_ticks[RC_LEFT_WHEEL]; // OCxRS -> OCxR at timer rollover
     OC2CONbits.ON = 1; //turn on the peripheral
 
-    if (RC_NUM_SERVOS > 1) {  //second servo = RIGHT_WHEEL
+    if (RC_NUM_SERVOS > 1) { //second servo = RIGHT_WHEEL
         OC3CON = 0x0;
         OC3R = 0x0000; // Initialize primary Compare Register
         OC3RS = 0x0000; // Initialize secondary Compare Register
@@ -112,7 +120,7 @@ uint8_t RC_servo_init(void) {
  * @return SUCCESS or ERROR
  * @brief takes in microsecond count, converts to ticks and updates the internal variables
  * @warning This will update the timing for the next pulse, not the current one */
-uint8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
+int8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
     if (in_pulse < RC_SERVO_MIN_PULSE) { //prevent servos from exceeding limits
         in_pulse = RC_SERVO_MIN_PULSE;
     }
@@ -136,7 +144,7 @@ uint8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
                 break;
         }
     }
-
+    RC_SET_NEW_CMD = FALSE; //reset flag after new command is set
     return SUCCESS;
 }
 
@@ -154,6 +162,17 @@ uint16_t RC_servo_get_pulse(uint8_t which_servo) {
  * @return raw timer ticks required to generate current pulse. */
 uint16_t RC_servo_get_raw_ticks(uint8_t which_servo) {
     return raw_ticks[which_servo];
+}
+
+/**
+ * @Function RC_servo_cmd_needed(void)
+ * @brief returns TRUE when the RC servo period register is ready for a new
+ * pulsewidth 
+ * @return TRUR or FALSE
+ * @author Aaron Hunter
+ */
+uint8_t RC_servo_cmd_needed(void) {
+    return RC_SET_NEW_CMD;
 }
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
@@ -173,6 +192,17 @@ void RC_servo_delay(int cycles) {
     }
 }
 
+/**
+ * @Function __ISR(_Timer_3_Vector, ipl6) RC_T3_handler(void)
+ * @brief sets a flag when the period register rolls over
+ * @author ahunter
+ */
+void __ISR(_TIMER_3_VECTOR, ipl6auto) RC_T3_handler(void) {
+    RC_SET_NEW_CMD = TRUE; //set new command needed boolean
+    // printf("ISR\r\n");
+    IFS0bits.T3IF = 0; //clear interrupt flag
+}
+
 /*Test harness*/
 #ifdef RCSERVO_TESTING
 
@@ -184,32 +214,38 @@ void main(void) {
     RC_servo_init();
 
     printf("\r\nRC_servo Test Harness %s %s\r\n", __DATE__, __TIME__);
-
+    RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
+    RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
+    RC_servo_delay(320000);
 
     while (1) {
-        if (direction == 1) {
-            RC_servo_set_pulse(test_pulse, RC_LEFT_WHEEL);
-            RC_servo_set_pulse(test_pulse, RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(test_pulse, RC_STEERING);
-            test_pulse += 10;
-            if (test_pulse > RC_SERVO_MAX_PULSE) {
-                direction = -1;
+        if (RC_servo_cmd_needed() == TRUE) {
+            if (direction == 1) {
+                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
+                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
+                RC_servo_set_pulse(test_pulse, RC_STEERING);
+                test_pulse += 10;
+                if (test_pulse > RC_SERVO_MAX_PULSE) {
+                    direction = -1;
+                }
+            }
+            if (direction == -1) {
+                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
+                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
+                RC_servo_set_pulse(test_pulse, RC_STEERING);
+                test_pulse -= 10;
+                if (test_pulse < RC_SERVO_MIN_PULSE) {
+                    direction = 1;
+                }
             }
         }
-        if (direction == -1) {
-            RC_servo_set_pulse(test_pulse, RC_LEFT_WHEEL);
-            RC_servo_set_pulse(test_pulse, RC_RIGHT_WHEEL);
-            RC_servo_set_pulse(test_pulse, RC_STEERING);
-            test_pulse -= 10;
-            if (test_pulse < RC_SERVO_MIN_PULSE) {
-                direction = 1;
-            }
-        }
-        RC_servo_delay(160000);
         printf("LEFT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_LEFT_WHEEL), RC_servo_get_raw_ticks(RC_LEFT_WHEEL));
         printf("RIGHT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_RIGHT_WHEEL), RC_servo_get_raw_ticks(RC_RIGHT_WHEEL));
         printf("STEERING PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_STEERING), RC_servo_get_raw_ticks(RC_STEERING));
+        RC_servo_delay(320000);
+
     }
+    // RC_servo_set_pulse(RC_SERVO_MIN_PULSE, RC_LEFT_WHEEL);
 }
 
 #endif //RCSERVO_TESTING

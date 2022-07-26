@@ -193,6 +193,7 @@ typedef enum {
     M_REG_HYH,
     M_REG_HZL,
     M_REG_HZH,
+    M_REG_TMPS,
     M_REG_ST2,
     // Break
     M_REG_CNTL2 = 0x31,

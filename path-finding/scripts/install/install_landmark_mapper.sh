@@ -1,8 +1,8 @@
 #!/bin/bash
 # change directory to tflite examples raspi 
-cp -r cone_mapper examples/lite/examples/object_detection/raspberry_pi/
+cp -r Landmark_Mapper examples/lite/examples/object_detection/raspberry_pi/
 
 cd examples/lite/examples/object_detection/raspberry_pi/
 
 # Demo
-cp cone_mapper/cone_detect_map.py .
+cp Landmark_Mapper/landmark_detect_map.py .

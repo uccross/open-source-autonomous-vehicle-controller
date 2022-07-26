@@ -18,8 +18,28 @@ gdown 1O8sTOCbTI0bmJTaZhbOr40dgPJSWVNYz
 gdown 1-3ZxeGXyJhshmpE7Vrc8jxo_zkE0GKCB
 
 # Install PyCoral
-/usr/bin/python3 -m pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
+pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0
 
 # Demo
 cp detect.py cone_detect.py
 sed -i 's/(camera_id)/("output.avi")/g' cone_detect.py
+
+# Install pycoral
+git clone https://github.com/google-coral/pycoral
+cd pycoral/examples
+sudo apt-get install libedgetpu1-std
+
+# Download Weights for edge tpu
+gdown 1E7vIXdZ15Wyz0uZrLxLXmwp1l_k_aee_
+
+# Download the test video
+gdown 1O8sTOCbTI0bmJTaZhbOr40dgPJSWVNYz
+
+# Download the cone_labels.txt
+gdown 1ZRk9k9IMz4lQCi7LrGTR0UYv8qjJ50K_
+
+# Copy the detection script
+cp ../../../../../../../scripts/inference/detect_image.py .
+
+cp detect_image.py detect_camera.py
+sed -i 's/("output.avi")/(camera_id)/g' detect_camera.py

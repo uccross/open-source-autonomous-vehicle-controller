@@ -33,7 +33,7 @@ path-finding
 |    └───legacy_scripts
 |    └───training
 |
-└───cone_mapper
+└───Landmark_Mapper
       README.md
 ```
 ### data
@@ -48,8 +48,8 @@ Contains scripts required for training your own models, setting up your environm
 ## Installation and Inference
 Choose the model you want to run from [models](models) and follow the instructions in the README of the respective model. The recommended model is EfficientDet0-Lite which can be run on a Raspberry Pi and optionally accelerated using a Coral Edge TPU following the [instructions given here](models/EfficientDet0-Lite/). 
 
-## cone_mapper
+## Landmark_Mapper
 <p align="center">
   <img src="data/demo/cone_map.png" alt="cone map image" width=200/></p>
 
-A package that uses camera intrinsics and exploits known geometry of the landmarks to predict their 3D locations. Instructions to run this with [EfficientDet0-Lite](models/EfficientDet0-Lite/) can be found in the ```README.md``` in ```cone_mapper```.
+A package that uses camera intrinsics and exploits known geometry of the landmarks to predict their 3D locations. Instructions to run this with [EfficientDet0-Lite](models/EfficientDet0-Lite/) can be found in the ```README.md``` in ```Landmark_Mapper```.

@@ -10,14 +10,37 @@ Code for detecting cones on Raspberry Pi using the [EfficientDet-Lite0](https://
 - \>=virtualenv 20.12.1
 
 ### Installation
-Run the following from the root of the cloned repository. Give permission and execute the environment setup and installation scripts 
+Run the following from the root of the cloned repository. Give permission and execute the environment setup and installation scripts.
 ```
 cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
 chmod u+x scripts/install/env.sh scripts/install/install.sh
 source scripts/install/env.sh
 source scripts/install/install.sh
 ```
-Perform Inference on Raspberry Pi with Coral Edge TPU disabled:<br>
+
+### Inference
+
+#### Perform Inference on Raspberry Pi with Coral Edge TPU enabled:<br>
+```
+cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
+source osavc_path_finding/bin/activate
+cd examples/lite/examples/object_detection/raspberry_pi/pycoral/examples
+```
+Video Stream from Camera
+```
+python3 detect_camera.py --model cone_detection_edgetpu.tflite --labels cone_labels.txt
+```
+Using recorded demo video
+```
+python3 detect_image.py --model cone_detection_edgetpu.tflite --labels cone_labels.txt
+```
+
+#### Perform Inference on Raspberry Pi without the Coral Edge TPU:<br>
+```
+cd <PATH_TO_REPO>/open-source-autonomous-vehicle-controller/path-finding
+source osavc_path_finding/bin/activate
+cd examples/lite/examples/object_detection/raspberry_pi/
+```
 Video Stream from Camera
 ```
 python3 detect.py --model cone_detection.tflite 
@@ -25,13 +48,4 @@ python3 detect.py --model cone_detection.tflite
 Using recorded demo video
 ```
 python3 cone_detect.py --model cone_detection.tflite 
-```
-Perform Inference on Raspberry Pi with Coral Edge TPU enabled:<br>
-Video Stream from Camera
-```
-python3 detect.py --model cone_detection.tflite --enableEdgeTPU
-```
-Using recorded demo video
-```
-python3 cone_detect.py --model cone_detection.tflite --enableEdgeTPU
 ```

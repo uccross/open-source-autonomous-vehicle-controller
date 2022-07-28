@@ -96,4 +96,28 @@ no_of_byte_to_write);
 void lidar_read(uint8_t register_address, uint8_t read_data[], uint8_t 
 no_of_byte_to_read);
 
+/*
+ * @Function void lidar_advanced_settings(uint8_t max_acqisition, bool
+ * quick_termination, uint8_t sensitivity)
+ * @param max_acqisition, its value can range from 0 to 255, the default value 
+ * is 255, max_acqisition presents the number of times the LiDAR will integrate 
+ * acquisitions to measure distance for one time, The unit-less relationship is 
+ * roughly as follows: rate = 1/max_acquisition and range = max_acquisition^(1/
+ * 4)  
+ * @param quick_termination, its value could be 0 or 1, the default value is 0,
+ * if input is true, device will terminate a distance measurement early, this 
+ * allows for faster and slightly less accurate operation without sacrificing 
+ * long-range performance.
+ * @param sensitivity, its value can range from 0 to 255, the default value is 
+ * 0, recommended values are 0x20 for higher sensitivity with more frequent
+ * erroneous measurements, and 0x60 for reduced sensitivity and fewer erroneous 
+ * measurements.
+ * @return None
+ * @brief low level function to read a single or multiple bytes from a paticular
+ * internal register address(es)
+ * @author Bhumil Depani
+ */
+void lidar_advanced_settings(uint8_t max_acq, bool quick_termination, uint8_t 
+sensitivity);
+
 #endif  //V3HPLIDAR_H

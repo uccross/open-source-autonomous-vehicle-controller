@@ -16,14 +16,16 @@
 #include "../V3HP_lidar/V3HP_lidar.h"       // header file for V3HP LiDAR
 #include "../AS5047D_encoder/AS5047D_encoder.h" /* header file for AS5047D 
 * encoder */
-
+#include "hardware/watchdog.h"
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
 
 #define TOLERANCE 500       // tolerance of -500 to +500 centidegree
-#define LIDAR_PERIOD 20000  // read LiDAR at every 20 ms
-#define ENCODER_PERIOD 1000 // read encoder at every 1 ms
+#define LIDAR_PERIOD 2000000  // read LiDAR at every 20 ms
+#define ENCODER_PERIOD 100000 // read encoder at every 1 ms
+#define WATCHDOG_COUNT  8000    /* Watchdog reset count in milliseconds, maximum
+* value could be 8388 milliseconds. */
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            
@@ -32,6 +34,19 @@
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 
  ******************************************************************************/
+
+/*
+ * @Function void watchdog_disable(void)
+ * @param None
+ * @return None
+ * @brief As Pico C/C++ SDK is not giving any function to disable the Watchdog
+ * timer, we are implementing it by accessing interal register of Pico.
+ * @author Bhumil Depani
+ */
+void watchdog_disable(void)
+{
+    hw_clear_bits(&watchdog_hw->ctrl, WATCHDOG_CTRL_ENABLE_BITS);
+}
 
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -98,6 +113,8 @@ void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
     
     uint32_t lidar_start_time = 0, encoder_start_time = 0;
     uint32_t lidar_current_time, encoder_current_time;
+
+    watchdog_enable(WATCHDOG_COUNT, 0);     /* to enable Watchdog timer for range at angle mode. */
     
     int16_t angle_from_encoder;
     angle_and_range output;
@@ -105,7 +122,7 @@ void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
     /* this won't be infinite loop. We are using break statement in on of the if
     * condition. So, whenever motor angle would be within acceptable range of 
     * angle, this break statement will be executed. */
-    while(1)        
+    while(1)
     {
         lidar_current_time = encoder_current_time = time_us_32();
         /* this if condition will only be true after a duration mentioned in
@@ -133,6 +150,10 @@ void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
         if((angle_from_encoder > lower_limit) && (angle_from_encoder < 
         upper_limit))
         {
+            watchdog_disable();     /* As we are done with the work for 
+            * commanded angle, now disable the Watchdog timer. */
+
+            printf("\n%10d,  %10d,  %10d",angle_from_encoder, lower_limit, upper_limit);
             output = get_angle_and_range(initial_angle);
             printf("\nFinal Angle: %10d, Distnace: %10d", output.angle, output.
             range);
@@ -150,20 +171,24 @@ int main(void)
 
     uint16_t initial_angle = initialize_system_components();
 
+    lidar_advanced_settings(0xFF, 0, 0x00);     /*defualt LiDAR settings, can 
+    * change according to requirements, see the comments before function 
+    * implementation. */
+
     int16_t input_angle;
     angle_and_range output;
 
     for(int i = 0; i< 10; i++)
     {
         input_angle = i*1000;
-        printf("\nAn angle where want a distance: %d", input_angle);
+        printf("\n\n\nAn angle where want a distance: %d", input_angle);
         
         range_at_angle_mode(input_angle, initial_angle);
 
         for(int j=0; j<2; j++)
         {
             printf("\nIdeal time");
-            sleep_ms(5000);
+            sleep_ms(2000);
         }
     }
 }

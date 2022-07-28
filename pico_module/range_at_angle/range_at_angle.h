@@ -64,4 +64,6 @@ angle_and_range get_angle_and_range(uint16_t initial_angle);
  */
 void range_at_angle_mode(int16_t angle, uint16_t initial_angle);
 
+
+
 #endif      // RANGEATANGLE_H

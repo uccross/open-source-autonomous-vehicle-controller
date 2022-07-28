@@ -8,7 +8,7 @@ import csv
 # Create the connection
 # Need to provide the serial port and baudrate
 print("Starting mavcsv_logging.py\n")
-master = mavutil.mavlink_connection("COM3", baud=57600) # usb on windows
+master = mavutil.mavlink_connection("COM14", baud=115200) # usb on windows
 # find the OSAVC controller
 master.wait_heartbeat(timeout = 10)
 if master.target_system == 0:

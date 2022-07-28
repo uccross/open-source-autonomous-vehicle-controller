@@ -23,7 +23,7 @@ target_link_libraries(${PROJECT_NAME}
         hardware_spi
         hardware_i2c
         hardware_pwm
-        pico_util
+        hardware_uart
         pico_stdlib)
 
 # create map/bin/hex file etc.

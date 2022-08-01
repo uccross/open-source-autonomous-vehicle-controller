@@ -15,7 +15,7 @@ cd examples/lite/examples/object_detection/raspberry_pi
 gdown 1O8sTOCbTI0bmJTaZhbOr40dgPJSWVNYz
 
 # Download the quantized model
-gdown 1-3ZxeGXyJhshmpE7Vrc8jxo_zkE0GKCB
+gdown 1PUo1kx7B_d8MdbHLkcch0IcdxPvL_6Ll
 
 # Download Weights for edge tpu
 gdown 1E7vIXdZ15Wyz0uZrLxLXmwp1l_k_aee_

@@ -1,0 +1,13 @@
+# flags
+DEBUG: False
+ENABLE_VISUALIZER: True
+
+# camera intrinsics
+fx: 0.1
+fy: 0.1
+cx: 0.0
+cy: 0.0
+
+# Landmarks
+height: 0.2
+width: 0.1

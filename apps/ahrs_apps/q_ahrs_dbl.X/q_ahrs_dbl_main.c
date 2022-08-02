@@ -183,13 +183,23 @@ double lin_alg_q_norm(double q[QSZ]) {
     return ((double) sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]));
 }
 
-void ahrs_update(double q_minus[QSZ], double q_plus[QSZ], double bias_minus[MSZ],
-        double bias_plus[MSZ], double gyros[MSZ], double mags[MSZ], double accels[MSZ],
-        double mag_i[MSZ], double acc_i[MSZ], double dt) {
-    double kp_a = 2.5; //accelerometer proportional gain
-    double ki_a = 0.05; // accelerometer integral gain
-    double kp_m = 2.5; // magnetometer proportional gain
-    double ki_m = 0.05; //magnetometer integral gain
+/**
+ * @function m_norm()
+ * @param M A matrix
+ * @return The magnitude of the M, m_norm
+ */
+double m_norm(double M[MSZ]) {
+    return ((double) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
+}
+
+//void ahrs_update(double q_minus[QSZ], double q_plus[QSZ], double bias_minus[MSZ],
+//        double bias_plus[MSZ], double gyros[MSZ], double mags[MSZ], double accels[MSZ],
+//        double mag_i[MSZ], double acc_i[MSZ], double dt) 
+
+void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
+        double mags[MSZ], double accels[MSZ], double mag_i[MSZ], double acc_i[MSZ],
+        double dt, double kp_a, double ki_a, double kp_m, double ki_m,
+        double q_plus[QSZ], double bias_plus[MSZ]) {
 
     double acc_b[MSZ]; //estimated gravity vector in body frame
     double mag_b[MSZ]; //estimated magnetic field vector in body frame
@@ -205,7 +215,19 @@ void ahrs_update(double q_minus[QSZ], double q_plus[QSZ], double bias_minus[MSZ]
     double q_dot[QSZ]; // quaternion derivative
     double b_dot[MSZ]; // bias vector derivative
     double q_norm;
+    double acc_n;
+    double mag_n;
 
+    /* normalize inertial measurements */
+    acc_n = m_norm(accels);
+    accels[0] = accels[0] / acc_n;
+    accels[1] = accels[1] / acc_n;
+    accels[2] = accels[2] / acc_n;
+    
+    mag_n = m_norm(mags);
+    mags[0] = mags[0] / mag_n;
+    mags[1] = mags[1] / mag_n;
+    mags[2] = mags[2] / mag_n;
 
     /*Accelerometer attitude calculations */
     q_rot_v_q(acc_i, q_minus, acc_b); //estimate gravity vector in body frame 
@@ -263,6 +285,12 @@ int main(void) {
     uint32_t current_time = 0;
     uint32_t update_start = 0;
     uint32_t update_end = 0;
+    /*filter gains*/
+    double kp_a = 2.5; //accelerometer proportional gain
+    double ki_a = 0.05; // accelerometer integral gain
+    double kp_m = 2.5; // magnetometer proportional gain
+    double ki_m = 0.05; //magnetometer integral gain
+    /*timing and conversion*/
     const double dt = DT;
     const double deg2rad = M_PI / 180.0;
     const double rad2deg = 180.0 / M_PI;
@@ -345,7 +373,9 @@ int main(void) {
             gyro_cal[1] = (double) IMU_data.gyro.y * deg2rad;
             gyro_cal[2] = (double) IMU_data.gyro.z * deg2rad;
             update_start = Sys_timer_get_usec();
-            ahrs_update(q_minus, q_plus, b_minus, b_plus, gyro_cal, mag_cal, acc_cal, m_i, a_i, dt);
+            //            ahrs_update(q_minus, q_plus, b_minus, b_plus, gyro_cal, mag_cal, acc_cal, m_i, a_i, dt);
+            ahrs_update(q_minus, b_minus, gyro_cal, mag_cal, acc_cal, m_i,
+                    a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             update_end = Sys_timer_get_usec();
             quat2euler(q_plus, euler);
 

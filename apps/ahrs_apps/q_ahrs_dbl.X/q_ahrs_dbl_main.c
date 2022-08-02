@@ -192,10 +192,6 @@ double m_norm(double M[MSZ]) {
     return ((double) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
 }
 
-//void ahrs_update(double q_minus[QSZ], double q_plus[QSZ], double bias_minus[MSZ],
-//        double bias_plus[MSZ], double gyros[MSZ], double mags[MSZ], double accels[MSZ],
-//        double mag_i[MSZ], double acc_i[MSZ], double dt) 
-
 void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
         double mags[MSZ], double accels[MSZ], double mag_i[MSZ], double acc_i[MSZ],
         double dt, double kp_a, double ki_a, double kp_m, double ki_m,
@@ -223,7 +219,7 @@ void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
     accels[0] = accels[0] / acc_n;
     accels[1] = accels[1] / acc_n;
     accels[2] = accels[2] / acc_n;
-    
+
     mag_n = m_norm(mags);
     mags[0] = mags[0] / mag_n;
     mags[1] = mags[1] / mag_n;
@@ -373,7 +369,6 @@ int main(void) {
             gyro_cal[1] = (double) IMU_data.gyro.y * deg2rad;
             gyro_cal[2] = (double) IMU_data.gyro.z * deg2rad;
             update_start = Sys_timer_get_usec();
-            //            ahrs_update(q_minus, q_plus, b_minus, b_plus, gyro_cal, mag_cal, acc_cal, m_i, a_i, dt);
             ahrs_update(q_minus, b_minus, gyro_cal, mag_cal, acc_cal, m_i,
                     a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             update_end = Sys_timer_get_usec();

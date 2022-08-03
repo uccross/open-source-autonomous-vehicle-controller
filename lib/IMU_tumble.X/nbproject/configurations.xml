@@ -6,7 +6,6 @@
                    projectFiles="true">
       <itemPath>../ICM-20948.X/ICM_20948.h</itemPath>
       <itemPath>../ICM-20948.X/ICM_20948_registers.h</itemPath>
-      <itemPath>../Board.X/ICM_20948_registers.h</itemPath>
       <itemPath>../Serial.X/SerialM32.h</itemPath>
       <itemPath>../Board.X/Board.h</itemPath>
       <itemPath>../System_timer.X/System_timer.h</itemPath>

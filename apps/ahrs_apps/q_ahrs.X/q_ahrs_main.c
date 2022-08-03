@@ -99,11 +99,6 @@ float m_norm(float M[MSZ]) {
     return ((float) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
 }
 
-
-//void ahrs_update(float q_minus[QSZ], float q_plus[QSZ], float bias_minus[MSZ],
-//        float bias_plus[MSZ], float gyros[MSZ], float mags[MSZ], float accels[MSZ],
-//        float mag_i[MSZ], float acc_i[MSZ], float dt) {
-
 void ahrs_update(float q_minus[QSZ], float bias_minus[MSZ], float gyros[MSZ],
         float mags[MSZ], float accels[MSZ], float mag_i[MSZ], float acc_i[MSZ],
         float dt, float kp_a, float ki_a, float kp_m, float ki_m,

@@ -26,17 +26,18 @@
 /*******************************************************************************
  * PUBLIC TYPEDEFS                                                             *
  ******************************************************************************/
-struct IMU_device {
-    accum x;
-    accum y;
-    accum z;
+
+struct IMU_axis {
+    float x;
+    float y;
+    float z;
 };
 
-struct IMU_output {
-    struct IMU_device acc;
-    struct IMU_device gyro;
-    struct IMU_device mag;
-    accum temp;
+struct IMU_out {
+    struct IMU_axis acc;
+    struct IMU_axis gyro;
+    struct IMU_axis mag;
+    float temp;
     uint16_t mag_status;
 };
 
@@ -77,7 +78,7 @@ uint8_t IMU_is_data_ready(void);
  * @note 
  * @author Aaron Hunter,
  **/
-uint8_t IMU_get_raw_data(struct IMU_output* IMU_data);
+uint8_t IMU_get_raw_data(struct IMU_out* IMU_data);
 
 /**
  * @Function IMU_get_norm_data(void)
@@ -86,7 +87,7 @@ uint8_t IMU_get_raw_data(struct IMU_output* IMU_data);
  * @note 
  * @author Aaron Hunter,
  **/
-void IMU_get_norm_data(struct IMU_output* IMU_data);
+void IMU_get_norm_data(struct IMU_out* IMU_data);
 
 /**
  * @Function IMU_get_scaled_data(void)
@@ -95,7 +96,7 @@ void IMU_get_norm_data(struct IMU_output* IMU_data);
  * @note 
  * @author Aaron Hunter,
  **/
-uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data);
+uint8_t IMU_get_scaled_data(struct IMU_out* IMU_data);
 
 /**
  * @Function IMU_set_mag_cal(accum A[MSZ][MSZ], accum b[MSZ])
@@ -106,7 +107,7 @@ uint8_t IMU_get_scaled_data(struct IMU_output* IMU_data);
  * @return SUCCESS or ERROR
  * @author Aaron Hunter,
  **/
-int8_t IMU_set_mag_cal(accum A[MSZ][MSZ], accum b[MSZ]);
+int8_t IMU_set_mag_cal(float A[MSZ][MSZ], float b[MSZ]);
 
 /**
  * @Function IMU_set_acc_cal(accum A[MSZ][MSZ], accum b[MSZ])
@@ -118,7 +119,7 @@ int8_t IMU_set_mag_cal(accum A[MSZ][MSZ], accum b[MSZ]);
  * @return SUCCESS or ERROR
  * @author Aaron Hunter,
  **/
-int8_t IMU_set_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]);
+int8_t IMU_set_acc_cal(float A[MSZ][MSZ], float b[MSZ]);
 
 /**
  * @Function IMU_set_gyro_cal(float scale[MSZ], float offset[MSZ]);
@@ -128,7 +129,30 @@ int8_t IMU_set_acc_cal(accum A[MSZ][MSZ], accum b[MSZ]);
  * @return SUCCESS or ERROR
  * @author Aaron Hunter,
  **/
-int8_t IMU_set_gyro_cal(accum A[MSZ][MSZ], accum b[MSZ]);
+int8_t IMU_set_gyro_cal(float A[MSZ][MSZ], float b[MSZ]);
+
+/**
+ * @Function IMU_get_mag_cal(accum A[MSZ][MSZ], accum b[MSZ])
+ * @param A destination matrix
+ * @param b destination offset
+ * @brief gets scaling matrix and offset vector for magnetometer 
+ * @note bias is scaled to mGauss
+ * @return SUCCESS or ERROR
+ * @author Aaron Hunter,
+ **/
+int8_t IMU_get_mag_cal(float A[MSZ][MSZ], float b[MSZ]);
+
+/**
+ * @Function IMU_get_acc_cal(accum A[MSZ][MSZ], accum b[MSZ])
+ * @param A destination matrix
+ * @param b destination offset
+ * @brief gets scaling matrix and offset vector for accelerometer 
+ * @note bias is scaled by 1000mG, the expected value of the earth's 
+ * gravitational field. 
+ * @return SUCCESS or ERROR
+ * @author Aaron Hunter,
+ **/
+int8_t IMU_get_acc_cal(float A[MSZ][MSZ], float b[MSZ]);
 
 #endif	/* ICM_20948_H */ // End of header guard
 

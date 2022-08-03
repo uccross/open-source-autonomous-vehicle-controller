@@ -77,8 +77,8 @@ const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
 
 RCRX_channel_buffer RC_channels[CHANNELS];
 static struct GPS_data GPS_data;
-struct IMU_output IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
-struct IMU_output IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
+struct IMU_output_raw IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
+struct IMU_output_raw IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 encoder_t encoder_data[NUM_ENCODERS];
 static uint8_t pub_GPS = TRUE;
 static uint8_t pub_RC_servo = FALSE;

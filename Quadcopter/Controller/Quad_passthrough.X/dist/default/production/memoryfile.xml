@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <project>                                  
-  <executable name="dist/default/production/Mavlink_minimal.X.production.elf">                 
+  <executable name="dist/default/production/Quad_passthrough.X.production.elf">                 
     <memory name="program">                 
       <units>bytes</units>                 
       <length>531968</length>                 
-      <used>75008</used>                     
-      <free>456960</free>                     
+      <used>54924</used>                     
+      <free>477044</free>                     
     </memory>                              
     <memory name="data">              
       <units>bytes</units>                 
       <length>131072</length>                 
-      <used>12060</used>                     
-      <free>119012</free>                     
+      <used>10424</used>                     
+      <free>120648</free>                     
     </memory>                              
   </executable>                            
 </project>                                 

@@ -495,9 +495,14 @@ void main(void) {
             // how an airplane motor is configured.  We need reverse drive in other words.
             // Steering servo is assigned to rudder channel, may be easier to drive on aileron
             // Switch D is for passthrough mode and assigned to channel .  Low is passthrough, High is autonomous*/
-            printf("T %d S %d M %d stat %x ERR %d \r", servo_data[2], servo_data[3], \
-                    servo_data[7], RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
-//            printf("stat %x ERR %d \r\n", RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
+            printf("%d, %d, %d, %d, %d, %d, %d, %d, %d \r",
+                    servo_data[0], servo_data[1], servo_data[2], servo_data[3],
+                    servo_data[4], servo_data[5], servo_data[6], servo_data[7],
+                    servo_data[8]);
+                    //            printf("T %d S %d M %d stat %x ERR %d \r", servo_data[2], servo_data[3], \
+//                    servo_data[7], RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
+                    //            printf("stat %x ERR %d \r\n", RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
+                    //        }
         }
     }
 }

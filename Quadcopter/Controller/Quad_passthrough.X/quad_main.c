@@ -50,6 +50,7 @@ enum RC_channels {
     AIL,
     ELE,
     RUD,
+    HASH,
     SWITCH_A,
     SWITCH_B,
     SWITCH_C,
@@ -455,12 +456,13 @@ void publish_parameter(uint8_t param_id[16]) {
  * @author aahunter
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 static int calc_pw(int raw_counts) {
-    float normalized_pulse; //converted to microseconds and centered at 0
+    const int denominator = (RC_RX_MAX_COUNTS - RC_RX_MIN_COUNTS);
+    const int numerator = (RC_SERVO_MAX_PULSE - RC_SERVO_MIN_PULSE);
     int pulse_width; //servo output in microseconds
-    float scale = 0.6101;
-
-    normalized_pulse = (float) (raw_counts - RC_RX_MID_COUNTS)* scale;
-    pulse_width = (int) normalized_pulse + RC_SERVO_CENTER_PULSE;
+    
+    pulse_width = (raw_counts - RC_RX_MID_COUNTS) * numerator; // scale to servo values
+    pulse_width = pulse_width / denominator; // divide out counts
+    pulse_width = pulse_width + RC_SERVO_CENTER_PULSE; // add in midpoint of servo pulse
     return pulse_width;
 }
 
@@ -473,36 +475,49 @@ static int calc_pw(int raw_counts) {
  * @author Aaron Hunter
  */
 void set_control_output(void) {
+    int hash;
     int throttle[4];
     int throttle_raw;
-    int  roll_cmd;
-    int  pitch_cmd;
-    int  yaw_cmd;
+    int roll_cmd;
+    int pitch_cmd;
+    int yaw_cmd;
+    int hash_check;
+    const int tol = 4;
+    int INTOL;
 
     int phi_raw;
-    int  theta_raw;
-    int  psi_raw;
+    int theta_raw;
+    int psi_raw;
     /* get RC commanded values*/
     throttle_raw = RC_channels[THR];
     phi_raw = RC_channels[AIL];
     theta_raw = RC_channels[ELE];
-    psi_raw = RC_channels[RUD]; 
-    /*compute attitude commands*/
-    roll_cmd = phi_raw - RC_RX_MID_COUNTS;
-    pitch_cmd = theta_raw - RC_RX_MID_COUNTS;
-    yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS); // reverse for CCW positive yaw
+    psi_raw = RC_channels[RUD];
+    hash = RC_channels[HASH];
+    hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
+    if (abs(hash_check - hash) <= tol) {
+        INTOL = TRUE;
+        /*compute attitude commands*/
+        roll_cmd = phi_raw - RC_RX_MID_COUNTS;
+        pitch_cmd = theta_raw - RC_RX_MID_COUNTS;
+        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS); // reverse for CCW positive yaw
 
-    /* mix attitude into X configuration */
-    throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
-    throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
-    throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
-    throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
-    /* send commands to motor outputs*/
-    RC_servo_set_pulse(throttle[0], MOTOR_1);
-    RC_servo_set_pulse(throttle[1], MOTOR_2);
-    RC_servo_set_pulse(throttle[2], MOTOR_3);
-    RC_servo_set_pulse(throttle[3], MOTOR_4);
-    printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
+        /* mix attitude into X configuration */
+        throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
+        throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
+        throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
+        throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
+        /* send commands to motor outputs*/
+        RC_servo_set_pulse(throttle[0], MOTOR_1);
+        RC_servo_set_pulse(throttle[1], MOTOR_2);
+        RC_servo_set_pulse(throttle[2], MOTOR_3);
+        RC_servo_set_pulse(throttle[3], MOTOR_4);
+    } else {
+        INTOL = FALSE;
+            printf("%d, %d, %d, %d, %d, %d, %d \r\n", throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+    }
+
+//        printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
 }
 
 int main(void) {
@@ -539,8 +554,6 @@ int main(void) {
     cur_time = Sys_timer_get_msec();
     control_start_time = cur_time;
     heartbeat_start_time = cur_time;
-
-
 
     while (1) {
         cur_time = Sys_timer_get_msec();

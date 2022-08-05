@@ -107,6 +107,17 @@ int8_t RC_servo_init(void) {
         OC4RS = raw_ticks[RC_STEERING]; // OCxRS -> OCxR at timer rollover
         OC4CONbits.ON = 1; //turn on the peripheral
     }
+    if (RC_NUM_SERVOS > 3) { //third servo = STEERING servo
+        OC5CON = 0x0;
+        OC5R = 0x0000; // Initialize primary Compare Register
+        OC5RS = 0x0000; // Initialize secondary Compare Register
+        OC5CONbits.OC32 = 0; //16 bit mode
+        OC5CONbits.OCTSEL = 1; //use timer 3
+        OC5CONbits.OCM = 0b110; // PWM mode, no fault detection
+        OC5R = raw_ticks[RC_STEERING]; // need load this register initially 
+        OC5RS = raw_ticks[RC_STEERING]; // OCxRS -> OCxR at timer rollover
+        OC5CONbits.ON = 1; //turn on the peripheral
+    }
     /* turn on the timer */
     T3CONbits.ON = 1;
     __builtin_enable_interrupts();
@@ -139,6 +150,9 @@ int8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
                 break;
             case RC_STEERING:
                 OC4RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
+                break;
+            case MOTOR:
+                OC5RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
                 break;
             default:
                 break;

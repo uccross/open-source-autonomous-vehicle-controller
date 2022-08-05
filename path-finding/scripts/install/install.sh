@@ -15,7 +15,13 @@ cd examples/lite/examples/object_detection/raspberry_pi
 gdown 1O8sTOCbTI0bmJTaZhbOr40dgPJSWVNYz
 
 # Download the quantized model
-gdown 1-3ZxeGXyJhshmpE7Vrc8jxo_zkE0GKCB
+gdown 1PUo1kx7B_d8MdbHLkcch0IcdxPvL_6Ll
+
+# Download Weights for edge tpu
+gdown 1E7vIXdZ15Wyz0uZrLxLXmwp1l_k_aee_
+
+# Download the cone_labels.txt
+gdown 1ZRk9k9IMz4lQCi7LrGTR0UYv8qjJ50K_
 
 # Install PyCoral
 pip install --extra-index-url https://google-coral.github.io/py-repo/ pycoral~=2.0

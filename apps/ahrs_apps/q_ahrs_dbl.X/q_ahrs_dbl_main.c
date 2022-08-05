@@ -192,6 +192,9 @@ double m_norm(double M[MSZ]) {
     return ((double) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
 }
 
+
+//            ahrs_update(q_minus, b_minus, gyro_cal, mag_cal, acc_cal, m_i,
+//                    a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
 void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
         double mags[MSZ], double accels[MSZ], double mag_i[MSZ], double acc_i[MSZ],
         double dt, double kp_a, double ki_a, double kp_m, double ki_m,
@@ -295,18 +298,19 @@ int main(void) {
      if there are benefits to be had from the double precision we will update
      the driver or just use raw data and perform calibration inside the ahrs
      algorithm */
+    /*calibration matrices*/
     float A_acc[MSZ][MSZ] = {
-        {5.98605657636023e-05,	5.02299172664344e-08,	8.41134559461075e-07},
-        {-2.82167981801537e-08,	6.05938345982234e-05,	6.95665927111956e-07},
-        {4.48326742757725e-08,	-3.34771681800715e-07,	5.94633160681115e-05}
+        6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
+        -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
+        -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
     };
     float A_mag[MSZ][MSZ] = {
-        {0.00333834334834959,	2.58649731866218e-05,	-4.47182534891735e-05},
-        {3.97521279910819e-05,	0.00341838979684877,	-7.55578863505947e-06},
-        {-6.49436573527762e-05,	3.05050635014235e-05,	0.00334143925188739}
+        0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
+        6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
+        -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
     };
-    float b_acc[MSZ] = {0.00591423067694908, 0.0173747801090554, 0.0379428158730668};
-    float b_mag[MSZ] = {0.214140746707571, -1.08116057610690, -0.727337561140470};
+    float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
+    float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
     // gravity inertial vector
     double a_i[MSZ] = {0, 0, 1.0};
     // Earth's magnetic field inertial vector, normalized 
@@ -347,6 +351,7 @@ int main(void) {
     IMU_set_mag_cal(A_mag, b_mag);
     IMU_set_acc_cal(A_acc, b_acc);
 
+    start_time = Sys_timer_get_msec();
     while (1) {
         current_time = Sys_timer_get_msec();
         if ((current_time - start_time) >= MEAS_PERIOD) {

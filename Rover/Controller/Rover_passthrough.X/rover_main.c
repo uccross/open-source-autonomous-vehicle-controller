@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "xc.h"
 #include "Board.h"
@@ -736,6 +737,11 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+    
+    /*radio variables*/
+    char message[BUFFER_SIZE];
+    uint8_t msg_len = 0;
+    
 
     /*filter gains*/
     double kp_a = 2.5; //accelerometer proportional gain
@@ -804,7 +810,7 @@ int main(void) {
         IMU_retry--;
     }
 
-    printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
+    printf("\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
     /* load calibration matrices */
     IMU_set_mag_cal(A_mag, b_mag);
     IMU_set_acc_cal(A_acc, b_acc);
@@ -856,8 +862,11 @@ int main(void) {
                     a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             quat2euler(q_plus, euler);
 
-            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-
+//            printf("%d, %+3.1f, %+3.1f, %+3.1f \r\n", cur_time-control_start_time, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            for(index=0; index < msg_len; index++){
+                Radio_put_char(message[index]);
+            }
             // update b_minus and q_minus
             b_minus[0] = b_plus[0];
             b_minus[1] = b_plus[1];

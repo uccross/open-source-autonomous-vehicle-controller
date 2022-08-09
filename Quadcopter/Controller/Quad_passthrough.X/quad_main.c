@@ -47,6 +47,7 @@ mavlink_system_t mavlink_system = {
 };
 
 enum RC_channels {
+    SWITCH_D,
     THR,
     AIL,
     ELE,
@@ -55,7 +56,6 @@ enum RC_channels {
     SWITCH_A,
     SWITCH_B,
     SWITCH_C,
-    SWITCH_D,
     SWITCH_E
 }; //map to the car controls from the RC receiver
 
@@ -191,7 +191,7 @@ void check_IMU_events(void) {
 void RC_channels_init(void) {
     uint8_t i;
     for (i = 0; i < CHANNELS; i++) {
-        RC_channels[i] = RC_RX_MID_COUNTS;
+        RC_channels[i] = RC_RX_MIN_COUNTS;
     }
 }
 
@@ -477,6 +477,7 @@ static int calc_pw(int raw_counts) {
  */
 void set_control_output(void) {
     int hash;
+    int switch_d;
     int throttle[4];
     int throttle_raw;
     int roll_cmd;
@@ -490,6 +491,7 @@ void set_control_output(void) {
     int theta_raw;
     int psi_raw;
     /* get RC commanded values*/
+    switch_d = RC_channels[SWITCH_D];
     throttle_raw = RC_channels[THR];
     phi_raw = RC_channels[AIL];
     theta_raw = RC_channels[ELE];
@@ -502,12 +504,19 @@ void set_control_output(void) {
         roll_cmd = phi_raw - RC_RX_MID_COUNTS;
         pitch_cmd = theta_raw - RC_RX_MID_COUNTS;
         yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS); // reverse for CCW positive yaw
+        if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
+            /* mix attitude into X configuration */
+            throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
+            throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
+            throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
+            throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
 
-        /* mix attitude into X configuration */
-        throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
-        throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
-        throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
-        throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
+        } else { // Set throttle to minimum
+            throttle[0] = RC_SERVO_MIN_PULSE;
+            throttle[1] = RC_SERVO_MIN_PULSE;
+            throttle[2] = RC_SERVO_MIN_PULSE;
+            throttle[3] = RC_SERVO_MIN_PULSE;
+        }
         /* send commands to motor outputs*/
         RC_servo_set_pulse(throttle[0], MOTOR_1);
         RC_servo_set_pulse(throttle[1], MOTOR_2);
@@ -515,7 +524,7 @@ void set_control_output(void) {
         RC_servo_set_pulse(throttle[3], MOTOR_4);
     } else {
         INTOL = FALSE;
-        printf("%d, %d, %d, %d, %d, %d, %d \r\n", throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
     }
 
     //        printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
@@ -751,7 +760,9 @@ void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
 }
 
 int main(void) {
+    uint32_t start_time = 0;
     uint32_t cur_time = 0;
+    uint32_t RC_timeout = 1000;
     uint32_t warmup_time = 250; //time in ms to allow subsystems to stabilize (IMU))
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
@@ -760,6 +771,7 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+    static int8_t RC_system_online = FALSE;
 
     /*filter gains*/
     double kp_a = 2.5; //accelerometer proportional gain
@@ -809,13 +821,33 @@ int main(void) {
     Board_init(); //board configuration
     Serial_init(); //start debug terminal (USB)
     Sys_timer_init(); //start the system timer
+    cur_time = Sys_timer_get_msec();
+    start_time = cur_time;
+    RCRX_init(); //initialize the radio control system
+    /*wait until we get data from the RC controller*/
+    while (cur_time - start_time < RC_timeout) {
+        if (RCRX_new_cmd_avail()) {
+            RC_system_online = TRUE;
+            break;
+        }
+    }
+    if (RC_system_online == FALSE) {
+        printf("RC system failed to connect!\r\n");
+    } else {
+        printf("RC system online.\r\n");
+    }
+
+    RC_channels_init(); //set channels to midpoint of RC system
+    RC_servo_init(); // start the servo subsystem
     /*small delay to get all the subsystems time to get online*/
     while (cur_time < warmup_time) {
         cur_time = Sys_timer_get_msec();
     }
     Radio_serial_init(); //start the radios
     RCRX_init(); //initialize the radio control system
-    RC_channels_init(); //set channels to midpoint of RC system
+    RC_channels_init(); //set channels to MIN of RC system
+    printf("CH0: %d, CH1 %d,: CH2: %d, CH3: %d., CH4 %d \r\n", RC_channels[0], RC_channels[1], RC_channels[2], RC_channels[3], RC_channels[4]);
+
     RC_servo_init(); // start the servo subsystem
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
@@ -877,7 +909,7 @@ int main(void) {
                     a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             quat2euler(q_plus, euler);
 
-            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            //            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
 
             // update b_minus and q_minus
             b_minus[0] = b_plus[0];

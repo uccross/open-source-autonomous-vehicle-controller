@@ -69,6 +69,8 @@ enum motors {
 
 
 const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
+static int8_t RC_system_online = FALSE;
+
 
 RCRX_channel_buffer RC_channels[CHANNELS];
 struct IMU_out IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
@@ -479,7 +481,7 @@ static int calc_pw(int raw_counts) {
 void set_control_output(void) {
     int hash;
     int hash_check;
-    const int tol = 4;
+    const int tol = 10;
     int INTOL;
 
     /* get RC commanded values*/
@@ -729,6 +731,7 @@ void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
 int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
+    uint32_t RC_timeout = 1000;
     uint32_t warmup_time = 1000; //time in ms to allow subsystems to stabilize (IMU))
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
@@ -737,11 +740,11 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
-    
+
     /*radio variables*/
     char message[BUFFER_SIZE];
     uint8_t msg_len = 0;
-    
+
 
     /*filter gains*/
     double kp_a = 2.5; //accelerometer proportional gain
@@ -789,10 +792,40 @@ int main(void) {
 
     //Initialization routines
     Board_init(); //board configuration
-    Serial_init(); //start debug terminal (USB)
-    Sys_timer_init(); //start the system timer
+    Serial_init(); //start debug terminal 
     Radio_serial_init(); //start the radios
+    printf("Board initialization complete.\r\n");
+    msg_len = sprintf(message, "Board initialization complete.\r\n");
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+
+    Sys_timer_init(); //start the system timer
+    cur_time = Sys_timer_get_msec();
+    printf("System timer initialized.  Current time %d. \r\n", cur_time);
+    msg_len = sprintf(message, "System timer initialized.  Current time %d. \r\n", cur_time);
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+    cur_time = Sys_timer_get_msec();
+    start_time = cur_time;
     RCRX_init(); //initialize the radio control system
+    /*wait until we get data from the RC controller*/
+    while (cur_time - start_time < RC_timeout) {
+        if (RCRX_new_cmd_avail()) {
+            RC_system_online = TRUE;
+            break;
+        }
+    }
+    if (RC_system_online == FALSE) {
+        msg_len = sprintf(message, "RC system failed to connect!\r\n");
+    } else {
+        msg_len = sprintf(message, "RC system online.\r\n");
+    }
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+
     RC_channels_init(); //set channels to midpoint of RC system
     RC_servo_init(); // start the servo subsystem
 
@@ -842,6 +875,13 @@ int main(void) {
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
                     printf("IMU error count %d\r\n", IMU_error);
+                    IMU_state = IMU_init(IMU_SPI_MODE);
+                    if (IMU_state == ERROR && IMU_retry > 0) {
+                        IMU_state = IMU_init(IMU_SPI_MODE);
+                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
+                        IMU_retry--;
+                    }
+
                 }
             }
         }
@@ -862,9 +902,9 @@ int main(void) {
                     a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             quat2euler(q_plus, euler);
 
-//            printf("%d, %+3.1f, %+3.1f, %+3.1f \r\n", cur_time-control_start_time, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            //            printf("%d, %+3.1f, %+3.1f, %+3.1f \r\n", cur_time-control_start_time, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
             msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-            for(index=0; index < msg_len; index++){
+            for (index = 0; index < msg_len; index++) {
                 Radio_put_char(message[index]);
             }
             // update b_minus and q_minus
@@ -879,7 +919,7 @@ int main(void) {
         //publish heartbeat
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-//            publish_heartbeat();
+            //            publish_heartbeat();
         }
     }
     return 0;

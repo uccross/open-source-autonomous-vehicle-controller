@@ -740,6 +740,8 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+    uint32_t IMU_update_start;
+    uint32_t IMU_update_end;
 
     /*radio variables*/
     char message[BUFFER_SIZE];
@@ -803,7 +805,7 @@ int main(void) {
     Sys_timer_init(); //start the system timer
     cur_time = Sys_timer_get_msec();
     printf("System timer initialized.  Current time %d. \r\n", cur_time);
-    msg_len = sprintf(message, "System timer initialized.  Current time %d. \r\n", cur_time);
+    msg_len = sprintf(message, "System timer initialized.\r\n");
     for (index = 0; index < msg_len; index++) {
         Radio_put_char(message[index]);
     }
@@ -855,7 +857,7 @@ int main(void) {
     while (1) {
         //check for all events
         check_IMU_events(); //check for IMU data ready and publish when available
-        check_radio_events(); //detect and process MAVLink incoming messages
+//        check_radio_events(); //detect and process MAVLink incoming messages
         check_RC_events(); //check incoming RC commands
         cur_time = Sys_timer_get_msec();
         //publish control and sensor signals
@@ -871,21 +873,24 @@ int main(void) {
             }
             /*start next data acquisition round*/
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
+            IMU_update_start = Sys_timer_get_msec();
             if (IMU_state == ERROR) {
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
                     printf("IMU error count %d\r\n", IMU_error);
-                    IMU_state = IMU_init(IMU_SPI_MODE);
-                    if (IMU_state == ERROR && IMU_retry > 0) {
-                        IMU_state = IMU_init(IMU_SPI_MODE);
-                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
-                        IMU_retry--;
-                    }
+//                    IMU_retry = 5;
+//                    IMU_state = IMU_init(IMU_SPI_MODE);
+//                    if (IMU_state == ERROR && IMU_retry > 0) {
+//                        IMU_state = IMU_init(IMU_SPI_MODE);
+//                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
+//                        IMU_retry--;
+//                    }
 
                 }
             }
         }
         if (IMU_is_data_ready() == TRUE) {
+            IMU_update_end = Sys_timer_get_msec();
             IMU_get_norm_data(&IMU_scaled);
 
             acc_cal[0] = (double) IMU_scaled.acc.x;
@@ -902,11 +907,11 @@ int main(void) {
                     a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
             quat2euler(q_plus, euler);
 
-            //            printf("%d, %+3.1f, %+3.1f, %+3.1f \r\n", cur_time-control_start_time, euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-            for (index = 0; index < msg_len; index++) {
-                Radio_put_char(message[index]);
-            }
+            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            //            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            //            for (index = 0; index < msg_len; index++) {
+            //                Radio_put_char(message[index]);
+            //            }
             // update b_minus and q_minus
             b_minus[0] = b_plus[0];
             b_minus[1] = b_plus[1];

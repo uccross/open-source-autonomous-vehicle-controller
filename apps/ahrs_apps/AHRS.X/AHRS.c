@@ -177,21 +177,20 @@ void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ],
 
     float gyro_q_wfb[QSZ]; // temporary quaternion to hold feedback term
     float q_dot[QSZ]; // quaternion derivative
-    float b_dot[MSZ]; // bias vector derivative
     float q_norm;
     float acc_n;
     float mag_n;
 
     /* normalize inertial measurements */
-    acc_n = m_norm(accels);
-    accels[0] = accels[0] / acc_n;
-    accels[1] = accels[1] / acc_n;
-    accels[2] = accels[2] / acc_n;
+    acc_n = 1.0 / m_norm(accels);
+    accels[0] = accels[0] * acc_n;
+    accels[1] = accels[1] * acc_n;
+    accels[2] = accels[2] * acc_n;
 
-    mag_n = m_norm(mags);
-    mags[0] = mags[0] / mag_n;
-    mags[1] = mags[1] / mag_n;
-    mags[2] = mags[2] / mag_n;
+    mag_n = 1.0 / m_norm(mags);
+    mags[0] = mags[0] * mag_n;
+    mags[1] = mags[1] * mag_n;
+    mags[2] = mags[2] * mag_n;
 
     /*Accelerometer attitude calculations */
     q_rot_v_q(a_i, q_minus, a_b); //estimate gravity vector in body frame 

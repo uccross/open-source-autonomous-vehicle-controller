@@ -35,12 +35,28 @@
  * PUBLIC FUNCTIONS                                                           *
  ******************************************************************************/
 
+/*******************************************************************************
+ * PUBLIC TYPEDEF                                                              *
+ ******************************************************************************/
+enum {
+    RC_SERVO_TYPE,
+    ESC_UNIDIRECTIONAL_TYPE,
+    ESC_BIDIRECTIONAL_TYPE
+};
+
+enum {
+    SERVO_PWM_1,
+    SERVO_PWM_2,
+    SERVO_PWM_3,
+    SERVO_PWM_4
+};
+
 /**
  * @Function RC_servo_init(void)
  * @param None
  * @return SUCCESS or ERROR
  * @brief initializes hardware required and set it to the CENTER PULSE */
-int8_t RC_servo_init(void);
+int8_t RC_servo_init(uint8_t output_type, uint8_t output_channel);
 
 /**
  * @Function int RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo)

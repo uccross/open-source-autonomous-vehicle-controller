@@ -57,17 +57,17 @@ OBJECTDIR=build/${CND_CONF}/${IMAGE_TYPE}
 DISTDIR=dist/${CND_CONF}/${IMAGE_TYPE}
 
 # Source Files Quoted if spaced
-SOURCEFILES_QUOTED_IF_SPACED=RC_servo.c ../Board.X/Board.c ../Serial.X/SerialM32.c
+SOURCEFILES_QUOTED_IF_SPACED=RC_servo.c ../Board.X/Board.c ../Serial.X/SerialM32.c ../System_timer.X/System_timer.c
 
 # Object Files Quoted if spaced
-OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/RC_servo.o ${OBJECTDIR}/_ext/36105697/Board.o ${OBJECTDIR}/_ext/875531885/SerialM32.o
-POSSIBLE_DEPFILES=${OBJECTDIR}/RC_servo.o.d ${OBJECTDIR}/_ext/36105697/Board.o.d ${OBJECTDIR}/_ext/875531885/SerialM32.o.d
+OBJECTFILES_QUOTED_IF_SPACED=${OBJECTDIR}/RC_servo.o ${OBJECTDIR}/_ext/36105697/Board.o ${OBJECTDIR}/_ext/875531885/SerialM32.o ${OBJECTDIR}/_ext/698669614/System_timer.o
+POSSIBLE_DEPFILES=${OBJECTDIR}/RC_servo.o.d ${OBJECTDIR}/_ext/36105697/Board.o.d ${OBJECTDIR}/_ext/875531885/SerialM32.o.d ${OBJECTDIR}/_ext/698669614/System_timer.o.d
 
 # Object Files
-OBJECTFILES=${OBJECTDIR}/RC_servo.o ${OBJECTDIR}/_ext/36105697/Board.o ${OBJECTDIR}/_ext/875531885/SerialM32.o
+OBJECTFILES=${OBJECTDIR}/RC_servo.o ${OBJECTDIR}/_ext/36105697/Board.o ${OBJECTDIR}/_ext/875531885/SerialM32.o ${OBJECTDIR}/_ext/698669614/System_timer.o
 
 # Source Files
-SOURCEFILES=RC_servo.c ../Board.X/Board.c ../Serial.X/SerialM32.c
+SOURCEFILES=RC_servo.c ../Board.X/Board.c ../Serial.X/SerialM32.c ../System_timer.X/System_timer.c
 
 
 
@@ -111,38 +111,50 @@ ${OBJECTDIR}/RC_servo.o: RC_servo.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/RC_servo.o.d 
 	@${RM} ${OBJECTDIR}/RC_servo.o 
-	@${FIXDEPS} "${OBJECTDIR}/RC_servo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/RC_servo.o.d" -o ${OBJECTDIR}/RC_servo.o RC_servo.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/RC_servo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/RC_servo.o.d" -o ${OBJECTDIR}/RC_servo.o RC_servo.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 ${OBJECTDIR}/_ext/36105697/Board.o: ../Board.X/Board.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/36105697" 
 	@${RM} ${OBJECTDIR}/_ext/36105697/Board.o.d 
 	@${RM} ${OBJECTDIR}/_ext/36105697/Board.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/36105697/Board.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/_ext/36105697/Board.o.d" -o ${OBJECTDIR}/_ext/36105697/Board.o ../Board.X/Board.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/_ext/36105697/Board.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/36105697/Board.o.d" -o ${OBJECTDIR}/_ext/36105697/Board.o ../Board.X/Board.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 ${OBJECTDIR}/_ext/875531885/SerialM32.o: ../Serial.X/SerialM32.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/875531885" 
 	@${RM} ${OBJECTDIR}/_ext/875531885/SerialM32.o.d 
 	@${RM} ${OBJECTDIR}/_ext/875531885/SerialM32.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" -o ${OBJECTDIR}/_ext/875531885/SerialM32.o ../Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" -o ${OBJECTDIR}/_ext/875531885/SerialM32.o ../Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	
+${OBJECTDIR}/_ext/698669614/System_timer.o: ../System_timer.X/System_timer.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/698669614" 
+	@${RM} ${OBJECTDIR}/_ext/698669614/System_timer.o.d 
+	@${RM} ${OBJECTDIR}/_ext/698669614/System_timer.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/698669614/System_timer.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE) -g -D__DEBUG -D__MPLAB_DEBUGGER_PK3=1  -fframe-base-loclist  -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/698669614/System_timer.o.d" -o ${OBJECTDIR}/_ext/698669614/System_timer.o ../System_timer.X/System_timer.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 else
 ${OBJECTDIR}/RC_servo.o: RC_servo.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}" 
 	@${RM} ${OBJECTDIR}/RC_servo.o.d 
 	@${RM} ${OBJECTDIR}/RC_servo.o 
-	@${FIXDEPS} "${OBJECTDIR}/RC_servo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/RC_servo.o.d" -o ${OBJECTDIR}/RC_servo.o RC_servo.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/RC_servo.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/RC_servo.o.d" -o ${OBJECTDIR}/RC_servo.o RC_servo.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 ${OBJECTDIR}/_ext/36105697/Board.o: ../Board.X/Board.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/36105697" 
 	@${RM} ${OBJECTDIR}/_ext/36105697/Board.o.d 
 	@${RM} ${OBJECTDIR}/_ext/36105697/Board.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/36105697/Board.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/_ext/36105697/Board.o.d" -o ${OBJECTDIR}/_ext/36105697/Board.o ../Board.X/Board.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/_ext/36105697/Board.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/36105697/Board.o.d" -o ${OBJECTDIR}/_ext/36105697/Board.o ../Board.X/Board.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 ${OBJECTDIR}/_ext/875531885/SerialM32.o: ../Serial.X/SerialM32.c  nbproject/Makefile-${CND_CONF}.mk
 	@${MKDIR} "${OBJECTDIR}/_ext/875531885" 
 	@${RM} ${OBJECTDIR}/_ext/875531885/SerialM32.o.d 
 	@${RM} ${OBJECTDIR}/_ext/875531885/SerialM32.o 
-	@${FIXDEPS} "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -MMD -MF "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" -o ${OBJECTDIR}/_ext/875531885/SerialM32.o ../Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	@${FIXDEPS} "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/875531885/SerialM32.o.d" -o ${OBJECTDIR}/_ext/875531885/SerialM32.o ../Serial.X/SerialM32.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
+	
+${OBJECTDIR}/_ext/698669614/System_timer.o: ../System_timer.X/System_timer.c  nbproject/Makefile-${CND_CONF}.mk
+	@${MKDIR} "${OBJECTDIR}/_ext/698669614" 
+	@${RM} ${OBJECTDIR}/_ext/698669614/System_timer.o.d 
+	@${RM} ${OBJECTDIR}/_ext/698669614/System_timer.o 
+	@${FIXDEPS} "${OBJECTDIR}/_ext/698669614/System_timer.o.d" $(SILENT) -rsi ${MP_CC_DIR}../  -c ${MP_CC}  $(MP_EXTRA_CC_PRE)  -g -x c -c -mprocessor=$(MP_PROCESSOR_OPTION)  -DRCSERVO_TESTING -I"../Serial.X" -I"../Board.X" -I"../System_timer.X" -MMD -MF "${OBJECTDIR}/_ext/698669614/System_timer.o.d" -o ${OBJECTDIR}/_ext/698669614/System_timer.o ../System_timer.X/System_timer.c    -DXPRJ_default=$(CND_CONF)  -legacy-libc  $(COMPARISON_BUILD)  -mdfp=${DFP_DIR}  
 	
 endif
 

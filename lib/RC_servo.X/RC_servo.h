@@ -25,11 +25,6 @@
 #define RC_SERVO_MAX_PULSE 2000
 #define RC_ESC_TRIM -10
 
-#define RC_NUM_SERVOS 4
-#define RC_LEFT_WHEEL 0
-#define RC_RIGHT_WHEEL 1
-#define RC_STEERING 2
-#define MOTOR 3
 
 /*******************************************************************************
  * PUBLIC FUNCTIONS                                                           *

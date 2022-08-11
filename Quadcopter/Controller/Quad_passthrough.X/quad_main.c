@@ -485,9 +485,9 @@ void set_control_output(void) {
     if (abs(hash_check - hash) <= tol) {
         INTOL = TRUE;
         /*compute attitude commands*/
-        roll_cmd = phi_raw - RC_RX_MID_COUNTS;
-        pitch_cmd = theta_raw - RC_RX_MID_COUNTS;
-        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS); // reverse for CCW positive yaw
+        roll_cmd = (phi_raw - RC_RX_MID_COUNTS) >> 2;
+        pitch_cmd = (theta_raw - RC_RX_MID_COUNTS) >> 2;
+        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
         if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
             /* mix attitude into X configuration */
             throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
@@ -547,20 +547,6 @@ int main(void) {
     /* Calibration matrices and offset vectors */
 
     /*calibration matrices*/
-    // Test IMU calibration
-//    float A_acc[MSZ][MSZ] = {
-//        6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
-//        -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
-//        -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
-//    };
-//    float A_mag[MSZ][MSZ] = {
-//        0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
-//        6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
-//        -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
-//    };
-//    float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
-//    float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
-    // quad imu calibrations
     float A_acc[MSZ][MSZ] = {
         {5.98605657636023e-05, 5.02299172664344e-08, 8.41134559461075e-07},
         {-2.82167981801537e-08, 6.05938345982234e-05, 6.95665927111956e-07},

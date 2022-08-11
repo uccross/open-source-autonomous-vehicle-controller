@@ -31,8 +31,8 @@
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            *
  ******************************************************************************/
-static uint16_t pulse_width[RC_NUM_SERVOS]; //PW in microseconds
-static uint16_t raw_ticks[RC_NUM_SERVOS]; // raw ticks corresponding to pulse width
+static uint16_t pulse_width[RC_SERVO_NUM_OUTPUTS]; //PW in microseconds
+static uint16_t raw_ticks[RC_SERVO_NUM_OUTPUTS]; // raw ticks corresponding to pulse width
 static int8_t RC_SET_NEW_CMD = FALSE; //flag to indicate when the new command can be loaded 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *

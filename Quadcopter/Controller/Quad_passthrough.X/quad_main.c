@@ -69,7 +69,7 @@ enum motors {
 
 const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
 
-RCRX_channel_buffer RC_channels[CHANNELS];
+RCRX_channel_buffer RC_channels[CHANNELS] = {RC_SERVO_MIN_PULSE};
 struct IMU_out IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
 struct IMU_out IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 static uint8_t pub_RC_servo = FALSE;
@@ -820,6 +820,7 @@ int main(void) {
     //Initialization routines
     Board_init(); //board configuration
     Serial_init(); //start debug terminal (USB)
+    Radio_serial_init(); //start the radios
     Sys_timer_init(); //start the system timer
     cur_time = Sys_timer_get_msec();
     start_time = cur_time;
@@ -836,19 +837,12 @@ int main(void) {
     } else {
         printf("RC system online.\r\n");
     }
+    /* With RC controller online we can set the servo PWM outputs*/
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_1); // all the motors use ESCs
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_2);
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_3);
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_4);
 
-    RC_channels_init(); //set channels to midpoint of RC system
-    RC_servo_init(); // start the servo subsystem
-    /*small delay to get all the subsystems time to get online*/
-    while (cur_time < warmup_time) {
-        cur_time = Sys_timer_get_msec();
-    }
-    Radio_serial_init(); //start the radios
-    RCRX_init(); //initialize the radio control system
-    RC_channels_init(); //set channels to MIN of RC system
-    printf("CH0: %d, CH1 %d,: CH2: %d, CH3: %d., CH4 %d \r\n", RC_channels[0], RC_channels[1], RC_channels[2], RC_channels[3], RC_channels[4]);
-
-    RC_servo_init(); // start the servo subsystem
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);

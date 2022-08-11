@@ -73,7 +73,7 @@ const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
 static int8_t RC_system_online = FALSE;
 
 
-RCRX_channel_buffer RC_channels[CHANNELS];
+RCRX_channel_buffer RC_channels[CHANNELS] = {RC_RX_MID_COUNTS};
 struct IMU_out IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
 struct IMU_out IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 static uint8_t pub_RC_servo = FALSE;
@@ -99,13 +99,6 @@ void check_IMU_events(void);
  * @function RC_channels_init(void)
  * @param none
  * @brief set all RC channels to RC_RX_MID_COUNTS
- * @author Aaron Hunter
- */
-void RC_channels_init(void);
-/**
- * @function check_RC_events(void)
- * @param none
- * @brief checks for RC messages and stores data in RC channel buffer
  * @author Aaron Hunter
  */
 void check_RC_events();
@@ -183,19 +176,6 @@ void set_control_output(void);
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
         IMU_get_raw_data(&IMU_raw);
-    }
-}
-
-/**
- * @function RC_channels_init(void)
- * @param none
- * @brief set all RC channels to RC_RX_MID_COUNTS
- * @author Aaron Hunter
- */
-void RC_channels_init(void) {
-    uint8_t i;
-    for (i = 0; i < CHANNELS; i++) {
-        RC_channels[i] = RC_RX_MID_COUNTS;
     }
 }
 
@@ -500,12 +480,10 @@ void set_control_output(void) {
     }
 }
 
-
 int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
     uint32_t RC_timeout = 1000;
-    uint32_t warmup_time = 1000; //time in ms to allow subsystems to stabilize (IMU))
     uint32_t control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     uint8_t index;
@@ -594,15 +572,11 @@ int main(void) {
         Radio_put_char(message[index]);
     }
 
-    RC_channels_init(); //set channels to midpoint of RC system
-    RC_servo_init(); // start the servo subsystem
+    /* With RC controller online we can set the servo PWM outputs*/
+    RC_servo_init(ESC_BIDIRECTIONAL_TYPE, SERVO_PWM_1); // Left motor
+    RC_servo_init(ESC_BIDIRECTIONAL_TYPE, SERVO_PWM_2); // right motor
+    RC_servo_init(RC_SERVO_TYPE, SERVO_PWM_3); //steering servo
 
-    /*small delay to get all the subsystems time to get online*/
-    start_time = Sys_timer_get_msec();
-    cur_time = start_time;
-    while (cur_time - start_time < warmup_time) {
-        cur_time = Sys_timer_get_msec();
-    }
     /* initialize the IMU */
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
@@ -682,5 +656,5 @@ int main(void) {
             }
         }
     }
-    return(0);
+    return (0);
 }

@@ -24,6 +24,7 @@
 #define RC_SERVO_CENTER_PULSE 1500
 #define RC_SERVO_MAX_PULSE 2000
 #define RC_ESC_TRIM -10
+#define RC_SERVO_NUM_OUTPUTS 4
 
 
 /*******************************************************************************

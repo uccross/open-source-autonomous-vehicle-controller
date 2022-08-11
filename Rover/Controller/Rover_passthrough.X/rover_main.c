@@ -48,7 +48,21 @@ mavlink_system_t mavlink_system = {
     MAV_COMP_ID_AUTOPILOT1 // Component ID (a MAV_COMPONENT value)
 };
 
+//enum RC_channels {
+//    THR,
+//    AIL,
+//    ELE,
+//    RUD,
+//    HASH,
+//    SWITCH_A,
+//    SWITCH_B,
+//    SWITCH_C,
+//    SWITCH_D,
+//    SWITCH_E
+//}; //map to the car controls from the RC receiver
+
 enum RC_channels {
+    SWITCH_D,
     THR,
     AIL,
     ELE,
@@ -57,7 +71,6 @@ enum RC_channels {
     SWITCH_A,
     SWITCH_B,
     SWITCH_C,
-    SWITCH_D,
     SWITCH_E
 }; //map to the car controls from the RC receiver
 
@@ -508,19 +521,34 @@ int main(void) {
     const float deg2rad = M_PI / 180.0;
     const float rad2deg = 180.0 / M_PI;
     /* Calibration matrices and offset vectors */
-    float A_acc[MSZ][MSZ] = {
-        {5.98605657636023e-05, 5.02299172664344e-08, 8.41134559461075e-07},
-        {-2.82167981801537e-08, 6.05938345982234e-05, 6.95665927111956e-07},
-        {4.48326742757725e-08, -3.34771681800715e-07, 5.94633160681115e-05}
-    };
-    float A_mag[MSZ][MSZ] = {
-        {0.00333834334834959, 2.58649731866218e-05, -4.47182534891735e-05},
-        {3.97521279910819e-05, 0.00341838979684877, -7.55578863505947e-06},
-        {-6.49436573527762e-05, 3.05050635014235e-05, 0.00334143925188739}
-    };
-    float b_acc[MSZ] = {0.00591423067694908, 0.0173747801090554, 0.0379428158730668};
-    float b_mag[MSZ] = {0.214140746707571, -1.08116057610690, -0.727337561140470};
 
+    /*calibration matrices*/
+    // Test IMU calibration
+    //        float A_acc[MSZ][MSZ] = {
+    //            6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
+    //            -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
+    //            -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
+    //        };
+    //        float A_mag[MSZ][MSZ] = {
+    //            0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
+    //            6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
+    //            -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
+    //        };
+    //        float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
+    //        float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
+    // quad imu calibrations
+//    float A_acc[MSZ][MSZ] = {
+//        {5.98605657636023e-05, 5.02299172664344e-08, 8.41134559461075e-07},
+//        {-2.82167981801537e-08, 6.05938345982234e-05, 6.95665927111956e-07},
+//        {4.48326742757725e-08, -3.34771681800715e-07, 5.94633160681115e-05}
+//    };
+//    float A_mag[MSZ][MSZ] = {
+//        {0.00333834334834959, 2.58649731866218e-05, -4.47182534891735e-05},
+//        {3.97521279910819e-05, 0.00341838979684877, -7.55578863505947e-06},
+//        {-6.49436573527762e-05, 3.05050635014235e-05, 0.00334143925188739}
+//    };
+//    float b_acc[MSZ] = {0.00591423067694908, 0.0173747801090554, 0.0379428158730668};
+//    float b_mag[MSZ] = {0.214140746707571, -1.08116057610690, -0.727337561140470};
     // gravity inertial vector
     float a_i[MSZ] = {0, 0, 1.0};
     // Earth's magnetic field inertial vector, normalized 
@@ -586,6 +614,7 @@ int main(void) {
     }
 
     printf("\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
+    printf("Testing!\r\n");
     /* load IMU calibrations */
     IMU_set_mag_cal(A_mag, b_mag);
     IMU_set_acc_cal(A_acc, b_acc);
@@ -608,13 +637,6 @@ int main(void) {
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
             set_control_output(); // set actuator outputs
-            /*publish high speed sensors*/
-            if (pub_RC_signals == TRUE) {
-                publish_RC_signals_raw();
-            }
-            if (pub_IMU == TRUE) {
-                publish_IMU_data(RAW);
-            }
             /*start next data acquisition round*/
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             IMU_update_start = Sys_timer_get_msec();
@@ -628,9 +650,14 @@ int main(void) {
                     //                        IMU_state = IMU_init(IMU_SPI_MODE);
                     //                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
                     //                        IMU_retry--;
-                    //                    }
-
                 }
+            }
+            /*publish high speed sensors*/
+            if (pub_RC_signals == TRUE) {
+                publish_RC_signals_raw();
+            }
+            if (pub_IMU == TRUE) {
+                publish_IMU_data(RAW);
             }
         }
         if (IMU_is_data_ready() == TRUE) {
@@ -649,11 +676,11 @@ int main(void) {
             gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
             AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
             printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-            //publish heartbeat
-            if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
-                heartbeat_start_time = cur_time; //reset the timer
-                //            publish_heartbeat();
-            }
+        }
+        /* if period timer expires, publish the heartbeat message*/
+        if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
+            heartbeat_start_time = cur_time; //reset the timer
+            //            publish_heartbeat();
         }
     }
     return (0);

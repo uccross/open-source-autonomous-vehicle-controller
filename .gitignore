@@ -37,4 +37,6 @@
 !LICENSE
 !.gitignore
 !*.stp
+!*.SLDASM
+!*.SLDPRT
 

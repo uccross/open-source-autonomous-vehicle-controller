@@ -184,13 +184,13 @@ short lidar_advanced_settings(uint8_t max_acqisition, bool quick_termination,
 uint8_t sensitivity);
 
 /*
- * @Function void send_error_on_mavlink(short message)
+ * @Function void send_lidar_error_on_mavlink(short message)
  * @param message, an error code
  * @return None
  * @brief a function just takes an error code and wrote the appropriate error 
  * description on the serial port.
  * @author Bhumil Depani
  */
-void send_error_on_mavlink(short message);
+void send_lidar_error_on_mavlink(short message);
 
 #endif  //V3HPLIDAR_H

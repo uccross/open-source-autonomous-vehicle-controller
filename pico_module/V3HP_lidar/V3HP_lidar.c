@@ -81,6 +81,7 @@ void i2c_initialize(void)
  * @brief to configure required LiDAR internal registers to initiate measurement
  * @author Bhumil Depani
  */
+
 short trigger_measurement(void)
 {
     uint8_t data = 0x04;        /* need to write 0x04 to ACQ_COMMAND to 
@@ -425,14 +426,14 @@ uint8_t sensitivity)
 }
 
 /*
- * @Function void send_error_on_mavlink(short message)
+ * @Function void send_lidar_error_on_mavlink(short message)
  * @param message, an error code
  * @return None
  * @brief a function just takes an error code and wrote the appropriate error 
  * description on the serial port.
  * @author Bhumil Depani
  */
-void send_error_on_mavlink(short message)
+void send_lidar_error_on_mavlink(short message)
 {
     if(message == LIDAR_WRITE_ERROR_TIMEOUT)
     {
@@ -456,7 +457,6 @@ void send_error_on_mavlink(short message)
     }
 }
 
-
 #ifdef V3HPLIDAR_TESTING
 
 int main()
@@ -465,25 +465,30 @@ int main()
 
     i2c_initialize();
     short trigger_output;
+    uint32_t start, stop, middle;
     while (true)
     {
+        start = time_us_32();
         trigger_output = trigger_measurement();
-
+        middle = time_us_32();
         if(trigger_output != TRIGGER_SUCCESS)
         {
-            send_error_on_mavlink(trigger_output);
+            send_lidar_error_on_mavlink(trigger_output);
         }
-
+        
         int32_t distance = get_distance();
+        stop = time_us_32();
         if(distance >= 0)
         {
+
             printf("\nCurrent distace: %5d cm", distance);
+            printf("    trigger: %10lu, read: %10lu, all: %10lu", (middle - start), (stop - middle), (stop - start));
         }
         if(distance < 0)
         {
-            send_error_on_mavlink(distance);
+            send_lidar_error_on_mavlink(distance);
         }
-        sleep_ms(1000);
+        sleep_ms(5000);
     }
 }
 

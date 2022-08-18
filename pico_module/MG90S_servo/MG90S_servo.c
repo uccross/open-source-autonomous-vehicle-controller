@@ -14,12 +14,13 @@
 #include "MG90S_servo.h"                // Header file for MG90S_servo.c
 #include "hardware/pwm.h"               //Pico PWM Library
 #include <stdio.h>                      //C standard Input Output Library
+#include "../AS5047D_encoder/AS5047D_encoder.h"
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
 
-#define MOTOR_PIN 0                 // GPIO pin number where Motor is connected
+#define MOTOR_PIN 2                 // GPIO pin number where Motor is connected
 #define MIN_MICROSECOND 440         /* As per datasheet 2.5% of duty cycle
 * should be needed to move servo motor at -90 degree angle. For 50 Hz Servo
 * motor, PWM period is 20,000 microsecond. So, 2.5% of 20,000 is 500. So, our
@@ -71,7 +72,7 @@ void MG90S_servo_init(void)
     * number associated with a MOTOR_PIN */
 
     uint pwm_clock_freq;        /* pwm_clock_freq refers to the PWM frequency 
-    * we will get after dividing Pico System Clock frequency */
+    * we will get after dividing Pico System Clock frequency. */
 
     pwm_clock_freq = SYSTEM_CLOCK_FREQ / FREQUENCY_DIVISOR;
     pwm_wrap_count = pwm_clock_freq / PWM_PERIOD_HZ;
@@ -97,7 +98,7 @@ void MG90S_servo_init(void)
  */
 void MG90S_servo_set_angle(int16_t angle_degree)
 {   
-    servo_angle = angle_degree;     /* save angle_degree to further use in 
+    servo_angle = angle_degree;   /* save angle_degree to further use in 
     * MG90S_servo_get_angle function */
     uint base_microsecond = CENTER_MICROSECOND;
 
@@ -155,18 +156,33 @@ int16_t MG90S_servo_get_angle(void)
 void main()
 {
     MG90S_servo_init();
-    while (1)
+    sleep_ms(2000);
+    /*MG90S_servo_set_angle(0);
+    sleep_ms(10000);*/
+    //spi_initialize(SPI_SPEED);
+    //uint16_t initial_angle;
+    //initial_angle = get_initial_angle();
+    for(int i =0; i< 5; i++)
     {
-        MG90S_servo_set_angle(0);
+        /*MG90S_servo_set_angle(0);
         printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
-        sleep_ms(5000);
+        sleep_ms(5000);*/
         MG90S_servo_set_angle(-9000);
         printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
-        sleep_ms(5000);
+        sleep_ms(1000);
+        MG90S_servo_set_angle(-4500);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
+        sleep_ms(1000);
+        MG90S_servo_set_angle(0);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
+        sleep_ms(1000);
+        MG90S_servo_set_angle(4500);
+        printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
+        sleep_ms(1000);
         MG90S_servo_set_angle(9000);
         printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
-        sleep_ms(5000);
-        MG90S_servo_set_angle(-4500);
+        sleep_ms(1000);
+        /*MG90S_servo_set_angle(-4500);
         printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
         sleep_ms(5000);
         MG90S_servo_set_angle(0);
@@ -178,8 +194,9 @@ void main()
             MG90S_servo_set_angle(count);
             printf("\nAngle at this time: %10d", MG90S_servo_get_angle());
             sleep_ms(5000);
-        }
+        }*/
     }
+    MG90S_servo_set_angle(0);
 }
 
 #endif  //MG90SSERVO_TESTING

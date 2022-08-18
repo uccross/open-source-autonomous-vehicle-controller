@@ -79,7 +79,9 @@ void spi_initialize(int data_speed_hz)
  * @Function uint16_t get_initial_angle(void)
  * @param None
  * @return an initial angle stored in an internal register of encoder. The 
- * return value will be between 0 and 36000, including 0.
+ * return value will be between 0 and 36000, including 0. If error occurs, then
+ * error code will be sent for SPI_WRITE_ERROR_GENERIC, SPI_WRITE_COMMAND_ERROR,
+ * SPI_READ_ERROR_GENERIC and SPI_READ_ERROR_PARITY.
  * @brief This function should be called just after powering up controller and 
  * initializing GPIO and SPI communication. An output initial angle will be used
  * to calculate the absolute angle afterwards.
@@ -90,17 +92,24 @@ uint16_t get_initial_angle(void)
     uint8_t read_data[2];
     uint16_t initial_angle;
 
-    spi_read(ANGLEUNC_ADDRESS, read_data);  /* spi_read function will send back 
-    * data in read_data array. */
+    short read_output = spi_read_wrapper(ANGLEUNC_ADDRESS, read_data);  /* 
+    spi_read function will send back data in read_data array. */
 
-    initial_angle = extract_angle(read_data);
+    if(read_output == SPI_READ_SUCCESS)
+        initial_angle = extract_angle(read_data);
+    else
+    {
+            initial_angle = 65535 + read_output;
+    }
     return initial_angle;
 }
 
 /*
  * @Function int16_t get_angle(uint16_t initial_angle)
  * @param initial_angle, an initial angle when microcontroller has powered up.
- * @return a current angle of servo motor in centidegree (-18000 to +18000).
+ * @return a current angle of servo motor in centidegree (-18000 to +18000). If 
+ * error occurs, then error code will be sent for SPI_WRITE_ERROR_GENERIC, 
+ * SPI_WRITE_COMMAND_ERROR, SPI_READ_ERROR_GENERIC and SPI_READ_ERROR_PARITY.
  * @brief This function should be called to get a current angle of a servo 
  * motor. This current angle will be calculated with current reading from
  * encoder and an initial_angle.
@@ -111,15 +120,21 @@ int16_t get_angle(uint16_t initial_angle)
     uint8_t read_data[2];
     int16_t angle_degree;
 
-    spi_read(ANGLEUNC_ADDRESS, read_data);  /* spi_read function will send back 
-    * data in read_data array. */
+    short read_output = spi_read_wrapper(ANGLEUNC_ADDRESS, read_data);  /* spi_read function will send back data in read_data array. */
 
-    uint16_t raw_angle_degree = extract_angle(read_data);  /* this 
-    raw_angle_degree will be raw angle (from 0 to 36000 centidegree) reading, 
-    residing in the encoder. */
+    if(read_output == SPI_READ_SUCCESS)
+    {
+        uint16_t raw_angle_degree = extract_angle(read_data);  /* this 
+        raw_angle_degree will be raw angle (from 0 to 36000 centidegree) 
+        reading, residing in the encoder. */
 
-    angle_degree = angle_correction(raw_angle_degree, initial_angle);   /* to 
-    * get absolute angle between -18000 to +18000 centidegree. */
+        angle_degree = angle_correction(raw_angle_degree, initial_angle);   /* 
+        to get absolute angle between -18000 to +18000 centidegree. */
+    }
+    else
+    {
+        angle_degree = 32767 + read_output;
+    }
     return angle_degree;
 }
 
@@ -164,14 +179,37 @@ output_command_frame[])
 uint16_t attach_parity_bit(uint16_t data)
 {
     uint16_t data_copy = data;
-    unsigned int count = 0;     //to count number of ones in the "data"
+    uint8_t count = 0;     //to count number of ones in the "data"
     while (data_copy) {
-        count += data_copy & 1;
+        count += (data_copy & 1);
         data_copy >>= 1;
     }
-    if(count % 2 != 0)          // if number of ones is odd, make parity bit 1
+    if((count % 2) != 0)          // if number of ones is odd, make parity bit 1
         data |= 0x8000;
     return data;
+}
+
+/*
+ * @Function bool parity_checker(uint8_t data[])
+ * @param data, data array with 2 uint8_t elements. Which includes even parity
+ * bit.
+ * @return true if parity matches, false if not.
+ * @brief to check the even parity bit.
+ * @author Bhumil Depani
+ */
+bool parity_checker(uint8_t data[])
+{
+    uint16_t whole_data = (data[0] << 8) | data[1];
+    short count = 0;
+    while(whole_data)
+    {
+        count += (whole_data & 1);
+        whole_data >>= 1;
+    }
+    if(count % 2 == 0)
+        return true;
+    else
+        return false;
 }
 
 /*
@@ -180,26 +218,91 @@ uint16_t attach_parity_bit(uint16_t data)
  * @param read_data[], output read_data array. read_data[0] with higher 8 bits 
  * of register_address content and read_data[1] with lower 8 bits of 
  * register_address content.
- * @return None
+ * @return success or error code, SPI_READ_SUCCESS, SPI_WRITE_ERROR_GENERIC, 
+ * SPI_WRITE_COMMAND_ERROR, SPI_READ_ERROR_GENERIC, SPI_READ_ERROR_PARITY 
  * @brief This function will manage the lower level signals for reading data
  * out of SPI slave.
  * @author Bhumil Depani
  */
-void spi_read(uint16_t register_address, uint8_t read_data[])
+short spi_read(uint16_t register_address, uint8_t read_data[])
 {
     uint8_t output_command[2];
+    short output;
     generate_command_frame(register_address, 1, output_command);    /* to 
     * generate appropriate command frame for AS5047D SPI slave. */
 
     gpio_put(CS_PIN, 0);
-    spi_write_blocking(SPI_PORT, output_command, 2);
+    short bytes = spi_write_blocking(SPI_PORT, output_command, 2);
     gpio_put(CS_PIN, 1);
 
     sleep_us(1);
     
-    gpio_put(CS_PIN, 0);
-    spi_read_blocking(SPI_PORT, 0, read_data, 2);
-    gpio_put(CS_PIN, 1);
+    if(bytes == 2)      // For error free execution, if condition would be true
+    {
+        gpio_put(CS_PIN, 0);
+        bytes = spi_read_blocking(SPI_PORT, 0, read_data, 2);
+        gpio_put(CS_PIN, 1);
+
+        if(bytes == 2)  // For error free execution, if condition would be true
+        {
+            bool error_bit = (read_data[0] & 0b01000000) >> 6;
+            bool parity_bit = (read_data[0] & 0b10000000) >> 7;
+            if (error_bit == 1)
+            {
+                output = SPI_WRITE_COMMAND_ERROR;
+            }
+            else   // For error free execution, else statements will be executed
+            {
+                bool parity_result = parity_checker(read_data);
+                if(parity_result)   /* For error free execution, if condition 
+                * would be true. */
+                    output = SPI_READ_SUCCESS;
+                else
+                    output = SPI_READ_ERROR_PARITY;
+            }
+        }
+        else
+        {
+            output = SPI_READ_ERROR_GENERIC;
+        }
+    }
+    else
+    {
+        output = SPI_WRITE_ERROR_GENERIC;
+    }
+    return output;
+}
+
+/*
+ * @Function void spi_read_wrapper(uint16_t register_address, uint8_t read_data
+ * [])
+ * @param register_address, an internal register address from where to read
+ * @param read_data[], output read_data array. read_data[0] with higher 8 bits 
+ * of register_address content and read_data[1] with lower 8 bits of 
+ * register_address content.
+ * @return success or error code, SPI_READ_SUCCESS, SPI_WRITE_ERROR_GENERIC, 
+ * SPI_WRITE_COMMAND_ERROR, SPI_READ_ERROR_GENERIC, SPI_READ_ERROR_PARITY
+ * @brief This function will act as a wrapper function of spi_read() function, 
+ * the function will call spi_read() function at the max 3 times, and if still
+ * error persist, it will send an error code.
+ * @author Bhumil Depani
+ */
+short spi_read_wrapper(uint16_t register_address, uint8_t read_data[])
+{
+    short read_output = spi_read(register_address, read_data);
+
+    if(read_output == SPI_READ_SUCCESS)
+        return SPI_READ_SUCCESS;
+    else
+    {
+        for(short i = 0; i < 2; i++)
+        {
+            read_output = spi_read(register_address, read_data);
+            if(read_output == SPI_READ_SUCCESS)
+                return read_output;
+        }
+        return read_output;
+    }
 }
 
 /*
@@ -214,12 +317,9 @@ void spi_read(uint16_t register_address, uint8_t read_data[])
  */
 uint16_t extract_angle(uint8_t raw_sensor_data_array[])
 {
-    uint16_t raw_sensor_data = raw_sensor_data_array[0] << 8 | 
+    uint16_t raw_sensor_data = (raw_sensor_data_array[0] << 8) | 
     raw_sensor_data_array[1];
-    
-    bool error_bit = (raw_sensor_data_array[0] & 0b01000000) >> 6;
-    bool parity_bit = (raw_sensor_data_array[0] & 0b10000000) >> 7;
-            
+
     uint16_t raw_sensor_angle = raw_sensor_data & 0x3FFF;
     uint16_t raw_angle_degree = ((raw_sensor_angle * 360.0) / ENCODER_RESOLUTION) * 100;              //calculating centidegrees
 
@@ -267,6 +367,72 @@ int16_t angle_correction(uint16_t raw_angle, uint16_t initial_angle)
     return final_angle;
 }
 
+/*
+ * @Function void send_initial_angle_encoder_error_on_mavlink(uint16_t message)
+ * @param message, encoded error code to be sent out on MAVLink
+ * @return None
+ * @brief this function accepts error code and sent the appropriate message on 
+ * the mavlink. The function can only decode error code, sent from 
+ * get_initial_angle() function.
+ * @author Bhumil Depani
+ */
+void send_initial_angle_encoder_error_on_mavlink(uint16_t message)
+{
+    if(message == 65534)
+    {
+        printf("\nEncoder SPI Write Generic Error.");
+    }
+    else if(message == 65533)
+    {
+        printf("\nEncoder SPI Write Command Error.");
+    }
+    else if(message == 65532)
+    {
+        printf("\nEncoder SPI Read Generic Error.");
+    }
+    else if(message == 65531)
+    {
+        printf("\nEncoder SPI Read Parity Error.");
+    }
+    else
+    {
+        printf("\nUnknown error from encoder driver module.");
+    }
+}
+
+/*
+ * @Function void send_angle_encoder_error_on_mavlink(uint16_t message)
+ * @param message, encoded error code to be sent out on MAVLink
+ * @return None
+ * @brief this function accepts error code and sent the appropriate message on 
+ * the mavlink. The function can only decode error code, sent from 
+ * get_angle() function.
+ * @author Bhumil Depani
+ */
+void send_angle_encoder_error_on_mavlink(int16_t message)
+{
+    if(message == 32766)
+    {
+        printf("\nEncoder SPI Write Generic Error.");
+    }
+    else if(message == 32765)
+    {
+        printf("\nEncoder SPI Write Command Error.");
+    }
+    else if(message == 32764)
+    {
+        printf("\nEncoder SPI Read Generic Error.");
+    }
+    else if(message == 32763)
+    {
+        printf("\nEncoder SPI Read Parity Error.");
+    }
+    else
+    {
+        printf("\nUnknown error from encoder driver module.");
+    }
+}
+
 #ifdef AS5047DENCODER_TESTING
 
 int main()
@@ -274,19 +440,33 @@ int main()
     stdio_init_all();
     spi_initialize(SPI_SPEED);
     
-    float initial_angle;
+    uint16_t initial_angle;
     initial_angle = get_initial_angle();
-
-    while(1)
+    if(initial_angle <= 36000)
     {
-        for(int i = 0; i < 10; i++)
-        {
-            int16_t angle_degree = get_angle(initial_angle);
-            printf("\nAngle is %d", angle_degree);
-
-            sleep_ms(1000);
-        }
+        while(1)
+            {
+                for(int i = 0; i < 10; i++)
+                {
+                    int16_t angle_degree = get_angle(initial_angle);
+                    if(angle_degree <= 18000)
+                    {
+                        printf("\nAngle is %d", angle_degree);
+                    }
+                    else
+                    {
+                        send_angle_encoder_error_on_mavlink(angle_degree);
+                    }
+                    sleep_ms(1000);
+                }
+            }
     }
+    else
+    {
+        send_initial_angle_encoder_error_on_mavlink(initial_angle);
+    }
+
+    
 }
 
 #endif      // AS5047DENCODER_TESTING

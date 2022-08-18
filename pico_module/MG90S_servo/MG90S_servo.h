@@ -59,7 +59,6 @@ void MG90S_servo_set_angle(int16_t angle_degree);
  */
 uint16_t microsecond_to_pwm_count(float microsecond);
 
-
 /*
  * @Function int16_t MG90S_servo_get_angle(void)
  * @param None

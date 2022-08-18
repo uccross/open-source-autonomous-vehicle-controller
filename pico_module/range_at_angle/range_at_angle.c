@@ -1,7 +1,7 @@
 /*
  * File: range_at_angle.c
  * Author: Bhuml Depani
- * Brief: This is one of the mode of sensor driver module. In this file, there 
+ * Brief: This is one of the modes of sensor driver module. In this file, there 
  * are functions to find the range (distance) at a particular angle.
  * Created on 07/12/2022 07:12 pm
 */
@@ -17,11 +17,11 @@
 #include "../AS5047D_encoder/AS5047D_encoder.h" /* header file for AS5047D 
 * encoder */
 #include "hardware/watchdog.h"
+
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
 
-#define TOLERANCE 500       // tolerance of -500 to +500 centidegree
 #define LIDAR_PERIOD 2000000  // read LiDAR at every 20 ms
 #define ENCODER_PERIOD 100000 // read encoder at every 1 ms
 #define WATCHDOG_COUNT  8000    /* Watchdog reset count in milliseconds, maximum
@@ -162,7 +162,6 @@ void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
     }
 }
 
-#define RANGEATANGLE_TESTING
 #ifdef RANGEATANGLE_TESTING
 
 int main(void)

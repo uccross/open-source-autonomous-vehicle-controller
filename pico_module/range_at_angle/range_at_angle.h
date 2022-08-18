@@ -1,7 +1,7 @@
 /*
  * File: range_at_angle.h
  * Author: Bhuml Depani
- * Brief: This is one of the mode of sensor driver module. In this file, there 
+ * Brief: This is one of the modes of sensor driver module. In this file, there 
  * are functions to find the range (distance) at a particular angle.
  * Created on 07/12/2022 07:35 pm
 */
@@ -19,7 +19,9 @@
  * PUBLIC #DEFINES                                                            *
  ******************************************************************************/
 
-typedef struct angle_an_range
+#define TOLERANCE 100       // tolerance of -100 to +100 centidegree
+
+typedef struct angle_and_range
 {
     int16_t angle;
     uint16_t range;
@@ -63,7 +65,5 @@ angle_and_range get_angle_and_range(uint16_t initial_angle);
  * @author Bhumil Depani
  */
 void range_at_angle_mode(int16_t angle, uint16_t initial_angle);
-
-
 
 #endif      // RANGEATANGLE_H

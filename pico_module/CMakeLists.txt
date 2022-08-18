@@ -12,7 +12,9 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(${PROJECT_NAME}
+        main.c
         range_at_angle/range_at_angle.c
+        constant_panning_mode/constant_panning_mode.c
         MG90S_servo/MG90S_servo.c
         V3HP_lidar/V3HP_lidar.c
         AS5047D_encoder/AS5047D_encoder.c

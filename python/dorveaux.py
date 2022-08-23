@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 #Read raw data
 # filename = sys.argv[1]
-filename = 'tumble_030122.csv'
+filename = 'tumble_1.csv'
 
 df_raw = pd.read_csv(filename)
 
@@ -15,7 +15,11 @@ mag_df = df_raw[['xmag','ymag','zmag']]
 y_i = mag_df.values/1.0
 scale = ((mag_df['xmag'].max()-mag_df['xmag'].min())/2 + (mag_df['ymag'].max()-mag_df['ymag'].min())/2 +(mag_df['zmag'].max()-mag_df['zmag'].min())/2)/3
 
-#Dorveaux calibration (copy pasted from Aaron's code)
+acc_df =  df_raw[['xacc','yacc','zacc']]
+y_acc_i = acc_df.values/1.0
+acc_scale = ((acc_df['xacc'].max()-acc_df['xacc'].min())/2 + (acc_df['yacc'].max()-acc_df['yacc'].min())/2 +(acc_df['zacc'].max()-acc_df['zacc'].min())/2)/3
+
+#Dorveaux calibration 
 
 def imu_calibrate(points, num_iters=1):
     # determine the number of points
@@ -157,4 +161,16 @@ plot_3d(y_i,data_cal*scale)
 plot_errors(errors)
 plt.show()
 
+[A_acc_cal, B_acc_cal] = imu_calibrate(y_acc_i, 10)
+data_cal = ((A_acc_cal @ y_acc_i.T) + B_acc_cal).T
 
+errors = np.linalg.norm(data_cal,axis=1)-1
+
+#Plot/Show
+print("\nA = ", np.linalg.inv(A_acc_cal))
+print("\nB = ", -B_acc_cal)
+
+print("\nMSE: ",mse)
+plot_3d(y_acc_i,data_cal*acc_scale)
+plot_errors(errors)
+plt.show()

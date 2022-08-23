@@ -81,6 +81,10 @@ enum motors {
     MOTOR_4
 };
 
+enum mav_output_type {
+    USB,
+    RADIO
+};
 
 const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
 static int8_t RC_system_online = FALSE;
@@ -155,6 +159,14 @@ void publish_heartbeat(void);
  * @author aaron hunter
  */
 void publish_parameter(uint8_t param_id[16]);
+/**
+ * @Function mavprint(char msg_buffer[], int8_t msg_length, int8_t output);
+ * @param msg_buffer, string of bytes to send to receiver
+ * @param msg_length, length of msg_buffer
+ * @param output, either USB or RADIO, which peripheral to send the message from
+ * @return SUCCESS or ERROR
+ */
+int8_t mavprint(uint8_t msg_buffer[], int8_t msg_length, int8_t output);
 
 /**
  * @Function calc_pw(uint16_t raw_counts)
@@ -410,9 +422,10 @@ void publish_heartbeat(void) {
             custom,
             state);
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
-    for (index = 0; index < msg_length; index++) {
-        Radio_put_char(msg_buffer[index]);
-    }
+    mavprint(msg_buffer, msg_length, RADIO);
+    //    for (index = 0; index < msg_length; index++) {
+    //        Radio_put_char(msg_buffer[index]);
+    //    }
 }
 
 /**
@@ -443,6 +456,29 @@ void publish_parameter(uint8_t param_id[16]) {
     for (index = 0; index < msg_length; index++) {
         Radio_put_char(msg_buffer[index]);
     }
+}
+
+/**
+ * @Function mavprint(char msg_buffer[], int8_t msg_length, int8_t output);
+ * @param msg_buffer, string of bytes to send to receiver
+ * @param msg_length, length of msg_buffer
+ * @param output, either USB or RADIO, which peripheral to send the message from
+ * @return SUCCESS or ERROR
+ */
+int8_t mavprint(uint8_t msg_buffer[], uint8_t msg_length, uint8_t output) {
+    uint8_t i;
+    if (output == USB) {
+        for (i = 0; i < msg_length; i++) {
+            putchar(msg_buffer[i]);
+        }
+    } else if (output == RADIO) {
+        for (i = 0; i < msg_length; i++) {
+            Radio_put_char(msg_buffer[i]);
+        }
+    } else {
+        return ERROR;
+    }
+    return SUCCESS;
 }
 
 /**
@@ -523,32 +559,20 @@ int main(void) {
     /* Calibration matrices and offset vectors */
 
     /*calibration matrices*/
-    // Test IMU calibration
-    //        float A_acc[MSZ][MSZ] = {
-    //            6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
-    //            -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
-    //            -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
-    //        };
-    //        float A_mag[MSZ][MSZ] = {
-    //            0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
-    //            6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
-    //            -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
-    //        };
-    //        float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
-    //        float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
-    // quad imu calibrations
-//    float A_acc[MSZ][MSZ] = {
-//        {5.98605657636023e-05, 5.02299172664344e-08, 8.41134559461075e-07},
-//        {-2.82167981801537e-08, 6.05938345982234e-05, 6.95665927111956e-07},
-//        {4.48326742757725e-08, -3.34771681800715e-07, 5.94633160681115e-05}
-//    };
-//    float A_mag[MSZ][MSZ] = {
-//        {0.00333834334834959, 2.58649731866218e-05, -4.47182534891735e-05},
-//        {3.97521279910819e-05, 0.00341838979684877, -7.55578863505947e-06},
-//        {-6.49436573527762e-05, 3.05050635014235e-05, 0.00334143925188739}
-//    };
-//    float b_acc[MSZ] = {0.00591423067694908, 0.0173747801090554, 0.0379428158730668};
-//    float b_mag[MSZ] = {0.214140746707571, -1.08116057610690, -0.727337561140470};
+    //    Test IMU calibration values
+    float A_acc[MSZ][MSZ] = {
+        6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
+        -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
+        -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
+    };
+    float A_mag[MSZ][MSZ] = {
+        0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
+        6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
+        -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
+    };
+    float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
+    float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
+
     // gravity inertial vector
     float a_i[MSZ] = {0, 0, 1.0};
     // Earth's magnetic field inertial vector, normalized 
@@ -680,7 +704,7 @@ int main(void) {
         /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-            //            publish_heartbeat();
+            publish_heartbeat();
         }
     }
     return (0);

@@ -47,7 +47,7 @@ Adapt configuration for your use case by changing data in the yaml file:<br>
             --num_threads: The number of CPU threads to run the model.
             --enable_edgetpu: True/False whether the model is a EdgeTPU model.
     Example:
-    python landmark_detect_map.py --model cone_detection.tflite --source 0 --num_threads 4 --enableEdgeTPU --labels cone_labels.txt
+    python landmark_detect_map.py --model cone_detection_edgetpu.tflite --source 0 --num_threads 4 --enableEdgeTPU --labels cone_labels.txt
 ```
 
 #### Debug

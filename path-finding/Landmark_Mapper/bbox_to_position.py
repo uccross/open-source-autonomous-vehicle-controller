@@ -70,7 +70,7 @@ class bbox:
                                 bbox.origin_y + bbox.height))
 
             if (self.ENABLE_VISUALIZER):
-                viz = visualize(self.position2d)
+                viz = visualize(self.position2d, "Image_Map")
 
     def get_variance(self, dh, dw):
         mean = (dh + dw) / 2
@@ -107,3 +107,8 @@ class bbox:
                                 self.camera_fy) / bbox.width
             self.get_variance(depth_landmark, depth_landmark_w)
             self.position2d.append((x, y, class_.index))
+        if(self.DEBUG):
+            print(self.position2d)
+    
+    def get_pose(self):
+        return self.position2d

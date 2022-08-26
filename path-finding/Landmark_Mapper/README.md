@@ -69,3 +69,9 @@ cy: optical center y
 height: height of landmark
 width: maximum base width of landmark
 ```
+
+### Event-Triggered asynchronous call to Detector
+Parameters to call the detection are the same as above. An example file called ```call_detect.py``` has been added to demonstrate this functionality. The class is implemented in ```class_detect.py```
+```
+python call_detect.py
+```

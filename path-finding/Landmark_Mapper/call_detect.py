@@ -28,5 +28,7 @@ landmarkdetector = LandmarkDetector(model="cone_detection.tflite",
                                     top_k=8,
                                     threshold=0.2)
 
-landmark_positions = landmarkdetector.return_pose()
-print(landmark_positions)
+while True:
+    landmarkdetector.tflite_run()
+    landmark_positions = landmarkdetector.return_pose()
+    print(landmark_positions)

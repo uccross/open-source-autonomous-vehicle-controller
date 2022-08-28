@@ -58,7 +58,7 @@ class bbox:
         else:
             for detection in self.detection_result.detections:
                 bbox = detection.bounding_box
-                class_ = detection.classes[0]
+                class_ = detection.categories[0]
                 self.get_position(bbox, class_, edge_processing)
                 if (self.DEBUG):
                     print(

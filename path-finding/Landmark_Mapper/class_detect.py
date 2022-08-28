@@ -36,43 +36,53 @@ class LandmarkDetector:
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
         self.positions = None
+        self.enable_edgetpu = enable_edgetpu
 
         if not (bool(enable_edgetpu)):
-            self.tflite_run(model, source, int(width), int(height),
-                            int(num_threads), bool(enable_edgetpu))
+            # Initialize the object detection model
+            base_options = core.BaseOptions(file_name=model,
+                                            use_coral=enable_edgetpu,
+                                            num_threads=num_threads)
+            detection_options = processor.DetectionOptions(max_results=10,
+                                                           score_threshold=0.2)
+            options = vision.ObjectDetectorOptions(
+                base_options=base_options, detection_options=detection_options)
+            self.detector = vision.ObjectDetector.create_from_options(options)
+            self.tflite_run()
         else:
+            print('Loading {} with {} labels.'.format(model, labels))
+            self.interpreter = make_interpreter(model)
+            self.interpreter.allocate_tensors()
+            labels = read_label_file(labels)
+            self.inference_size = input_size(self.interpreter)
             self.coral_run(model, labels, threshold, top_k, enable_edgetpu)
 
     def coral_run(self, model, labels, threshold, top_k, enable_edgetpu):
-        print('Loading {} with {} labels.'.format(model, labels))
-        interpreter = make_interpreter(model)
-        interpreter.allocate_tensors()
-        labels = read_label_file(labels)
-        inference_size = input_size(interpreter)
-
         ret, frame = self.cap.read()
         cv2_im = frame
 
         cv2_im_rgb = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
-        cv2_im_rgb = cv2.resize(cv2_im_rgb, inference_size)
+        cv2_im_rgb = cv2.resize(cv2_im_rgb, self.inference_size)
         start = time.perf_counter()
-        run_inference(interpreter, cv2_im_rgb.tobytes())
+        run_inference(self.interpreter, cv2_im_rgb.tobytes())
         inference_time = time.perf_counter() - start
         cv2_im = cv2.putText(cv2_im, "FPS:%.2f" % (1 / inference_time),
                              (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                              (255, 0, 0), 2)
 
-        objs = get_objects(interpreter, threshold)[:top_k]
+        objs = get_objects(self.interpreter, threshold)[:top_k]
         cone = bbox_to_position.bbox(objs, enable_edgetpu)
         self.positions = cone.get_pose()
-        cv2_im = self.append_objs_to_img(cv2_im, inference_size, objs, labels)
+        cv2_im = self.append_objs_to_img(
+            cv2_im, self.inference_size, objs, labels)
 
         #cv2.imshow('frame', cv2_im)
-        #cv2.waitKey(0)
+        # cv2.waitKey(0)
 
     def append_objs_to_img(self, cv2_im, inference_size, objs, labels):
         height, width, channels = cv2_im.shape
-        scale_x, scale_y = width / inference_size[0], height / inference_size[1]
+        scale_x, scale_y = width / \
+            inference_size[0], height / inference_size[1]
         for obj in objs:
             bbox = obj.bbox.scale(scale_x, scale_y)
             x0, y0 = int(bbox.xmin), int(bbox.ymin)
@@ -86,8 +96,7 @@ class LandmarkDetector:
                                  cv2.FONT_HERSHEY_SIMPLEX, 0.4, (255, 0, 0), 2)
         return cv2_im
 
-    def tflite_run(self, model: str, source: str, width: int, height: int,
-                   num_threads: int, enable_edgetpu: bool) -> None:
+    def tflite_run(self) -> None:
         """
             Continuously run inference on images acquired from the camera.
             Args:
@@ -112,16 +121,6 @@ class LandmarkDetector:
         font_thickness = 1
         fps_avg_frame_count = 10
 
-        # Initialize the object detection model
-        base_options = core.BaseOptions(file_name=model,
-                                        use_coral=enable_edgetpu,
-                                        num_threads=num_threads)
-        detection_options = processor.DetectionOptions(max_results=10,
-                                                       score_threshold=0.2)
-        options = vision.ObjectDetectorOptions(
-            base_options=base_options, detection_options=detection_options)
-        detector = vision.ObjectDetector.create_from_options(options)
-
         # capture image from the camera and run inference
         success, image = self.cap.read()
         if not success:
@@ -138,17 +137,17 @@ class LandmarkDetector:
         input_tensor = vision.TensorImage.create_from_array(rgb_image)
 
         # Run object detection estimation using the model.
-        detection_result = detector.detect(input_tensor)
+        detection_result = self.detector.detect(input_tensor)
 
         # Draw keypoints and edges on input image
         image = utils.visualize(image, detection_result)
 
         # call cone_mapper
-        cone = bbox_to_position.bbox(detection_result, enable_edgetpu)
+        cone = bbox_to_position.bbox(detection_result, self.enable_edgetpu)
         self.positions = cone.get_pose()
 
         #cv2.imshow('object_detector', image)
-        #cv2.waitKey(0)
+        # cv2.waitKey(0)
 
     def return_pose(self):
         return self.positions

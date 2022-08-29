@@ -49,7 +49,6 @@ void set_control_output(float gyros[], PID_controller * controller) {
     PID_update(controller, ref, meas);
     setpoint = controller->u + RC_SERVO_CENTER_PULSE;
     RC_servo_set_pulse((int16_t) setpoint, SERVO_PWM_1);
-
 }
 
 int main(void) {
@@ -83,16 +82,16 @@ int main(void) {
     uint8_t IMU_state;
     int8_t IMU_retry = 5;
     struct IMU_out IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-    
+
     /* Controller and gains*/
     PID_controller controller; // declare our controller object
     float dt = DT; // set update interval
-    float kp = 80;
+    float kp = 40;
     float ki = 0.0;
     float kd = 0.0;
     float u_max = 500.0;
     float u_min = -500.0;
-    
+
     /* timing constants */
     uint32_t current_time;
     uint32_t start_time;

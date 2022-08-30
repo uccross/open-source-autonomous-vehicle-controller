@@ -544,7 +544,7 @@ void publish_GPS(void) {
             0, //altitude --can update GPS data if need this
             UINT_16_MAX, //hdop--currently don't care
             UINT_16_MAX, //vdop
-            (uint16_t) (GPS_data.spd * KNOTS_TO_MPS * 100.0), //need to verify units and convert from knots if so
+            (uint16_t) (GPS_data.spd * knots_to_mps * 100.0), //need to verify units and convert from knots if so
             (uint16_t) (GPS_data.cog * 100.0), //cdeg TODO verify heading angle between 0 and 359.99
             255, //satellites visible again, currently don't care
             0, //alt ellipsoid

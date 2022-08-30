@@ -16,6 +16,7 @@
                 <sourceRootElem>.</sourceRootElem>
                 <sourceRootElem>../../../apps/ahrs_apps/AHRS.X</sourceRootElem>
                 <sourceRootElem>../../../lib/Lin_alg.X</sourceRootElem>
+                <sourceRootElem>../../../lib/NEO_M8N.X</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

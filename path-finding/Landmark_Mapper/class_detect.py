@@ -53,11 +53,13 @@ class LandmarkDetector:
             print('Loading {} with {} labels.'.format(model, labels))
             self.interpreter = make_interpreter(model)
             self.interpreter.allocate_tensors()
-            labels = read_label_file(labels)
+            self.labels = read_label_file(labels)
+            self.threshold = threshold
+            self.top_k = top_k
             self.inference_size = input_size(self.interpreter)
-            self.coral_run(model, labels, threshold, top_k, enable_edgetpu)
+            self.coral_run()
 
-    def coral_run(self, model, labels, threshold, top_k, enable_edgetpu):
+    def coral_run(self):
         ret, frame = self.cap.read()
         cv2_im = frame
 
@@ -70,11 +72,11 @@ class LandmarkDetector:
                              (20, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                              (255, 0, 0), 2)
 
-        objs = get_objects(self.interpreter, threshold)[:top_k]
-        cone = bbox_to_position.bbox(objs, enable_edgetpu)
+        objs = get_objects(self.interpreter, self.threshold)[:self.top_k]
+        cone = bbox_to_position.bbox(objs, self.enable_edgetpu)
         self.positions = cone.get_pose()
         cv2_im = self.append_objs_to_img(
-            cv2_im, self.inference_size, objs, labels)
+            cv2_im, self.inference_size, objs, self.labels)
 
         #cv2.imshow('frame', cv2_im)
         # cv2.waitKey(0)

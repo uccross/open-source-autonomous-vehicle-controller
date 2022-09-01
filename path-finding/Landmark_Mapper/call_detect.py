@@ -32,3 +32,22 @@ while True:
     landmarkdetector.tflite_run()
     landmark_positions = landmarkdetector.return_pose()
     print(landmark_positions)
+    
+"""
+# Example code for testing with Coral Edge TPU
+
+landmarkdetector = LandmarkDetector(model="cone_detection_edgetpu.tflite",
+                                    source="output.avi",
+                                    width=640,
+                                    height=480,
+                                    num_threads=4,
+                                    enable_edgetpu=True,
+                                    labels="cone_labels.txt",
+                                    top_k=8,
+                                    threshold=0.2)
+
+while True:
+    landmarkdetector.coral_run()
+    landmark_positions = landmarkdetector.return_pose()
+    print(landmark_positions)
+"""

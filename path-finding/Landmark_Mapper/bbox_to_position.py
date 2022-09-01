@@ -69,8 +69,8 @@ class bbox:
                                 bbox.origin_x + bbox.width,
                                 bbox.origin_y + bbox.height))
 
-            if (self.ENABLE_VISUALIZER):
-                viz = visualize(self.position2d, "Image_Map")
+        if (self.ENABLE_VISUALIZER):
+            viz = visualize(self.position2d, "Image_Map")
 
     def get_variance(self, dh, dw):
         mean = (dh + dw) / 2

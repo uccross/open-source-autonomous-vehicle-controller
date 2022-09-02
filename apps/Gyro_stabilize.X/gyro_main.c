@@ -100,7 +100,6 @@ int main(void) {
     /* Initialize all the subsystems and sensors */
     Board_init();
     Serial_init();
-    printf("Board initialized\r\n");
     Sys_timer_init();
     RC_servo_init(RC_SERVO_TYPE, SERVO_PWM_1); // Set servo output to channel 1
     /*Allow IMU time to warm up before initializing it*/

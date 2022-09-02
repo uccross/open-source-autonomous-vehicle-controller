@@ -23,6 +23,7 @@
 #include "RC_servo.h"
 #include "ICM_20948.h"
 #include "AHRS.h"
+#include "PID.h"
 
 
 
@@ -83,6 +84,22 @@ static uint8_t pub_IMU = FALSE;
 /*******************************************************************************
  * TYPEDEFS                                                                    *
  ******************************************************************************/
+
+/* inner loop gyro rate controllers*/
+PID_controller pitch_rate_controller;
+float pitch_rate_dt = DT; //loop update time (sec)
+float pitch_rate_kp = 240.0; // proportional gain
+float pitch_rate_ki = 0.0; // integral gain
+float pitch_rate_kd = 0.0; // derivative gain
+float pitch_rate_u_max = 2000.0; // output upper bound
+float pitch_rate_u_min = -2000.0; //output lower bound
+PID_controller roll_rate_controller;
+float roll_rate_dt = DT; //loop update time (sec)
+float roll_rate_kp = 240.0; // proportional gain
+float roll_rate_ki = 0.0; // integral gain
+float roll_rate_kd = 0.0; // derivative gain
+float roll_rate_u_max = 2000.0; // output upper bound
+float roll_rate_u_min = -2000.0; //output lower bound
 
 
 /*******************************************************************************
@@ -154,14 +171,25 @@ void publish_parameter(uint8_t param_id[16]);
 static int calc_pw(int raw_counts);
 
 /**
- * @Function set_control_output(void)
+ * @Function set_control_output(float gyros[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(void);
+void set_control_output(float gyros[]);
+
+/**
+ * @Function get_control_output(float gyro_axis, PID_controller * controller)
+ * @param gyros[], gyro rates in rad/sec
+ * @param controller, the PID controller 
+ * @return none
+ * @brief converts gyro rate to servo outputs
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+float get_control_output(float gyro_axis, PID_controller * controller);
 
 /*******************************************************************************
  * FUNCTIONS                                                                   *
@@ -452,14 +480,14 @@ static int calc_pw(int raw_counts) {
 }
 
 /**
- * @Function set_control_output(void)
+ * @Function set_control_output(float gyros[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(void) {
+void set_control_output(float gyros[]) {
     int hash;
     int switch_d;
     int throttle[4];
@@ -480,14 +508,18 @@ void set_control_output(void) {
     phi_raw = RC_channels[AIL];
     theta_raw = RC_channels[ELE];
     psi_raw = RC_channels[RUD];
+//    psi_raw = 0; 
     hash = RC_channels[HASH];
     hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
     if (abs(hash_check - hash) <= tol) {
         INTOL = TRUE;
         /*compute attitude commands*/
-        roll_cmd = (phi_raw - RC_RX_MID_COUNTS) >> 2;
-        pitch_cmd = (theta_raw - RC_RX_MID_COUNTS) >> 2;
+        //        roll_cmd = (phi_raw - RC_RX_MID_COUNTS) >> 2;
+        roll_cmd = (int)get_control_output(gyros[0], &roll_rate_controller);
+        //        pitch_cmd = (theta_raw - RC_RX_MID_COUNTS) >> 2;
+        pitch_cmd = (int)get_control_output(gyros[1], &pitch_rate_controller);
         yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
+//        printf("r_gyro: %+0.3f, p_gyro: %+0.3f, roll: %d, pitch: %d, yaw: %d \r\n",gyros[0], gyros[1], roll_cmd, pitch_cmd, yaw_cmd );
         if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
             /* mix attitude into X configuration */
             throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
@@ -508,10 +540,20 @@ void set_control_output(void) {
         RC_servo_set_pulse(throttle[3], MOTOR_4);
     } else {
         INTOL = FALSE;
-        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+//        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
     }
 
     //        printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
+}
+
+float get_control_output(float gyro_axis, PID_controller * controller) {
+    float ref = 0; //
+    float meas = gyro_axis; // x axis gyro
+    float setpoint = 0;
+    /* get control from PID*/
+    PID_update(controller, ref, meas);
+    setpoint = controller->u;
+    return (setpoint);
 }
 
 int main(void) {
@@ -622,8 +664,11 @@ int main(void) {
         printf("IMU failed init, retrying %d \r\n", IMU_retry);
         IMU_retry--;
     }
+    /*initialize controllers*/
+    PID_init(&pitch_rate_controller, pitch_rate_dt, pitch_rate_kp, pitch_rate_ki, pitch_rate_kd, pitch_rate_u_max, pitch_rate_u_min);
+    PID_init(&roll_rate_controller, roll_rate_dt, roll_rate_kp, roll_rate_ki, roll_rate_kd, roll_rate_u_max, roll_rate_u_min);
 
-    printf("\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
+    printf("\r\nQuad Passthrough Control App %s, %s \r\n", __DATE__, __TIME__);
     printf("Testing!\r\n");
     /* load IMU calibrations */
     IMU_set_mag_cal(A_mag, b_mag);
@@ -646,7 +691,7 @@ int main(void) {
         //publish control and sensor signals
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            set_control_output(); // set actuator outputs
+            set_control_output(gyro_cal); // set actuator outputs
             /*start next data acquisition round*/
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_updated == TRUE) {
@@ -690,7 +735,7 @@ int main(void) {
             gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
             AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
 
-            printf("%+3.1f, %+3.1f, %+3.1f, %d \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg, IMU_update_end - IMU_update_start);
+//            printf("%+3.1f, %+3.1f, %+3.1f, %d \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg, IMU_update_end - IMU_update_start);
         }
         /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {

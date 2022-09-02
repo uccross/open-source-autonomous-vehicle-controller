@@ -349,8 +349,6 @@ void publish_GPS(uint8_t dest) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
-    uint16_t index = 0;
-
     //verify fix status
     if (GPS_has_fix() == TRUE) {
         gps_fix = GPS_FIX_TYPE_3D_FIX;
@@ -391,7 +389,6 @@ void publish_IMU_data(uint8_t data_type, uint8_t dest) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
-    uint16_t index = 0;
     uint8_t IMU_id = 0;
     if (data_type == RAW) {
         mavlink_msg_raw_imu_pack(mavlink_system.sysid,
@@ -491,7 +488,6 @@ void publish_RC_signals_raw(void) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
-    uint16_t index = 0;
     uint8_t RC_port = 0; //first 8 channels 
     uint8_t rssi = 255; //unknown--may be able to extract from receiver
     mavlink_msg_rc_channels_raw_pack(mavlink_system.sysid,
@@ -510,7 +506,6 @@ void publish_RC_signals_raw(void) {
             rssi);
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     mavprint(msg_buffer, msg_length, USB);
-
 }
 
 /**
@@ -524,7 +519,6 @@ void publish_heartbeat(uint8_t dest) {
     mavlink_message_t msg_tx;
     uint16_t msg_length;
     uint8_t msg_buffer[BUFFER_SIZE];
-    uint16_t index = 0;
     uint8_t mode = MAV_MODE_FLAG_MANUAL_INPUT_ENABLED | MAV_MODE_FLAG_SAFETY_ARMED;
     uint32_t custom = 0;
     uint8_t state = MAV_STATE_STANDBY;
@@ -537,9 +531,6 @@ void publish_heartbeat(uint8_t dest) {
             state);
     msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
     mavprint(msg_buffer, msg_length, dest);
-    //    for (index = 0; index < msg_length; index++) {
-    //        Radio_put_char(msg_buffer[index]);
-    //    }
 }
 
 /**
@@ -663,6 +654,7 @@ int main(void) {
     uint32_t IMU_update_end;
 
     /*radio variables*/
+    char c;
     char message[BUFFER_SIZE];
     uint8_t msg_len = 0;
 
@@ -711,27 +703,20 @@ int main(void) {
     Board_init(); //board configuration
     Serial_init(); //start debug terminal 
     Radio_serial_init(); //start the radios
-    //    printf("Board initialization complete.\r\n");
-    msg_len = sprintf(message, "Board initialization complete.\r\n");
-    for (index = 0; index < msg_len; index++) {
-        Radio_put_char(message[index]);
-    }
-
+    GPS_init(); // initialize GPS 
+//    printf("Board initialization complete.\r\n");
+//    msg_len = sprintf(message, "Board initialization complete.\r\n");
+//    mavprint(message, msg_len, RADIO);
     Sys_timer_init(); //start the system timer
-    cur_time = Sys_timer_get_msec();
-    //    printf("System timer initialized.  Current time %d. \r\n", cur_time);
-    msg_len = sprintf(message, "System timer initialized.\r\n");
-    for (index = 0; index < msg_len; index++) {
-        Radio_put_char(message[index]);
-    }
-    /* initialize GPS */
-    GPS_init(); 
-    
+//    printf("System timer initialized.  Current time %d. \r\n", cur_time);
+//    msg_len = sprintf(message, "System timer initialized.\r\n");
+//    mavprint(message, msg_len, RADIO);
     cur_time = Sys_timer_get_msec();
     start_time = cur_time;
     RCRX_init(); //initialize the radio control system
     /*wait until we get data from the RC controller*/
     while (cur_time - start_time < RC_timeout) {
+        cur_time = Sys_timer_get_msec();
         if (RCRX_new_cmd_avail()) {
             RC_system_online = TRUE;
             break;
@@ -742,9 +727,7 @@ int main(void) {
     } else {
         msg_len = sprintf(message, "RC system online.\r\n");
     }
-    for (index = 0; index < msg_len; index++) {
-        Radio_put_char(message[index]);
-    }
+    mavprint(message, msg_len, RADIO);
 
     /* With RC controller online we can set the servo PWM outputs*/
     RC_servo_init(ESC_BIDIRECTIONAL_TYPE, SERVO_PWM_1); // Left motor
@@ -757,17 +740,13 @@ int main(void) {
         IMU_state = IMU_init(IMU_SPI_MODE);
         //        printf("IMU failed init, retrying %d \r\n", IMU_retry);
         msg_len = sprintf(message, "IMU failed init, retrying %d \r\n", IMU_retry);
-        for (index = 0; index < msg_len; index++) {
-            Radio_put_char(message[index]);
-        }
+        mavprint(message, msg_len, RADIO);
         IMU_retry--;
     }
 
     //    printf("\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
     msg_len = sprintf(message, "\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
-    for (index = 0; index < msg_len; index++) {
-        Radio_put_char(message[index]);
-    }
+    mavprint(message, msg_len, RADIO);
     /* load IMU calibrations */
     IMU_set_mag_cal(A_mag, b_mag);
     IMU_set_acc_cal(A_acc, b_acc);
@@ -800,7 +779,7 @@ int main(void) {
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
                     msg_len = sprintf(message, "IMU error count %d\r\n", IMU_error);
-                    mavprint(message, msg_len, RADIO);
+                    mavprint(message, msg_len, USB);
                     IMU_retry = 5;
                     IMU_state = IMU_init(IMU_SPI_MODE);
                     if (IMU_state == ERROR && IMU_retry > 0) {
@@ -848,6 +827,8 @@ int main(void) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat(USB);
             msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            mavprint(message, msg_len, RADIO);
+            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n ", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);
         }
     }

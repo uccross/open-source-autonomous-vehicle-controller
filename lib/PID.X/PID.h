@@ -39,20 +39,14 @@ typedef struct PID_controller {
  ******************************************************************************/
 
 /**
- * @Function PID_init(*pid,float kp, float ki, float kd,
-        float max_output, float min_output);
+ * @Function PID_init(*pid);
  * @param *pid, pointer to PID_controller type
- * @param kp, proportional gain constant
- * @param, ki, integral gain constant
- * @param, kd, derivative gain constant
- * @param max_output, actuator upper bound
- * @param min_output, actuator lower bound
  * @brief initializes the PID_controller struct
- * @note 
+ * @note computes the c0, c1, c2 constants of the controller and initializes
+ * error array
  * @author Aaron Huter,
  * @modified */
-void PID_init(PID_controller *pid, float dt, float kp, float ki, float kd,
-        float max_output, float min_output);
+void PID_init(PID_controller *pid);
 
 
 

@@ -31,32 +31,20 @@
  ******************************************************************************/
 
 /**
- * @Function PID_init(*pid,float kp, float ki, float kd,
-        float max_output, float min_output);
+ * @Function PID_init(*pid);
  * @param *pid, pointer to PID_controller type
- * @param kp, proportional gain constant
- * @param, ki, integral gain constant
- * @param, kd, derivative gain constant
- * @param max_output, actuator upper bound
- * @param min_output, actuator lower bound
  * @brief initializes the PID_controller struct
- * @note 
+ * @note computes the c0, c1, c2 constants of the controller and initializes
+ * error array
  * @author Aaron Huter,
  * @modified */
-void PID_init(PID_controller *pid, float dt, float kp, float ki, float kd,
-        float max_output, float min_output) {
+void PID_init(PID_controller *pid) {
     int i;
-    pid->dt = dt;
-    pid->kp = kp;
-    pid->ki = ki;
-    pid->kd = kd;
-    pid->u_max = max_output;
-    pid->u_min = min_output;
     /*pre compute the constant calculations*/
-    pid->c0 = kp + ki * dt + kd / dt;
-    pid->c1 = -kp - 2 * kd / dt;
-    pid->c2 = kd / dt;
-    /* initialize variables*/
+    pid->c0 = pid->kp + pid->ki * pid->dt + pid->kd / pid->dt;
+    pid->c1 = -pid->kp - 2 * pid->kd / pid->dt;
+    pid->c2 = pid->kd / pid->dt;
+    /* initialize error*/
     pid->u = 0;
     for (i = 0; i < 3; i++) {
         pid->error[i] = 0;
@@ -97,21 +85,23 @@ void PID_update(PID_controller *pid, float reference, float measurement) {
 #include "SerialM32.h"
 
 void main(void) {
-    float dt = .02;
-    float kp = 1;
-    float ki = 0.5;
-    float kd = 0.2;
+    PID_controller controller;
+    controller.dt = .02;
+    controller.kp = 1;
+    controller.ki = 0.5;
+    controller.kd = 0.2;
+    controller.u_max = 2000;
+    controller.u_min = -2000;
+
     float ref;
     float y;
-    float max_u = 2000;
-    float min_u = -2000;
-    PID_controller controller;
+
 
 
     Board_init();
     Serial_init();
     printf("PID test harness %s, %s\r\n", __DATE__, __TIME__);
-    PID_init(&controller, dt, kp, ki, kd, max_u, min_u);
+    PID_init(&controller);
     printf("Controller initialized to: \r\n");
     printf("dt %f\r\n", controller.dt);
     printf("kp: %f\r\n", controller.kp);

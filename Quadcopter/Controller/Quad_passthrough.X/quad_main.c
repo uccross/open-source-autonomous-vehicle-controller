@@ -32,7 +32,8 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define ANGULAR_RATE_CONTROL_PERIOD 20 //Period for control loop in msec
+#define ANGLE_CONTROL_PERIOD 20 // msec for calculating new angular control output
 #define BUFFER_SIZE 1024
 #define RAW 1
 #define SCALED 2
@@ -84,23 +85,53 @@ static uint8_t pub_IMU = FALSE;
 /*******************************************************************************
  * TYPEDEFS                                                                    *
  ******************************************************************************/
-
 /* inner loop gyro rate controllers*/
-PID_controller pitch_rate_controller;
-float pitch_rate_dt = DT; //loop update time (sec)
-float pitch_rate_kp = 240.0; // proportional gain
-float pitch_rate_ki = 0.0; // integral gain
-float pitch_rate_kd = 0.0; // derivative gain
-float pitch_rate_u_max = 2000.0; // output upper bound
-float pitch_rate_u_min = -2000.0; //output lower bound
-PID_controller roll_rate_controller;
-float roll_rate_dt = DT; //loop update time (sec)
-float roll_rate_kp = 240.0; // proportional gain
-float roll_rate_ki = 0.0; // integral gain
-float roll_rate_kd = 0.0; // derivative gain
-float roll_rate_u_max = 2000.0; // output upper bound
-float roll_rate_u_min = -2000.0; //output lower bound
 
+PID_controller pitch_rate_controller = {
+    .dt = DT,
+    .kp = 120.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 2000.0,
+    .u_min = -2000.0
+};
+
+PID_controller roll_rate_controller = {
+    .dt = DT,
+    .kp = 120.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 2000.0,
+    .u_min = -2000.0
+};
+
+PID_controller roll_controller = {
+    .dt = DT,
+    .kp = 20.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 1000.0,
+    .u_min = -1000.0
+};
+
+PID_controller pitch_controller = {
+    .dt = DT,
+    .kp = 20.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 1000.0,
+    .u_min = -1000.0
+};
+
+/* container for controller outputs*/
+struct controller_outputs {
+    float phi;
+    float theta;
+    float psi;
+    float phi_dot;
+    float theta_dot;
+    float psi_dot;
+} controller_outputs;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES                                                         *
@@ -171,25 +202,51 @@ void publish_parameter(uint8_t param_id[16]);
 static int calc_pw(int raw_counts);
 
 /**
- * @Function set_control_output(float gyros[])
+ * @Function set_control_output(float gyros[], float euler[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(float gyros[]);
+void set_control_output(float gyros[], float euler[]);
 
 /**
- * @Function get_control_output(float gyro_axis, PID_controller * controller)
- * @param gyros[], gyro rates in rad/sec
- * @param controller, the PID controller 
+ * @Function void calc_angle_rate_output(float gyros[])
+ * @param gyros[], the gyro rate measurements
+ * @brief computes the output of the gyro rate controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_rate_output(float gyros[]);
+
+/**
+ * @Function void calc_angle_output(float euler[])
+ * @param euler[], the euler angle measurements
+ * @brief computes the output of the angle controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_output(float euler[]);
+
+
+/**
+ * @Function set_motor_outputs(void);
  * @return none
- * @brief converts gyro rate to servo outputs
- * (servos and ESCs) to those values
+ * @brief computes the output of the motors
  * @author Aaron Hunter
  */
-float get_control_output(float gyro_axis, PID_controller * controller);
+void set_motor_outputs(void);
+
+
+/**
+ * @Function get_control_output(float ref, float sensor_val, PID_controller * controller)
+ * @param ref, the control reference
+ * @paarm sensor, sensor measurement
+ * @param controller, the PID controller 
+ * @return controller output
+ * @brief generates controller output
+ * @author Aaron Hunter
+ */
+float get_control_output(float ref, float sensor_val, PID_controller * controller);
 
 /*******************************************************************************
  * FUNCTIONS                                                                   *
@@ -480,20 +537,53 @@ static int calc_pw(int raw_counts) {
 }
 
 /**
- * @Function set_control_output(float gyros[])
+ * @Function void calc_angle_rate_output(float gyros[])
+ * @param gyros[], the gyro rate measurements
+ * @brief computes the output of the gyro rate controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_rate_output(float gyros[]) {
+    float roll_rate_cmd;
+    float pitch_rate_cmd;
+    roll_rate_cmd = get_control_output(controller_outputs.phi, gyros[0], &roll_rate_controller);
+    pitch_rate_cmd = get_control_output(controller_outputs.theta, gyros[1], &pitch_rate_controller);
+    controller_outputs.phi_dot = roll_rate_cmd;
+    controller_outputs.theta_dot = pitch_rate_cmd;
+}
+
+/**
+ * @Function void calc_angle_output(float euler[])
+ * @param euler[], the euler angle measurements
+ * @brief computes the output of the angle controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_output(float euler[]){
+    float roll_cmd;
+    float pitch_cmd;
+    /* NOTE: Euler angles are defined a yaw, pitch, roll for some stupid reason*/
+    roll_cmd = get_control_output(0.0, euler[2], &roll_controller);
+    pitch_cmd = get_control_output(0.0, euler[1], &pitch_controller);
+    controller_outputs.phi = roll_cmd;
+    controller_outputs.theta = pitch_cmd;
+}
+
+/**
+ * @Function set_control_output(float gyros[], float euler[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(float gyros[]) {
+void set_control_output(float gyros[], float euler[]) {
     int hash;
     int switch_d;
     int throttle[4];
     int throttle_raw;
-    int roll_cmd;
-    int pitch_cmd;
+    float roll_cmd;
+    float pitch_cmd;
+    int roll_rate_cmd;
+    int pitch_rate_cmd;
     int yaw_cmd;
     int hash_check;
     const int tol = 4;
@@ -508,24 +598,21 @@ void set_control_output(float gyros[]) {
     phi_raw = RC_channels[AIL];
     theta_raw = RC_channels[ELE];
     psi_raw = RC_channels[RUD];
-//    psi_raw = 0; 
+    //    psi_raw = 0; 
     hash = RC_channels[HASH];
     hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
     if (abs(hash_check - hash) <= tol) {
         INTOL = TRUE;
         /*compute attitude commands*/
-        //        roll_cmd = (phi_raw - RC_RX_MID_COUNTS) >> 2;
-        roll_cmd = (int)get_control_output(gyros[0], &roll_rate_controller);
-        //        pitch_cmd = (theta_raw - RC_RX_MID_COUNTS) >> 2;
-        pitch_cmd = (int)get_control_output(gyros[1], &pitch_rate_controller);
+        roll_rate_cmd = (int) get_control_output(0.0, gyros[0], &roll_rate_controller);
+        pitch_rate_cmd = (int) get_control_output(0.0, gyros[1], &pitch_rate_controller);
         yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
-//        printf("r_gyro: %+0.3f, p_gyro: %+0.3f, roll: %d, pitch: %d, yaw: %d \r\n",gyros[0], gyros[1], roll_cmd, pitch_cmd, yaw_cmd );
         if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
             /* mix attitude into X configuration */
-            throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
-            throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
-            throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
-            throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
+            throttle[0] = calc_pw((throttle_raw + roll_rate_cmd - pitch_rate_cmd - yaw_cmd));
+            throttle[1] = calc_pw(throttle_raw - roll_rate_cmd - pitch_rate_cmd + yaw_cmd);
+            throttle[2] = calc_pw(throttle_raw - roll_rate_cmd + pitch_rate_cmd - yaw_cmd);
+            throttle[3] = calc_pw(throttle_raw + roll_rate_cmd + pitch_rate_cmd + yaw_cmd);
 
         } else { // Set throttle to minimum
             throttle[0] = RC_SERVO_MIN_PULSE;
@@ -540,18 +627,70 @@ void set_control_output(float gyros[]) {
         RC_servo_set_pulse(throttle[3], MOTOR_4);
     } else {
         INTOL = FALSE;
-//        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+        //        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
     }
-
-    //        printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
 }
 
-float get_control_output(float gyro_axis, PID_controller * controller) {
-    float ref = 0; //
-    float meas = gyro_axis; // x axis gyro
+/**
+ * @Function set_motor_outputs(float theta_dot, float phi_dot);
+ * @param theta_dot, pitch rate
+ * @param phi_dot, roll rate
+ * @return none
+ * @brief converts RC input signals and controller outputs to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_motor_outputs(void) {
+    int hash;
+    int switch_d;
+    int throttle[4];
+    int throttle_raw;
+    int yaw_cmd;
+    int hash_check;
+    const int tol = 4;
+    int INTOL;
+    int phi_raw;
+    int theta_raw;
+    int psi_raw;
+    /* get RC commanded values*/
+    switch_d = RC_channels[SWITCH_D];
+    throttle_raw = RC_channels[THR];
+    phi_raw = RC_channels[AIL];
+    theta_raw = RC_channels[ELE];
+    psi_raw = RC_channels[RUD];
+    hash = RC_channels[HASH];
+    hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
+    if (abs(hash_check - hash) <= tol) {
+        INTOL = TRUE;
+        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
+        if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
+            /* mix attitude into X configuration */
+            throttle[0] = calc_pw((throttle_raw + controller_outputs.phi_dot - controller_outputs.theta_dot - yaw_cmd));
+            throttle[1] = calc_pw(throttle_raw - controller_outputs.phi_dot - controller_outputs.theta_dot + yaw_cmd);
+            throttle[2] = calc_pw(throttle_raw - controller_outputs.phi_dot + controller_outputs.theta_dot - yaw_cmd);
+            throttle[3] = calc_pw(throttle_raw + controller_outputs.phi_dot + controller_outputs.theta_dot + yaw_cmd);
+
+        } else { // Set throttle to minimum
+            throttle[0] = RC_SERVO_MIN_PULSE;
+            throttle[1] = RC_SERVO_MIN_PULSE;
+            throttle[2] = RC_SERVO_MIN_PULSE;
+            throttle[3] = RC_SERVO_MIN_PULSE;
+        }
+        /* send commands to motor outputs*/
+        RC_servo_set_pulse(throttle[0], MOTOR_1);
+        RC_servo_set_pulse(throttle[1], MOTOR_2);
+        RC_servo_set_pulse(throttle[2], MOTOR_3);
+        RC_servo_set_pulse(throttle[3], MOTOR_4);
+    } else {
+        INTOL = FALSE;
+        //        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+    }
+}
+
+float get_control_output(float ref, float sensor_val, PID_controller * controller) {
     float setpoint = 0;
     /* get control from PID*/
-    PID_update(controller, ref, meas);
+    PID_update(controller, ref, sensor_val);
     setpoint = controller->u;
     return (setpoint);
 }
@@ -560,7 +699,8 @@ int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
     uint32_t RC_timeout = 1000;
-    uint32_t control_start_time = 0;
+    uint32_t angular_rate_control_start_time = 0;
+    uint32_t angle_control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     uint8_t index;
     int8_t IMU_state = ERROR;
@@ -665,8 +805,10 @@ int main(void) {
         IMU_retry--;
     }
     /*initialize controllers*/
-    PID_init(&pitch_rate_controller, pitch_rate_dt, pitch_rate_kp, pitch_rate_ki, pitch_rate_kd, pitch_rate_u_max, pitch_rate_u_min);
-    PID_init(&roll_rate_controller, roll_rate_dt, roll_rate_kp, roll_rate_ki, roll_rate_kd, roll_rate_u_max, roll_rate_u_min);
+    PID_init(&pitch_rate_controller);
+    PID_init(&roll_rate_controller);
+    PID_init(&pitch_controller);
+    PID_init(&roll_controller);
 
     printf("\r\nQuad Passthrough Control App %s, %s \r\n", __DATE__, __TIME__);
     printf("Testing!\r\n");
@@ -679,7 +821,8 @@ int main(void) {
     AHRS_set_mag_inertial(m_i);
 
     cur_time = Sys_timer_get_msec();
-    control_start_time = cur_time;
+    angular_rate_control_start_time = cur_time;
+    angle_control_start_time = cur_time;
     heartbeat_start_time = cur_time;
 
     while (1) {
@@ -689,9 +832,11 @@ int main(void) {
         check_RC_events(); //check incoming RC commands
         cur_time = Sys_timer_get_msec();
         //publish control and sensor signals
-        if (cur_time - control_start_time >= CONTROL_PERIOD) {
-            control_start_time = cur_time; //reset control loop timer
-            set_control_output(gyro_cal); // set actuator outputs
+        if (cur_time - angular_rate_control_start_time >= ANGULAR_RATE_CONTROL_PERIOD) {
+            angular_rate_control_start_time = cur_time; //reset control loop timer
+//            set_control_output(gyro_cal, euler); // set actuator outputs
+            calc_angle_rate_output(gyro_cal);
+            set_motor_outputs();
             /*start next data acquisition round*/
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
             if (IMU_updated == TRUE) {
@@ -718,6 +863,12 @@ int main(void) {
                 publish_IMU_data(RAW);
             }
         }
+        /* update angular control every ANGL_CONTROL_PERIOD*/
+        if(cur_time - angle_control_start_time >= ANGLE_CONTROL_PERIOD) {
+            angle_control_start_time = cur_time;
+            calc_angle_output(euler);
+        }
+        
         if (IMU_is_data_ready() == TRUE) {
             IMU_updated = TRUE;
             IMU_update_end = Sys_timer_get_msec();
@@ -735,7 +886,7 @@ int main(void) {
             gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
             AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
 
-//            printf("%+3.1f, %+3.1f, %+3.1f, %d \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg, IMU_update_end - IMU_update_start);
+            //            printf("%+3.1f, %+3.1f, %+3.1f, %d \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg, IMU_update_end - IMU_update_start);
         }
         /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {

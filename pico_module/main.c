@@ -11,6 +11,9 @@
 #include "constant_panning_mode/constant_panning_mode.h"
 #include "range_at_angle/range_at_angle.h"
 #include "MG90S_servo/MG90S_servo.h"
+#include "mavlink/mavlink.h"
+
+#define LIDAR_MAX_DISTANCE 4000
 
 typedef enum
 {
@@ -26,6 +29,7 @@ void main(void)
 {
     stdio_init_all();                   // initializes Pico I/O pins
     sleep_ms(1000);
+    set_mavlink_communication();
 
     uint16_t initial_angle = initialize_system_components();
 
@@ -34,6 +38,13 @@ void main(void)
     int angle, range;
     lidar_mode current_mode = IDLE;
     lidar_mode previous_mode = IDLE;
+
+    uint16_t distances[72] = {0};
+    short array_index = 0;
+    uint8_t increment;
+    float angle_offset;
+
+    angle_and_range output;
     while(1)
     {
         choice = getchar_timeout_us(0);
@@ -65,11 +76,28 @@ void main(void)
             case CONSTANT_PANNING:
                 if(previous_mode == CONSTANT_PANNING)
                 {
-                    continue_constant_panning_mode();
+                    output = continue_constant_panning_mode();
+                    if(output.range != 0xFFFF)
+                    {
+                        distances[array_index++] = output.range; 
+                    }
+                    if(array_index == 72)
+                    {
+                        publish_lidar_data(distances, angle_offset, 0);
+                        for(short i = 0; i < 72; i++)
+                            distances[i] = 0;
+                        array_index = 0;
+                    }
                 }
                 else
                 {
-                    start_constant_panning_mode(initial_angle);
+                    angle_offset = start_constant_panning_mode(initial_angle);
+                    for(short i = 0; i < 72; i++)
+                        distances[i] = 0;
+                    
+                    array_index = 0;
+                    increment = ANGLE_INCREMENT/100;
+
                     previous_mode = CONSTANT_PANNING;
                 }
                 break;
@@ -78,20 +106,41 @@ void main(void)
                 scanf("%d", &angle);
                 printf("\nEnter Range: ");
                 scanf("%d", &range);
-                printf("\nAngle: %d, Range: %d", angle, range);
-                range_at_angle_mode(angle, initial_angle);
+                
+                angle_and_range output = range_at_angle_mode(angle, initial_angle);
+                for(short i = 0; i < 72; i++)
+                    distances[i] = 0;
+                distances[0] = output.range;
+                publish_lidar_data(distances, output.angle, 0);
+                array_index = 0;
                 current_mode = previous_mode;
                 previous_mode = RANGE_AT_ANGLE;
                 break;
             case IDLE:
                 if(previous_mode == IDLE)
                 {
-                    angle_and_range output = get_angle_and_range(initial_angle);
+                    output = get_angle_and_range(initial_angle);
                     printf("\nDistance at angle %10d is: %10d", output.angle, 
                     output.range);
+                    if(output.range != 0xFFFF)
+                    {
+                        distances[array_index++] = output.range; 
+                    }
+                    if(array_index == 72)
+                    {
+                        publish_lidar_data(distances, angle_offset, 0);
+                        for(short i = 0; i < 72; i++)
+                            distances[i] = 0;
+                        array_index = 0;
+                    }
                 }
                 else
                 {
+                    angle_offset = 0;
+                    //distances = {0};
+                    array_index = 0;
+                    increment = 0;
+
                     MG90S_servo_set_angle(0);
                     previous_mode = IDLE;
                 }

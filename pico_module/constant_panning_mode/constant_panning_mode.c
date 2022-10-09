@@ -23,7 +23,7 @@
  * PRIVATE #DEFINES                                                            *
  ******************************************************************************/
 
-#define ANGLE_INCREMENT 1000        /* the angle increment in centidegree; the measurement will be taken on 0, 10, 20... degrees
+
 
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            
@@ -45,15 +45,16 @@ bool direction = 1;     // 1 --> -90 to 90; 0 --> 90 to -90
  ******************************************************************************/
 
 /*
- * @Function void start_constant_panning_mode(uint16_t angle)
+ * @Function int16_t start_constant_panning_mode(uint16_t angle)
  * @param angle, an initial angle used by the encoder
- * @return None
+ * @return offset angle value
  * @brief this is a function to initiate the constant panning mode; this 
  * function should be called when we first start constant panning mode
  * @author Bhumil Depani
  */
-void start_constant_panning_mode(uint16_t angle)
+int16_t start_constant_panning_mode(uint16_t angle)
 {
+    angle_and_range output = {0, 0xFFFF};       // dummy data
     initial_angle = angle;
     direction = 1;          // initial direction will be from -90 to 90 degree
     no_of_stop = 0;         // initialize no_of_stop
@@ -75,10 +76,11 @@ void start_constant_panning_mode(uint16_t angle)
         }
     }
     MG90S_servo_set_angle(9000 + 1000);     // Giving 1000 centidegree extra
+    return stopping_angle[next_stop];
 }
 
 /*
- * @Function void continue_constant_panning_mode(void)
+ * @Function angle_and_range continue_constant_panning_mode(void)
  * @param None
  * @return None
  * @brief this is a function to drive the constant panning mode; this 
@@ -86,15 +88,16 @@ void start_constant_panning_mode(uint16_t angle)
  * mode
  * @author Bhumil Depani
  */
-void continue_constant_panning_mode(void)
+angle_and_range continue_constant_panning_mode(void)
 {
     int16_t current_angle = get_angle(initial_angle);
+    angle_and_range output = {0, 0xFFFF};
 
     if(direction)       // if going from -90 to 90
     {
         if(current_angle > (stopping_angle[next_stop] - TOLERANCE))
         {
-            angle_and_range output = get_angle_and_range(initial_angle);
+            output = get_angle_and_range(initial_angle);
             printf("\nDistance at angle %10d (actual angle is %10d) is: %10d", 
             stopping_angle[next_stop], output.angle, output.range);
             next_stop++;
@@ -111,7 +114,7 @@ void continue_constant_panning_mode(void)
     {
         if(current_angle < (stopping_angle[next_stop] + TOLERANCE))
         {
-            angle_and_range output = get_angle_and_range(initial_angle);
+            output = get_angle_and_range(initial_angle);
             printf("\nDistance at angle %10d (actual angle is %10d) is: %10d", stopping_angle[next_stop], output.angle, output.range);
             if(next_stop == 0)      // at -90 degree
             {
@@ -123,6 +126,7 @@ void continue_constant_panning_mode(void)
             next_stop--;
         }
     }
+    return output;
 }
 
 

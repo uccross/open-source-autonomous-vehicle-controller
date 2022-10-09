@@ -488,7 +488,7 @@ int main()
         {
             send_lidar_error_on_mavlink(distance);
         }
-        sleep_ms(5000);
+        sleep_ms(1000);
     }
 }
 

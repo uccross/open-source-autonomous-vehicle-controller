@@ -1,71 +1,69 @@
 /*
- * File: MG90S_servo.c
+ * File: range_at_angle.h
  * Author: Bhuml Depani
- * Brief: This file is a motor driver module for the MG90S Servo Motor. It
- * contains multiple functions which can be used to control the rotation of the
- * servo motor.
- * Created on 06/22/2022 04:28 pm
+ * Brief: This is one of the modes of sensor driver module. In this file, there 
+ * are functions to find the range (distance) at a particular angle.
+ * Created on 07/12/2022 07:35 pm
 */
 
-#ifndef MG90SSERVO_H
-#define MG90SSERVO_H
+#ifndef RANGEATANGLE_H
+#define RANGEATANGLE_H
 
 /*******************************************************************************
  * PUBLIC #INCLUDES                                                            *
  ******************************************************************************/
 
-#include "pico/stdlib.h"                // Pico Standard Library
+#include "pico/stdlib.h"                            // Pico Standard Library
 
 /*******************************************************************************
  * PUBLIC #DEFINES                                                            *
  ******************************************************************************/
 
-#define MHz 1000000
-#define SYSTEM_CLOCK_FREQ 125 * MHz     /* Pico System Clock frequency in Hz
-* from Datasheet */
+#define TOLERANCE 100       // tolerance of -100 to +100 centidegree
+
+typedef struct angle_and_range
+{
+    int16_t angle;
+    uint16_t range;
+}angle_and_range;
 
 /*******************************************************************************
  * PUBLIC FUNCTIONS                                                           *
  ******************************************************************************/
 
 /*
- * @Function void MG90S_servo_init(void)
+ * @Function uint16_t initialize_system_components(void)
  * @param None
- * @return None
- * @brief Initializes PWM with the required PWM Period for motor at pin
- * MOTOR_PIN
+ * @return an initial angle of magnet, read by rotary encoder
+ * @brief Initializes PWM in Pico for MG90S servo motor, initializes I2C 
+ * communication for V3HP LiDAR and initialized SPI communication with required
+ * speed and on particular GPIO pins of Pico.
  * @author Bhumil Depani
  */
-void MG90S_servo_init(void);
+uint16_t initialize_system_components(void);
 
 /*
- * @Function void MG90S_servo_set_angle(int16_t angle_degree)
- * @param angle_degree, an angle, in degree, where we want servo to rotate, for
- * MG90S Servo Motor angle should be between -9000 and 9000 centidegree
- * @return None
- * @brief takes an angle in degree, finds PWM duty cycle required, set PWM duty
- * cycle to the MOTOR_PIN 
+ * @Function angle_and_range get_angle_and_range(uint16_t initial_angle)
+ * @param initial_angle, an initial angle measured by encoder, while booting up
+ * system
+ * @return a structure angle_and_range
+ * @brief measures a distnace using LiDAR, measures an angle using an encoder 
+ * at current position of the servo motor, and combine both measurements in the
+ * angle_and_range structure
  * @author Bhumil Depani
  */
-void MG90S_servo_set_angle(int16_t angle_degree);
+angle_and_range get_angle_and_range(uint16_t initial_angle);
 
 /*
- * @Function uint16_t microsecond_to_pwm_count(float microsecond)
- * @param microsecond, microsecond will be converted into appropriate PWM Count
- * @return PWM Count associated with output microsecond
- * @brief takes microsecond as an input and according to values of 
- * PWM_PERIOD_HZ and pwm_wrap_count, the function will calculate the pwm count*
+ * @Function angle_and_range range_at_angle_mode(int16_t angle, uint16_t       * initial_angle)
+ * @param angle, the angle at which want to measure a distance
+ * @param initial_angle, an initial angle measured by encoder, while booting up
+ * system
+ * @return Final range and angle
+ * @brief this function implements one of the mode of a sensor driver module. A 
+ * function will first send command to motor, 
  * @author Bhumil Depani
  */
-uint16_t microsecond_to_pwm_count(float microsecond);
+angle_and_range range_at_angle_mode(int16_t angle, uint16_t initial_angle);
 
-/*
- * @Function int16_t MG90S_servo_get_angle(void)
- * @param None
- * @return angle of the servo motor in centidegree
- * @brief function can be called to know at which angle servo is remained
- * @author Bhumil Depani
- */
-int16_t MG90S_servo_get_angle(void);
-
-#endif  /*MG90SSERVO_H */
+#endif      // RANGEATANGLE_H

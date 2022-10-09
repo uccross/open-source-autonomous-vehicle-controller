@@ -18,6 +18,7 @@ add_executable(${PROJECT_NAME}
         MG90S_servo/MG90S_servo.c
         V3HP_lidar/V3HP_lidar.c
         AS5047D_encoder/AS5047D_encoder.c
+        mavlink/mavlink.c
         )
 
 # pull in common dependencies; libraries we included into our C Prohram

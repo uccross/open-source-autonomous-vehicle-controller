@@ -55,15 +55,15 @@ uint16_t initialize_system_components(void);
 angle_and_range get_angle_and_range(uint16_t initial_angle);
 
 /*
- * @Function void range_at_angle_mode(int16_t angle, uint16_t initial_angle)
+ * @Function angle_and_range range_at_angle_mode(int16_t angle, uint16_t       * initial_angle)
  * @param angle, the angle at which want to measure a distance
  * @param initial_angle, an initial angle measured by encoder, while booting up
  * system
- * @return None
+ * @return Final range and angle
  * @brief this function implements one of the mode of a sensor driver module. A 
  * function will first send command to motor, 
  * @author Bhumil Depani
  */
-void range_at_angle_mode(int16_t angle, uint16_t initial_angle);
+angle_and_range range_at_angle_mode(int16_t angle, uint16_t initial_angle);
 
 #endif      // RANGEATANGLE_H

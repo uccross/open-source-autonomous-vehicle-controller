@@ -83,7 +83,7 @@ void main(void)
                     }
                     if(array_index == 72)
                     {
-                        publish_lidar_data(distances, angle_offset, 0);
+                        publish_lidar_data(distances, angle_offset, ANGLE_INCREMENT/100);
                         for(short i = 0; i < 72; i++)
                             distances[i] = 0;
                         array_index = 0;
@@ -91,6 +91,13 @@ void main(void)
                 }
                 else
                 {
+                    if(array_index != 0)
+                    {
+                        if(previous_mode == IDLE)
+                        {
+                            publish_lidar_data(distances, 0, 0);
+                        }
+                    }
                     angle_offset = start_constant_panning_mode(initial_angle);
                     for(short i = 0; i < 72; i++)
                         distances[i] = 0;
@@ -106,6 +113,18 @@ void main(void)
                 scanf("%d", &angle);
                 printf("\nEnter Range: ");
                 scanf("%d", &range);
+
+                if(array_index != 0)
+                    {
+                        if(previous_mode == IDLE)
+                        {
+                            publish_lidar_data(distances, 0, 0);
+                        }
+                        else if(previous_mode == CONSTANT_PANNING)
+                        {
+                            publish_lidar_data(distances, angle_offset, ANGLE_INCREMENT/100);
+                        }
+                    }
                 
                 angle_and_range output = range_at_angle_mode(angle, initial_angle);
                 for(short i = 0; i < 72; i++)
@@ -128,7 +147,7 @@ void main(void)
                     }
                     if(array_index == 72)
                     {
-                        publish_lidar_data(distances, angle_offset, 0);
+                        publish_lidar_data(distances, 0, 0);
                         for(short i = 0; i < 72; i++)
                             distances[i] = 0;
                         array_index = 0;
@@ -136,10 +155,15 @@ void main(void)
                 }
                 else
                 {
-                    angle_offset = 0;
-                    //distances = {0};
                     array_index = 0;
                     increment = 0;
+                    if(array_index != 0)
+                    {
+                        if(previous_mode == CONSTANT_PANNING)
+                        {
+                            publish_lidar_data(distances, angle_offset, ANGLE_INCREMENT/100);
+                        }
+                    }
 
                     MG90S_servo_set_angle(0);
                     previous_mode = IDLE;

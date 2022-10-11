@@ -4,19 +4,12 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
+      <itemPath>../../../lib/AS5047D.X/AS5047D.h</itemPath>
+      <itemPath>../../../lib/PID.X/PID.h</itemPath>
       <itemPath>../../../lib/Board.X/Board.h</itemPath>
-      <itemPath>../../../lib/ICM-20948.X/ICM_20948.h</itemPath>
-      <itemPath>../../../lib/ICM-20948.X/ICM_20948_registers.h</itemPath>
-      <itemPath>../../../modules/c_library_v2/common/mavlink.h</itemPath>
-      <itemPath>../../../lib/Radio_serial.X/Radio_serial.h</itemPath>
-      <itemPath>../../../lib/RC_RX.X/RC_RX.h</itemPath>
-      <itemPath>../../../lib/RC_servo.X/RC_servo.h</itemPath>
       <itemPath>../../../lib/Serial.X/SerialM32.h</itemPath>
       <itemPath>../../../lib/System_timer.X/System_timer.h</itemPath>
-      <itemPath>../../../apps/ahrs_apps/AHRS.X/AHRS.h</itemPath>
-      <itemPath>../../../lib/Lin_alg.X/Lin_alg_float.h</itemPath>
-      <itemPath>../../../lib/NEO_M8N.X/NEO_M8N.h</itemPath>
-      <itemPath>../../../lib/AS5047D.X/AS5047D.h</itemPath>
+      <itemPath>../../../lib/RC_servo.X/RC_servo.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -25,18 +18,13 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <itemPath>rover_main.c</itemPath>
-      <itemPath>../../../lib/Board.X/Board.c</itemPath>
-      <itemPath>../../../lib/ICM-20948.X/ICM_20948.c</itemPath>
-      <itemPath>../../../lib/Radio_serial.X/Radio_serial.c</itemPath>
-      <itemPath>../../../lib/RC_RX.X/RC_RX.c</itemPath>
-      <itemPath>../../../lib/RC_servo.X/RC_servo.c</itemPath>
       <itemPath>../../../lib/Serial.X/SerialM32.c</itemPath>
-      <itemPath>../../../lib/System_timer.X/System_timer.c</itemPath>
-      <itemPath>../../../apps/ahrs_apps/AHRS.X/AHRS.c</itemPath>
-      <itemPath>../../../lib/Lin_alg.X/Lin_alg_float.c</itemPath>
-      <itemPath>../../../lib/NEO_M8N.X/NEO_M8N.c</itemPath>
       <itemPath>../../../lib/AS5047D.X/AS5047D.c</itemPath>
+      <itemPath>../../../lib/Board.X/Board.c</itemPath>
+      <itemPath>../../../lib/PID.X/PID.c</itemPath>
+      <itemPath>../../../lib/System_timer.X/System_timer.c</itemPath>
+      <itemPath>v_control_main.c</itemPath>
+      <itemPath>../../../lib/RC_servo.X/RC_servo.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -45,11 +33,12 @@
     </logicalFolder>
   </logicalFolder>
   <sourceRootList>
-    <Elem>.</Elem>
-    <Elem>../../../apps/ahrs_apps/AHRS.X</Elem>
-    <Elem>../../../lib/Lin_alg.X</Elem>
-    <Elem>../../../lib/NEO_M8N.X</Elem>
     <Elem>../../../lib/AS5047D.X</Elem>
+    <Elem>../../../lib/PID.X</Elem>
+    <Elem>../../../lib/Board.X</Elem>
+    <Elem>../../../lib/Serial.X</Elem>
+    <Elem>../../../lib/System_timer.X</Elem>
+    <Elem>../../../lib/RC_servo.X</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -100,7 +89,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value="..\..\..\lib\Board.X;..\..\..\lib\ICM-20948.X;..\..\..\lib\Radio_serial.X;..\..\..\lib\RC_RX.X;..\..\..\lib\RC_servo.X;..\..\..\lib\Serial.X;..\..\..\lib\System_timer.X;..\..\..\modules\c_library_v2;..\..\..\apps\ahrs_apps\AHRS.X;..\..\..\lib\Lin_alg.X;..\..\..\lib\NEO_M8N.X;..\..\..\lib\AS5047D.X"/>
+                  value="..\..\..\lib\AS5047D.X;..\..\..\lib\Board.X;..\..\..\lib\PID.X;..\..\..\lib\Serial.X;..\..\..\lib\System_timer.X;..\..\..\lib\RC_servo.X"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>
@@ -287,7 +276,8 @@
         <property key="memories.instruction.ram.ranges"
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
-        <property key="memories.programmemory.ranges" value="1d000000-1d07ffff"/>
+        <property key="memories.programmemory.ranges"
+                  value="${memories.programmemory.ranges.default}"/>
         <property key="poweroptions.powerenable" value="false"/>
         <property key="programmertogo.imagename" value=""/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
@@ -297,7 +287,8 @@
         <property key="programoptions.preservedataflash.ranges"
                   value="${programoptions.preservedataflash.ranges}"/>
         <property key="programoptions.preserveeeprom" value="false"/>
-        <property key="programoptions.preserveeeprom.ranges" value=""/>
+        <property key="programoptions.preserveeeprom.ranges"
+                  value="${memories.eedata.default}"/>
         <property key="programoptions.preserveprogram.ranges" value=""/>
         <property key="programoptions.preserveprogramrange" value="false"/>
         <property key="programoptions.preserveuserid" value="false"/>
@@ -306,7 +297,7 @@
         <property key="programoptions.testmodeentrymethod" value="VDDFirst"/>
         <property key="programoptions.usehighvoltageonmclr" value="false"/>
         <property key="programoptions.uselvpprogramming" value="false"/>
-        <property key="voltagevalue" value="3.25"/>
+        <property key="voltagevalue" value="2.5"/>
       </PICkit3PlatformTool>
     </conf>
   </confs>

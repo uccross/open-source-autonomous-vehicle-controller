@@ -197,6 +197,14 @@ static int calc_pw(int raw_counts);
  */
 void set_control_output(void);
 
+
+/**
+ * @function Rover_quat2euler()
+ * @param q A quaternion
+ * @param euler a vector of euler angles in [psi, theta, roll] order
+ */
+void Rover_quat2euler(float q[MSZ], float euler[MSZ]);
+
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -638,6 +646,25 @@ void set_control_output(void) {
     }
 }
 
+/**
+ * @function quat2euler()
+ * @param q A quaternion
+ * @param euler a vector of euler angles in [psi, theta, roll] order
+ */
+void Rover_quat2euler(float q[MSZ], float euler[MSZ]) {
+    float q00 = q[0] * q[0];
+    float q11 = q[1] * q[1];
+    float q22 = q[2] * q[2];
+    float q33 = q[3] * q[3];
+
+    // psi
+    euler[0] = atan2(2.0 * (q[1] * q[2] + q[0] * q[3]), ((q00 + q11 - q22 - q33)));
+    // theta
+    euler[1] = asin(2.0 * (q[0] * q[2] - q[1] * q[3]));
+    // phi
+    euler[2] = atan2(2.0 * (q[2] * q[3] + q[0] * q[1]), q00 - q11 - q22 + q33);
+}
+
 int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
@@ -667,10 +694,9 @@ int main(void) {
     const float dt = DT;
     const float deg2rad = M_PI / 180.0;
     const float rad2deg = 180.0 / M_PI;
-    /* Calibration matrices and offset vectors */
 
-    /*calibration matrices*/
-    // Rover IMU calibration:
+    /* Calibration matrices and offset vectors */
+    /* Rover IMU calibration */
     float A_acc[MSZ][MSZ] = {
         6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
         -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
@@ -691,7 +717,11 @@ int main(void) {
     // converted into ENU format and normalized:
     float m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.871322609031072};
 
-    // Euler angles
+    /*attitude*/
+    float q[QSZ] = {1, 0, 0, 0};
+    /*gyro bias*/
+    float gyro_bias[MSZ] = {0, 0, 0};
+    /*euler angles (yaw, pitch, roll) */
     float euler[MSZ] = {0, 0, 0};
 
     /* data arrays */
@@ -704,13 +734,13 @@ int main(void) {
     Serial_init(); //start debug terminal 
     Radio_serial_init(); //start the radios
     GPS_init(); // initialize GPS 
-//    printf("Board initialization complete.\r\n");
-//    msg_len = sprintf(message, "Board initialization complete.\r\n");
-//    mavprint(message, msg_len, RADIO);
+    //    printf("Board initialization complete.\r\n");
+    //    msg_len = sprintf(message, "Board initialization complete.\r\n");
+    //    mavprint(message, msg_len, RADIO);
     Sys_timer_init(); //start the system timer
-//    printf("System timer initialized.  Current time %d. \r\n", cur_time);
-//    msg_len = sprintf(message, "System timer initialized.\r\n");
-//    mavprint(message, msg_len, RADIO);
+    //    printf("System timer initialized.  Current time %d. \r\n", cur_time);
+    //    msg_len = sprintf(message, "System timer initialized.\r\n");
+    //    mavprint(message, msg_len, RADIO);
     cur_time = Sys_timer_get_msec();
     start_time = cur_time;
     RCRX_init(); //initialize the radio control system
@@ -811,8 +841,8 @@ int main(void) {
             gyro_cal[0] = (float) IMU_scaled.gyro.x * deg2rad;
             gyro_cal[1] = (float) IMU_scaled.gyro.y * deg2rad;
             gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
-            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
-            //            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q, gyro_bias);
+            Rover_quat2euler(q, euler);
         }
 
         /* publish GPS */
@@ -826,7 +856,9 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat(USB);
-            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
+            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n", 
+                    euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
+                    gyro_bias[0], gyro_bias[1], gyro_bias[2]);
             mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "GPS: %f, %f, %f \r\n ", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);

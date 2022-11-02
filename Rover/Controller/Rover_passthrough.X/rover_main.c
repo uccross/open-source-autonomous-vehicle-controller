@@ -670,7 +670,7 @@ int main(void) {
     /* Calibration matrices and offset vectors */
 
     /*calibration matrices*/
-    //    Test IMU calibration values
+    // Rover IMU calibration:
     float A_acc[MSZ][MSZ] = {
         6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
         -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,

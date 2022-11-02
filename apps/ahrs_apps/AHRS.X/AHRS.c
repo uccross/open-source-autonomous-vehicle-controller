@@ -157,13 +157,14 @@ void AHRS_set_filter_gains(float kp_a_set, float ki_a_set, float kp_m_set, float
  * @param dt, the integration time in seconds
  * @param mag_i normalized inertial aiding vector of magnetic field at location
  * @params kp_a, kp_i, km_p, km_i filter gains
- * @return euler angles in [psi, theta, phi] (yaw, pitch, roll) order
+ * @return attitude quaternion and gyro biases vector (x,y,z)
  * @brief implements the complementary filter update step 
  * @note 
  * @author Aaron Hunter, 08/05/2022
- * @modified */
+ * @modified  11/01/22 to return quaternion attitude and bias values rather
+ * than Euler angles*/
 void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ],
-        float dt, float euler[MSZ]) {
+        float dt, float q[QSZ], float bias[MSZ]) {
 
     float a_b[MSZ]; //estimated gravity vector in body frame
     float m_b[MSZ]; //estimated magnetic field vector in body frame
@@ -240,9 +241,6 @@ void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ],
     b_plus[1] = b_minus[1] - (w_meas_ai[1] + w_meas_mi[1]) * dt;
     b_plus[2] = b_minus[2] - (w_meas_ai[2] + w_meas_mi[2]) * dt;
 
-    /*convert attitude quaternion to euler angles*/
-    quat2euler(q_plus, euler);
-
     /* update b_minus and q_minus */
     b_minus[0] = b_plus[0];
     b_minus[1] = b_plus[1];
@@ -251,6 +249,15 @@ void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ],
     q_minus[1] = q_plus[1];
     q_minus[2] = q_plus[2];
     q_minus[3] = q_plus[3];
+
+    /* set external attitude and bias*/
+    bias[0] = b_plus[0];
+    bias[1] = b_plus[1];
+    bias[2] = b_plus[2];
+    q[0] = q_plus[0];
+    q[1] = q_plus[1];
+    q[2] = q_plus[2];
+    q[3] = q_plus[3];
 }
 
 
@@ -350,6 +357,13 @@ int main(void) {
     uint32_t update_start = 0;
     uint32_t update_end = 0;
 
+    /*attitude*/
+    float q_test[QSZ] = {1, 0, 0, 0};
+    /*gyro bias*/
+    float bias_test[MSZ] = {0, 0, 0};
+    /*euler angles (yaw, pitch, roll) */
+    float euler_test[MSZ] = {0, 0, 0};
+
     /*filter gains for testing */
     float kpa = 4.0; //accelerometer proportional gain
     float kia = 0.1; // accelerometer integral gain
@@ -379,35 +393,35 @@ int main(void) {
 
     /*calibration matrices*/
 
-// Test IMU calibration matrices
-//        float A_acc[MSZ][MSZ] = {
-//            6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
-//            -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
-//            -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
-//        };
-//        float A_mag[MSZ][MSZ] = {
-//            0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
-//            6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
-//            -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
-//        };
-//        float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
-//        float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
-// IMU 1 calibration values:
+    /* Rover IMU calibration */
     float A_acc[MSZ][MSZ] = {
-        {6.12649072e-05, -7.69323670e-07,  7.41523511e-07},
-        {8.86960833e-08,  5.99163592e-05,  4.45763158e-07},
-        {-8.40898963e-08, -9.22602608e-07,  5.95395979e-05}
+        6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
+        -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
+        -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
     };
-        float A_mag[MSZ][MSZ] = {
-        {3.36826234e-03, -1.56956478e-05, -1.16520778e-05},
-        { 4.48554406e-05,  3.54448710e-03,  1.51280264e-05},
-        {-1.02003198e-04, -3.17665038e-05,  3.48151565e-03}
+    float A_mag[MSZ][MSZ] = {
+        0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
+        6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
+        -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
     };
-    float b_acc[MSZ] = {0.02178154, 0.01720978, 0.01673077};
-    float b_mag[MSZ] = {-0.46909233, -0.03577201, 0.46432114};
+    float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
+    float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
 
-    // Euler angles
-    float euler[MSZ] = {0, 0, 0};
+    // IMU 1 calibration values:
+    //    float A_acc[MSZ][MSZ] = {
+    //        {6.12649072e-05, -7.69323670e-07,  7.41523511e-07},
+    //        {8.86960833e-08,  5.99163592e-05,  4.45763158e-07},
+    //        {-8.40898963e-08, -9.22602608e-07,  5.95395979e-05}
+    //    };
+    //        float A_mag[MSZ][MSZ] = {
+    //        {3.36826234e-03, -1.56956478e-05, -1.16520778e-05},
+    //        { 4.48554406e-05,  3.54448710e-03,  1.51280264e-05},
+    //        {-1.02003198e-04, -3.17665038e-05,  3.48151565e-03}
+    //    };
+    //    float b_acc[MSZ] = {0.02178154, 0.01720978, 0.01673077};
+    //    float b_mag[MSZ] = {-0.46909233, -0.03577201, 0.46432114};
+
+
 
     /* gryo, accelerometer, magnetometer data struct */
     struct IMU_out IMU_data = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -467,10 +481,11 @@ int main(void) {
             gyro_cal[1] = IMU_data.gyro.y * deg2rad;
             gyro_cal[2] = IMU_data.gyro.z * deg2rad;
             update_start = Sys_timer_get_usec();
-            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
+            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q_test, bias_test);
             update_end = Sys_timer_get_usec();
-            printf("%+3.1f, %+3.1f, %+3.1f, ", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-            printf("%+1.3e, %+1.3e, %+1.3e, ", b_plus[0], b_plus[1], b_plus[2]);
+            quat2euler(q_test, euler_test);
+            printf("%+3.1f, %+3.1f, %+3.1f, ", euler_test[0] * rad2deg, euler_test[1] * rad2deg, euler_test[2] * rad2deg);
+            printf("%+1.3e, %+1.3e, %+1.3e, ", bias_test[0], bias_test[1], bias_test[2]);
             printf("%d\r\n", update_end - update_start);
         }
     }

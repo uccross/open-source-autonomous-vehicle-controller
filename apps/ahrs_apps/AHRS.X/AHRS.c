@@ -64,7 +64,7 @@ static float m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.87132260903107
  * @param q A quaternion
  * @param euler a vector of euler angles in [psi, theta, roll] order
  */
-void quat2euler(float q[MSZ], float euler[MSZ]);
+static void quat2euler(float q[MSZ], float euler[MSZ]);
 /**
  * @function q_rot_v_q()
  * Rotate a vector from the inertial frame to the body frame
@@ -72,21 +72,21 @@ void quat2euler(float q[MSZ], float euler[MSZ]);
  * @param q an attitude quaternion
  * sets v_b to the rotated inertial vector in the body frame
  */
-void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]);
+static void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]);
 /**
  * @function v_copy()
  * @param v_in the vector to be copied
  * @param v_out vector to receive the copy
  * @return none
  */
-void v_copy(float v_in[MSZ], float v_out[MSZ]);
+static void v_copy(float v_in[MSZ], float v_out[MSZ]);
 
 /**
  * @function m_norm()
  * @param M A matrix
  * @return The magnitude of the M, m_norm
  */
-float m_norm(float M[MSZ]);
+static float m_norm(float M[MSZ]);
 
 /*******************************************************************************
  * PUBLIC FUNCTION IMPLEMENTATIONS                                             *
@@ -271,7 +271,7 @@ void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ],
  * @param q A quaternion
  * @param euler a vector of euler angles in [psi, theta, roll] order
  */
-void quat2euler(float q[MSZ], float euler[MSZ]) {
+static void quat2euler(float q[MSZ], float euler[MSZ]) {
     float q00 = q[0] * q[0];
     float q11 = q[1] * q[1];
     float q22 = q[2] * q[2];
@@ -292,7 +292,7 @@ void quat2euler(float q[MSZ], float euler[MSZ]) {
  * @param q an attitude quaternion
  * sets v_b to the rotated inertial vector in the body frame
  */
-void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
+static void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
     float q_i[QSZ];
     float q_temp[QSZ];
     float q_conj[QSZ];
@@ -325,7 +325,7 @@ void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
  * @param v_out vector to receive the copy
  * @return none
  */
-void v_copy(float v_in[MSZ], float v_out[MSZ]) {
+static void v_copy(float v_in[MSZ], float v_out[MSZ]) {
     int row;
     for (row = 0; row < MSZ; row++) {
         v_out[row] = v_in[row];
@@ -337,7 +337,7 @@ void v_copy(float v_in[MSZ], float v_out[MSZ]) {
  * @param M A matrix
  * @return The magnitude of the M, m_norm
  */
-float m_norm(float M[MSZ]) {
+static float m_norm(float M[MSZ]) {
     return ((float) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
 }
 

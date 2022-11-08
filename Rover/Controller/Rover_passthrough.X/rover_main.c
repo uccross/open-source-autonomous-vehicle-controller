@@ -24,6 +24,7 @@
 #include "RC_servo.h"
 #include "ICM_20948.h"
 #include "AHRS.h"
+#include "AS5047D.h"
 
 /*******************************************************************************
  * #DEFINES                                                                    *
@@ -61,7 +62,66 @@ static uint8_t pub_GPS = TRUE;
 
 /*conversions*/
 static const float knots_to_mps = KNOTS_TO_MPS;
+const float dt = DT;
+const float deg2rad = M_PI / 180.0;
+const float rad2deg = 180.0 / M_PI;
 
+
+/*Complementary filter gains*/
+float kp_a = 2.5; //accelerometer proportional gain
+float ki_a = 0.05; // accelerometer integral gain
+float kp_m = 2.5; // magnetometer proportional gain
+float ki_m = 0.05; //magnetometer integral gain
+
+/* Calibration matrices and offset vectors */
+/* Rover IMU calibration */
+float A_acc[MSZ][MSZ] = {
+    6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
+    -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
+    -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
+};
+float A_mag[MSZ][MSZ] = {
+    0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
+    6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
+    -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
+};
+float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
+float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
+
+// gravity inertial vector
+float a_i[MSZ] = {0, 0, 1.0};
+// Earth's magnetic field inertial vector, normalized 
+// North 22,680.8 nT	East 5,217.6 nT	Down 41,324.7 nT, value from NOAA
+// converted into ENU format and normalized:
+float m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.871322609031072};
+
+/*attitude*/
+float q[QSZ] = {1, 0, 0, 0};
+/*gyro bias*/
+float gyro_bias[MSZ] = {0, 0, 0};
+/*euler angles (yaw, pitch, roll) */
+float euler[MSZ] = {0, 0, 0};
+
+/* IMU data arrays */
+float gyro_cal[MSZ] = {0, 0, 0};
+float acc_cal[MSZ] = {0, 0, 0};
+float mag_cal[MSZ] = {0, 0, 0};
+
+/* Rover state */
+struct state {
+    float x;
+    float y;
+    float psi;
+    float v;
+    float delta;
+};
+struct state X = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
+/* Encoder structs for motors and servo */
+encoder_t enc[] = {
+    {.last_theta = 0, .next_theta = 0, .omega = 0},
+    {.last_theta = 0, .next_theta = 0, .omega = 0},
+    {.last_theta = 0, .next_theta = 0, .omega = 0}
+};
 /*******************************************************************************
  * TYPEDEFS AND ENUMS                                                          *
  ******************************************************************************/
@@ -129,6 +189,14 @@ void check_RC_events();
  * @author Aaron Hunter
  */
 void check_radio_events(void);
+/**
+ * @function check_encoder_events(void)
+ * @param none
+ * @brief looks for finished data acquisition from the encoders
+ * @note 
+ * @author Aaron Hunter
+ */
+void check_encoder_events(void);
 /**
  * @function publish_GPS(void)
  * @param none
@@ -298,6 +366,19 @@ void check_radio_events(void) {
                     break;
             }
         }
+    }
+}
+
+/**
+ * @function check_encoder_events(void)
+ * @param none
+ * @brief looks for finished data acquisition from the encoders
+ * @note 
+ * @author Aaron Hunter
+ */
+void check_encoder_events(void) {
+    if (Encoder_is_data_ready()) {
+        Encoder_get_data(enc);
     }
 }
 
@@ -672,7 +753,6 @@ int main(void) {
     uint32_t control_start_time = 0;
     uint32_t gps_start_time = 0;
     uint32_t heartbeat_start_time = 0;
-    uint8_t index;
     int8_t IMU_state = ERROR;
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
@@ -685,62 +765,13 @@ int main(void) {
     char message[BUFFER_SIZE];
     uint8_t msg_len = 0;
 
-    /*filter gains*/
-    float kp_a = 2.5; //accelerometer proportional gain
-    float ki_a = 0.05; // accelerometer integral gain
-    float kp_m = 2.5; // magnetometer proportional gain
-    float ki_m = 0.05; //magnetometer integral gain
-    /*timing and conversion*/
-    const float dt = DT;
-    const float deg2rad = M_PI / 180.0;
-    const float rad2deg = 180.0 / M_PI;
-
-    /* Calibration matrices and offset vectors */
-    /* Rover IMU calibration */
-    float A_acc[MSZ][MSZ] = {
-        6.01180201773358e-05, -6.28352073406424e-07, -3.91326747595870e-07,
-        -1.18653342135860e-06, 6.01268083773005e-05, -2.97010157797952e-07,
-        -3.19011230800348e-07, -3.62174516629958e-08, 6.04564465269327e-05
-    };
-    float A_mag[MSZ][MSZ] = {
-        0.00351413733554131, -1.74599042407869e-06, -1.62761272908763e-05,
-        6.73767225208446e-06, 0.00334531206332366, -1.35302929502152e-05,
-        -3.28233797524166e-05, 9.29337701972177e-06, 0.00343350080131375
-    };
-    float b_acc[MSZ] = {-0.0156750747576770, -0.0118720194488050, -0.0240128301624044};
-    float b_mag[MSZ] = {-0.809679246097106, 0.700742334522691, -0.571694648765172};
-
-    // gravity inertial vector
-    float a_i[MSZ] = {0, 0, 1.0};
-    // Earth's magnetic field inertial vector, normalized 
-    // North 22,680.8 nT	East 5,217.6 nT	Down 41,324.7 nT, value from NOAA
-    // converted into ENU format and normalized:
-    float m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.871322609031072};
-
-    /*attitude*/
-    float q[QSZ] = {1, 0, 0, 0};
-    /*gyro bias*/
-    float gyro_bias[MSZ] = {0, 0, 0};
-    /*euler angles (yaw, pitch, roll) */
-    float euler[MSZ] = {0, 0, 0};
-
-    /* data arrays */
-    float gyro_cal[MSZ] = {0, 0, 0};
-    float acc_cal[MSZ] = {0, 0, 0};
-    float mag_cal[MSZ] = {0, 0, 0};
-
     //Initialization routines
     Board_init(); //board configuration
     Serial_init(); //start debug terminal 
+    Encoder_init(); // start the encoders
     Radio_serial_init(); //start the radios
     GPS_init(); // initialize GPS 
-    //    printf("Board initialization complete.\r\n");
-    //    msg_len = sprintf(message, "Board initialization complete.\r\n");
-    //    mavprint(message, msg_len, RADIO);
     Sys_timer_init(); //start the system timer
-    //    printf("System timer initialized.  Current time %d. \r\n", cur_time);
-    //    msg_len = sprintf(message, "System timer initialized.\r\n");
-    //    mavprint(message, msg_len, RADIO);
     cur_time = Sys_timer_get_msec();
     start_time = cur_time;
     RCRX_init(); //initialize the radio control system
@@ -774,7 +805,6 @@ int main(void) {
         IMU_retry--;
     }
 
-    //    printf("\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
     msg_len = sprintf(message, "\r\nRover Manual Control App %s, %s \r\n", __DATE__, __TIME__);
     mavprint(message, msg_len, RADIO);
     /* load IMU calibrations */
@@ -793,6 +823,7 @@ int main(void) {
     while (1) {
         //check for all events
         check_IMU_events(); //check for IMU data ready and publish when available
+        check_encoder_events();
         check_GPS_events(); //check and process incoming GPS messages
         check_radio_events(); //detect and process MAVLink incoming messages
         check_USB_events();
@@ -814,11 +845,11 @@ int main(void) {
                     IMU_state = IMU_init(IMU_SPI_MODE);
                     if (IMU_state == ERROR && IMU_retry > 0) {
                         IMU_state = IMU_init(IMU_SPI_MODE);
-                        //                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
                         IMU_retry--;
                     }
                 }
             }
+            Encoder_start_data_acq(); // start encoder acquisition
             /*publish high speed sensors*/
             if (pub_RC_signals == TRUE) {
                 publish_RC_signals_raw();
@@ -856,9 +887,12 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat(USB);
-            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n", 
+            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n",
                     euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
                     gyro_bias[0], gyro_bias[1], gyro_bias[2]);
+            mavprint(message, msg_len, RADIO);
+            msg_len = sprintf(message, "%d, %d, %d \r\n",
+                    enc[LEFT_MOTOR].last_theta, enc[LEFT_MOTOR].next_theta, enc[LEFT_MOTOR].omega);
             mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "GPS: %f, %f, %f \r\n ", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);

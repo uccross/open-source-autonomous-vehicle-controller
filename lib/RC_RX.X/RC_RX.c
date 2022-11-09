@@ -166,7 +166,7 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
     parsing_RX = TRUE;
     RCRX_calc_cmd(channels);
     parsing_RX = FALSE;
-    //if a collision occured, clear the flag and re-enable interrupt to get data
+    //if a collision occurred, clear the flag and re-enable interrupt to get data
     if (RX_collision == TRUE) {
         RX_collision = FALSE;
         IEC0bits.U1RXIE = 1;

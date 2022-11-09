@@ -57,14 +57,16 @@ static struct GPS_data GPS_data;
 /* publish signal booleans */
 static uint8_t pub_RC_servo = FALSE;
 static uint8_t pub_RC_signals = TRUE;
-static uint8_t pub_IMU = FALSE;
-static uint8_t pub_GPS = TRUE;
+static uint8_t pub_IMU = TRUE;
+static uint8_t pub_GPS = FALSE;
 
 /*conversions*/
-static const float knots_to_mps = KNOTS_TO_MPS;
+const float knots_to_mps = KNOTS_TO_MPS;
 const float dt = DT;
 const float deg2rad = M_PI / 180.0;
 const float rad2deg = 180.0 / M_PI;
+const float enc_ticks2radians = 2 * M_PI / 16384;
+const float TWO_PI = 2 * M_PI;
 
 
 /*Complementary filter gains*/
@@ -273,6 +275,12 @@ void set_control_output(void);
  */
 void Rover_quat2euler(float q[MSZ], float euler[MSZ]);
 
+/**
+ * @function update_odometry(void)
+ * @brief: computes the addition to the vehicle location from encoder data
+ * 
+ */
+void update_odometry(void);
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -301,6 +309,18 @@ void check_GPS_events(void) {
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
         IMU_get_raw_data(&IMU_raw);
+        IMU_get_norm_data(&IMU_scaled);
+
+        acc_cal[0] = (float) IMU_scaled.acc.x;
+        acc_cal[1] = (float) IMU_scaled.acc.y;
+        acc_cal[2] = (float) IMU_scaled.acc.z;
+        mag_cal[0] = (float) IMU_scaled.mag.x;
+        mag_cal[1] = (float) IMU_scaled.mag.y;
+        mag_cal[2] = (float) IMU_scaled.mag.z;
+        /*scale gyro readings into rad/sec */
+        gyro_cal[0] = (float) IMU_scaled.gyro.x * deg2rad;
+        gyro_cal[1] = (float) IMU_scaled.gyro.y * deg2rad;
+        gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
     }
 }
 
@@ -746,6 +766,59 @@ void Rover_quat2euler(float q[MSZ], float euler[MSZ]) {
     euler[2] = atan2(2.0 * (q[2] * q[3] + q[0] * q[1]), q00 - q11 - q22 + q33);
 }
 
+/**
+ * @function update_odometry(void)
+ * @brief: computes the addition to the vehicle location from encoder data
+ * 
+ */
+void update_odometry(void) {
+    float l = 0.174; // wheelbase in meters
+    float r_w = .032; // wheel radius in meters
+    uint16_t heading_0 = 1805;
+    float R; // radius of vehicle path
+    float dPsi; // change in heading angle of rover
+    float Psi_new;
+    float dx; // change in x position of rover
+    float dy; // change in y position of rover
+    float d_omega; // wheel rotation amount
+    float delta; // steering angle
+    float delta_scale = 0.675;
+    const int16_t max_delta = 2730; // ~ 60 degree turn angle max in counts
+    const int16_t TWO_PI_INT = 16383; // 2^14 -1
+    int16_t delta_int;
+
+    /* encoder is oriented in opposite orientation so we subtract the angle from
+     the zero value instead of the other way around*/
+    delta_int = heading_0 - enc[HEADING].next_theta;
+    /* Handle wrap around issue*/
+    if (delta_int < -max_delta) {
+        delta_int = heading_0 - (enc[HEADING].next_theta - TWO_PI_INT);
+    }
+    /* Compute steering angle */
+    delta = (float) (delta_int) * enc_ticks2radians * delta_scale;
+    if (delta == 0.0) delta = 1e-17; // prevent divide by zero
+    /* compute heading change dPsi in inertial frame */
+    R = l / sin(delta);
+    d_omega = (float) ((enc[LEFT_MOTOR].omega + enc[RIGHT_MOTOR].omega) >> 1) * enc_ticks2radians;
+    dPsi = (r_w / R) * d_omega; // heading change due to steering command delta
+    Psi_new = X.psi + dPsi;
+    /* limit Psi to +/- PI*/
+    if (Psi_new > M_PI) {
+        Psi_new = Psi_new - TWO_PI;
+    }
+    if (Psi_new < -M_PI) {
+        Psi_new = Psi_new + TWO_PI;
+    }
+    /* compute change in position */
+    dx = -R * sin(X.psi) + R * sin(Psi_new);
+    dy = R * cos(X.psi) - R * cos(Psi_new);
+    /* update state variables*/
+    X.psi = Psi_new;
+    X.x = X.x + dx;
+    X.y = X.y + dy;
+    X.delta = delta;
+}
+
 int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
@@ -757,8 +830,6 @@ int main(void) {
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
-    uint32_t IMU_update_start;
-    uint32_t IMU_update_end;
 
     /*radio variables*/
     char c;
@@ -822,20 +893,23 @@ int main(void) {
 
     while (1) {
         //check for all events
-        check_IMU_events(); //check for IMU data ready and publish when available
-        check_encoder_events();
+        check_IMU_events(); //check for IMU data ready
+        check_encoder_events(); // check for encoder data ready
         check_GPS_events(); //check and process incoming GPS messages
         check_radio_events(); //detect and process MAVLink incoming messages
-        check_USB_events();
+        check_USB_events(); // look for MAVLink messages
         check_RC_events(); //check incoming RC commands
         cur_time = Sys_timer_get_msec();
         //publish control and sensor signals
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
+            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q, gyro_bias);
+            Rover_quat2euler(q, euler);
+            update_odometry();
             set_control_output(); // set actuator outputs
             /*start next data acquisition round*/
+            Encoder_start_data_acq(); // start encoder acquisition
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-            IMU_update_start = Sys_timer_get_msec();
             if (IMU_state == ERROR) {
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
@@ -849,7 +923,6 @@ int main(void) {
                     }
                 }
             }
-            Encoder_start_data_acq(); // start encoder acquisition
             /*publish high speed sensors*/
             if (pub_RC_signals == TRUE) {
                 publish_RC_signals_raw();
@@ -857,23 +930,6 @@ int main(void) {
             if (pub_IMU == TRUE) {
                 publish_IMU_data(SCALED, USB);
             }
-        }
-        if (IMU_is_data_ready() == TRUE) {
-            IMU_update_end = Sys_timer_get_msec();
-            IMU_get_norm_data(&IMU_scaled);
-
-            acc_cal[0] = (float) IMU_scaled.acc.x;
-            acc_cal[1] = (float) IMU_scaled.acc.y;
-            acc_cal[2] = (float) IMU_scaled.acc.z;
-            mag_cal[0] = (float) IMU_scaled.mag.x;
-            mag_cal[1] = (float) IMU_scaled.mag.y;
-            mag_cal[2] = (float) IMU_scaled.mag.z;
-            /*scale gyro readings into rad/sec */
-            gyro_cal[0] = (float) IMU_scaled.gyro.x * deg2rad;
-            gyro_cal[1] = (float) IMU_scaled.gyro.y * deg2rad;
-            gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
-            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q, gyro_bias);
-            Rover_quat2euler(q, euler);
         }
 
         /* publish GPS */
@@ -886,15 +942,19 @@ int main(void) {
         /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-            publish_heartbeat(USB);
-            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n",
-                    euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
-                    gyro_bias[0], gyro_bias[1], gyro_bias[2]);
+            //publish_heartbeat(USB);
+            //            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n",
+            //                    euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
+            //                    gyro_bias[0], gyro_bias[1], gyro_bias[2]);
+            //            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "%d, %d, %d \r\n",
+            //                    enc[HEADING].last_theta, enc[HEADING].next_theta, enc[HEADING].omega);
+            //            mavprint(message, msg_len, RADIO);
+            msg_len = sprintf(message, "Parse error counter: %d \r\n", RCRX_get_err());
             mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "%d, %d, %d \r\n",
-                    enc[LEFT_MOTOR].last_theta, enc[LEFT_MOTOR].next_theta, enc[LEFT_MOTOR].omega);
+            msg_len = sprintf(message, "State: x: %3.3f y: %3.3f psi: %3.3f delta: %3.3f \r\n", X.x, X.y, X.psi*rad2deg, X.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n ", GPS_data.time, GPS_data.lat, GPS_data.lon);
+            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);
         }
     }

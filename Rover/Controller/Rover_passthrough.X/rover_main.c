@@ -30,7 +30,7 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define CONTROL_PERIOD 10 //Period for control loop in msec
 #define GPS_PERIOD 100 //10 Hz update rate
 #define KNOTS_TO_MPS 0.5144444444 //1 meter/second is equal to 1.9438444924406 knots
 #define UINT_16_MAX 0xffff
@@ -38,7 +38,7 @@
 #define RAW 1
 #define SCALED 2
 #define NUM_MOTORS 4
-#define DT 0.02 //integration constant
+#define DT 0.01 //integration constant
 #define MSZ 3 //matrix size
 #define QSZ 4 //quaternion size
 
@@ -63,9 +63,10 @@ static uint8_t pub_GPS = FALSE;
 /*conversions*/
 const float knots_to_mps = KNOTS_TO_MPS;
 const float dt = DT;
+const float dt_inv = 1 / DT;
 const float deg2rad = M_PI / 180.0;
 const float rad2deg = 180.0 / M_PI;
-const float enc_ticks2radians = 2 * M_PI / 16384;
+const float enc_ticks2radians = 2.0 * M_PI / 16384.0;
 const float TWO_PI = 2 * M_PI;
 
 
@@ -117,7 +118,8 @@ struct state {
     float v;
     float delta;
 };
-struct state X = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
+struct state X_new = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
+struct state X_old = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
 /* Encoder structs for motors and servo */
 encoder_t enc[] = {
     {.last_theta = 0, .next_theta = 0, .omega = 0},
@@ -281,6 +283,13 @@ void Rover_quat2euler(float q[MSZ], float euler[MSZ]);
  * 
  */
 void update_odometry(void);
+
+/**
+ * @function low_pass(x)
+ * @param x, current measurement
+ * @return filtered quantity
+ */
+float low_pass(float x);
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -729,6 +738,11 @@ void set_control_output(void) {
     const int tol = 10;
     int INTOL;
 
+    /* Check switch state*/
+    /*if switch state == up*/
+    /* Manual control enabled */
+    /* if switch state == down*/
+    /* Autonomous mode enabled*/
     /* get RC commanded values*/
     hash = RC_channels[HASH];
     hash_check = (RC_channels[THR] >> 2) + (RC_channels[AIL] >> 2) + (RC_channels[ELE] >> 2) + (RC_channels[RUD] >> 2);
@@ -781,6 +795,7 @@ void update_odometry(void) {
     float dx; // change in x position of rover
     float dy; // change in y position of rover
     float d_omega; // wheel rotation amount
+    float v; // speed
     float delta; // steering angle
     float delta_scale = 0.675;
     const int16_t max_delta = 2730; // ~ 60 degree turn angle max in counts
@@ -801,7 +816,7 @@ void update_odometry(void) {
     R = l / sin(delta);
     d_omega = (float) ((enc[LEFT_MOTOR].omega + enc[RIGHT_MOTOR].omega) >> 1) * enc_ticks2radians;
     dPsi = (r_w / R) * d_omega; // heading change due to steering command delta
-    Psi_new = X.psi + dPsi;
+    Psi_new = X_old.psi + dPsi;
     /* limit Psi to +/- PI*/
     if (Psi_new > M_PI) {
         Psi_new = Psi_new - TWO_PI;
@@ -809,14 +824,39 @@ void update_odometry(void) {
     if (Psi_new < -M_PI) {
         Psi_new = Psi_new + TWO_PI;
     }
+    /* compute raw velocity */
+    v = d_omega * r_w * dt_inv; // vehicle speed [m/s]]
     /* compute change in position */
-    dx = -R * sin(X.psi) + R * sin(Psi_new);
-    dy = R * cos(X.psi) - R * cos(Psi_new);
-    /* update state variables*/
-    X.psi = Psi_new;
-    X.x = X.x + dx;
-    X.y = X.y + dy;
-    X.delta = delta;
+    /* TODO update using AHRS heading rather than odometry*/
+    dx = -R * sin(X_old.psi) + R * sin(Psi_new);
+    dy = R * cos(X_old.psi) - R * cos(Psi_new);
+    /* update state (X_new)*/
+    X_new.x = X_old.x + dx;
+    X_new.y = X_old.y + dy;
+    X_new.psi = Psi_new;
+    X_new.v = low_pass(v); // low pass the raw velocity to smooth out encoder variations
+    X_new.delta = delta;
+    /* save previous state (X_old variable) */
+    X_old.x = X_new.x;
+    X_old.y = X_new.y;
+    X_old.psi = X_new.psi;
+    X_old.v = X_new.v;
+    X_old.delta = X_new.delta;
+
+}
+
+/**
+ * @function low_pass(x)
+ * @param x, current measurement
+ * @return filtered quantity
+ */
+float low_pass(float x) {
+    static float y_prev = 0;
+    float y_new;
+    float alpha = 0.05;
+    y_new = y_prev + alpha * (x - y_prev);
+    y_prev = y_new;
+    return (y_new);
 }
 
 int main(void) {
@@ -824,6 +864,8 @@ int main(void) {
     uint32_t cur_time = 0;
     uint32_t RC_timeout = 1000;
     uint32_t control_start_time = 0;
+    uint32_t timer_start = 0;
+    int32_t timer_end = 0;
     uint32_t gps_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     int8_t IMU_state = ERROR;
@@ -903,6 +945,7 @@ int main(void) {
         //publish control and sensor signals
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
+            timer_start = Sys_timer_get_usec();
             AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q, gyro_bias);
             Rover_quat2euler(q, euler);
             update_odometry();
@@ -930,6 +973,8 @@ int main(void) {
             if (pub_IMU == TRUE) {
                 publish_IMU_data(SCALED, USB);
             }
+            /* test time duration of control actions*/
+            timer_end = Sys_timer_get_usec() - timer_start;
         }
 
         /* publish GPS */
@@ -950,9 +995,16 @@ int main(void) {
             //            msg_len = sprintf(message, "%d, %d, %d \r\n",
             //                    enc[HEADING].last_theta, enc[HEADING].next_theta, enc[HEADING].omega);
             //            mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "Parse error counter: %d \r\n", RCRX_get_err());
+            //            msg_len = sprintf(message, "Parse error counter: %d \r\n", RCRX_get_err());
+            //            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "Switch D: %d, switch A: %d \r\n", RC_channels[SWITCH_D], RC_channels[SWITCH_A]);
+            //            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "%d \r\n", timer_end);
+            //            mavprint(message, msg_len, RADIO);
+            msg_len = sprintf(message, "RCRX bytes: %d, collisions %d, interrupt %d, on? %d\r\n",
+                    RCRX_get_byte_count(), RCRX_get_collision_count(), IEC2bits.U5RXIE, U5MODEbits.ON);
             mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "State: x: %3.3f y: %3.3f psi: %3.3f delta: %3.3f \r\n", X.x, X.y, X.psi*rad2deg, X.delta * rad2deg);
+            msg_len = sprintf(message, "State: x: %3.3f y: %3.3f psi: %3.3f v: %3.3f delta: %3.3f \r\n", X_new.x, X_new.y, X_new.psi*rad2deg, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);

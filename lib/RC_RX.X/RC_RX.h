@@ -69,7 +69,7 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels);
 
 /**
  * @Function RCRX_get_err()
- * @param pointer to servo data buffer
+ * @param none
  * @return number of rc errors detected since init
  * @brief 
  * @note 
@@ -77,8 +77,25 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels);
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 unsigned int RCRX_get_err(void);
 
+/**
+ * @Function RCRX_get_byte_count()
+ * @param none
+ * @return number of bytes read since init
+ * @brief 
+ * @note used to troubleshoot RC dropouta
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_byte_count(void);
 
-
+/**
+ * @Function RCRX_get_collision_count()
+ * @param none
+ * @return number of collisions  since init
+ * @brief 
+ * @note used to troubleshoot RC dropouta
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_collision_count(void);
 
 
 #endif	/* RC_RX_H */ // End of header guard

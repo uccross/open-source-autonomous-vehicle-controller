@@ -56,9 +56,12 @@ struct IMU_out IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for s
 static struct GPS_data GPS_data;
 /* publish signal booleans */
 static uint8_t pub_RC_servo = FALSE;
-static uint8_t pub_RC_signals = TRUE;
+static uint8_t pub_RC_signals = FALSE;
 static uint8_t pub_IMU = TRUE;
 static uint8_t pub_GPS = FALSE;
+static uint8_t pub_encoders = TRUE;
+static uint8_t pub_attitude = TRUE;
+static uint8_t pub_position = TRUE;
 
 /*conversions*/
 const float knots_to_mps = KNOTS_TO_MPS;
@@ -115,11 +118,13 @@ struct state {
     float x;
     float y;
     float psi;
+    float vx;
+    float vy;
     float v;
     float delta;
 };
-struct state X_new = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
-struct state X_old = {.x = 0.0, .y = 0.0, .psi = 0.0, .v = 0.0, .delta = 0.0};
+struct state X_new = {.x = 0.0, .y = 0.0, .psi = 0.0, .vx = 0, .vy = 0, .v = 0.0, .delta = 0.0};
+struct state X_old = {.x = 0.0, .y = 0.0, .psi = 0.0, .vx = 0, .vy = 0, .v = 0.0, .delta = 0.0};
 /* Encoder structs for motors and servo */
 encoder_t enc[] = {
     {.last_theta = 0, .next_theta = 0, .omega = 0},
@@ -215,6 +220,7 @@ void publish_GPS(uint8_t dest);
  * @brief reads module level IMU data and publishes over radio serial in Mavlink
  * @author Aaron Hunter
  */
+
 void publish_IMU_data(uint8_t data_type, uint8_t dest);
 /**
  * @function publish_RC_signals_raw(void)
@@ -223,6 +229,28 @@ void publish_IMU_data(uint8_t data_type, uint8_t dest);
  * @author Aaron Hunter
  */
 void publish_RC_signals_raw(void);
+
+/**
+ * @function publish_encoder_data(void)
+ * @brief publish left and right encoder data as "RPM"
+ * @note: uses index 0 = LEFT_MOTOR, 1 = RIGHT_MOTOR, 2 = HEADING
+ * @note for steering servo (heading) we use the absolute position in radians,
+ * velocities are published as raw differences in angles (radians)
+ */
+void publish_encoder_data(void);
+
+/**
+ * @function publish_attitude(void)
+ * @brief publishes the quaternion attitude in ENU format
+ */
+void publish_attitude(void);
+
+/**
+ * @function publish_position(void)
+ * @brief publishes the rover state variables in local coordinates
+ */
+void publish_position(void);
+
 /**
  * @Function publish_heartbeat(uint8_t dest)
  * @param dest, either USB or RADIO
@@ -627,6 +655,94 @@ void publish_RC_signals_raw(void) {
 }
 
 /**
+ * @function publish_encoder_data(void)
+ * @brief publish left and right encoder data as "RPM"
+ * @note: uses index 0 = LEFT_MOTOR, 1 = RIGHT_MOTOR, 2 = HEADING
+ * @note for steering servo (heading) we use the absolute position in radians,
+ * velocities are published as raw differences in angles (radians)
+ */
+void publish_encoder_data(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    /* publish left motor raw omega*/
+    mavlink_msg_raw_rpm_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            LEFT_MOTOR,
+            (float) enc[LEFT_MOTOR].omega * enc_ticks2radians
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    mavprint(msg_buffer, msg_length, USB);
+    /* publish right motor data*/
+    mavlink_msg_raw_rpm_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            RIGHT_MOTOR,
+            (float) enc[RIGHT_MOTOR].omega * enc_ticks2radians
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    mavprint(msg_buffer, msg_length, USB);
+    /* publish heading angle in radians*/
+    mavlink_msg_raw_rpm_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            HEADING,
+            X_new.delta
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    mavprint(msg_buffer, msg_length, USB);
+}
+
+/**
+ * @function publish_attitude(void)
+ * @brief publishes the quaternion attitude in ENU format
+ */
+void publish_attitude(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    float repr_offset_q[QSZ] = {0, 0, 0, 0};
+    mavlink_msg_attitude_quaternion_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            q[0],
+            q[1],
+            q[2],
+            q[3],
+            gyro_cal[0],
+            gyro_cal[1],
+            gyro_cal[2],
+            repr_offset_q
+            );
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    mavprint(msg_buffer, msg_length, USB);
+}
+
+/**
+ * @function publish_position(void)
+ * @brief publishes the rover state variables in local coordinates
+ */
+void publish_position(void) {
+    mavlink_message_t msg_tx;
+    uint16_t msg_length;
+    uint8_t msg_buffer[BUFFER_SIZE];
+    mavlink_msg_local_position_ned_pack(mavlink_system.sysid,
+            mavlink_system.compid,
+            &msg_tx,
+            Sys_timer_get_msec(),
+            X_new.x,
+            X_new.y,
+            0,
+            X_new.vx,
+            X_new.vy,
+            0);
+    msg_length = mavlink_msg_to_send_buffer(msg_buffer, &msg_tx);
+    mavprint(msg_buffer, msg_length, USB);
+}
+
+/**
  * @Function publish_heartbeat(mav_output_type dest)
  * @param dest, either USB or RADIO
  * @brief publishes heartbeat message 
@@ -814,8 +930,12 @@ void update_odometry(void) {
     if (delta == 0.0) delta = 1e-17; // prevent divide by zero
     /* compute heading change dPsi in inertial frame */
     R = l / sin(delta);
+    /* average the speed from the encoders */
     d_omega = (float) ((enc[LEFT_MOTOR].omega + enc[RIGHT_MOTOR].omega) >> 1) * enc_ticks2radians;
-    dPsi = (r_w / R) * d_omega; // heading change due to steering command delta
+    /* compute raw velocity */
+    v = d_omega * r_w * dt_inv; // vehicle speed [m/s]]
+    v = low_pass(v); // low pass the raw velocity to smooth out encoder variations
+    dPsi = v * dt / R; // heading change due to steering command delta
     Psi_new = X_old.psi + dPsi;
     /* limit Psi to +/- PI*/
     if (Psi_new > M_PI) {
@@ -824,8 +944,7 @@ void update_odometry(void) {
     if (Psi_new < -M_PI) {
         Psi_new = Psi_new + TWO_PI;
     }
-    /* compute raw velocity */
-    v = d_omega * r_w * dt_inv; // vehicle speed [m/s]]
+
     /* compute change in position */
     /* TODO update using AHRS heading rather than odometry*/
     dx = -R * sin(X_old.psi) + R * sin(Psi_new);
@@ -834,12 +953,16 @@ void update_odometry(void) {
     X_new.x = X_old.x + dx;
     X_new.y = X_old.y + dy;
     X_new.psi = Psi_new;
-    X_new.v = low_pass(v); // low pass the raw velocity to smooth out encoder variations
+    X_new.vx = dx*dt_inv;
+    X_new.vy = dy*dt_inv;
+    X_new.v = v;
     X_new.delta = delta;
     /* save previous state (X_old variable) */
     X_old.x = X_new.x;
     X_old.y = X_new.y;
     X_old.psi = X_new.psi;
+    X_old.vx = X_new.vx;
+    X_old.vy = X_new.vy;
     X_old.v = X_new.v;
     X_old.delta = X_new.delta;
 
@@ -973,6 +1096,15 @@ int main(void) {
             if (pub_IMU == TRUE) {
                 publish_IMU_data(SCALED, USB);
             }
+            if (pub_encoders == TRUE) {
+                publish_encoder_data();
+            }
+            if (pub_attitude == TRUE) {
+                publish_attitude();
+            }
+            if (pub_position == TRUE){
+                publish_position();
+            }
             /* test time duration of control actions*/
             timer_end = Sys_timer_get_usec() - timer_start;
         }
@@ -999,12 +1131,13 @@ int main(void) {
             //            mavprint(message, msg_len, RADIO);
             //            msg_len = sprintf(message, "Switch D: %d, switch A: %d \r\n", RC_channels[SWITCH_D], RC_channels[SWITCH_A]);
             //            mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "%d \r\n", timer_end);
-            //            mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "RCRX bytes: %d, collisions %d, interrupt %d, on? %d\r\n",
-                    RCRX_get_byte_count(), RCRX_get_collision_count(), IEC2bits.U5RXIE, U5MODEbits.ON);
+            msg_len = sprintf(message, "%d \r\n", timer_end);
             mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "State: x: %3.3f y: %3.3f psi: %3.3f v: %3.3f delta: %3.3f \r\n", X_new.x, X_new.y, X_new.psi*rad2deg, X_new.v, X_new.delta * rad2deg);
+            //            msg_len = sprintf(message, "RCRX bytes: %d, collisions %d, parse err %d, Uart err %d\r\n",
+            //                    RCRX_get_byte_count(), RCRX_get_collision_count(), RCRX_get_err(), RCRX_get_uart_err_count());
+            //            mavprint(message, msg_len, RADIO);
+            msg_len = sprintf(message, "x: %3.1f y: %3.1f psi: %3.1f vx: %3.1f vy: %3.1f v: %3.1f delta: %3.1f \r\n",
+                    X_new.x, X_new.y, X_new.psi*rad2deg, X_new.vx, X_new.vy, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);

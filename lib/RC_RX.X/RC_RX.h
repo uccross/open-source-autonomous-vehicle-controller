@@ -97,6 +97,16 @@ unsigned int RCRX_get_byte_count(void);
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 unsigned int RCRX_get_collision_count(void);
 
+/**
+ * @Function RCRX_get_uart_err_count()
+ * @param none
+ * @return number of frame, parity or FIFO overrun errors  since init
+ * @brief 
+ * @note used to troubleshoot RC dropout
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_uart_err_count(void);
+
 
 #endif	/* RC_RX_H */ // End of header guard
 

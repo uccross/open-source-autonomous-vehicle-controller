@@ -49,6 +49,7 @@ static int8_t parse_error = FALSE;
 static unsigned int parse_error_counter = 0;
 static unsigned int byte_counter = 0;
 static unsigned int collision_counter = 0;
+static unsigned int uart_err_counter = 0;
 
 //typedef enum {
 //    WAIT_FOR_START,
@@ -138,7 +139,9 @@ uint8_t RCRX_init(void) {
     IPC12bits.U5IP = 0b110; //Interrupt priority of 6
     IPC12bits.U5IS = 0; //sub-priority 0
     IEC2bits.U5RXIE = 1; //enable interrupt on RX
+    IEC2bits.U5EIE = 1; // enable error interrupts
     IFS2bits.U5RXIF = 0; //clear interrupt flags
+    IFS2bits.U5EIF = 0;
     // turn on UART
     U5MODEbits.ON = 1;
     __builtin_enable_interrupts();
@@ -218,6 +221,18 @@ unsigned int RCRX_get_collision_count(void) {
     return collision_counter;
 }
 
+/**
+ * @Function RCRX_get_uart_err_count()
+ * @param none
+ * @return number of frame, parity or FIFO overrun errors  since init
+ * @brief 
+ * @note used to troubleshoot RC dropout
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_uart_err_count(void) {
+    return uart_err_counter;
+}
+
 /*******************************************************************************
  * PRIVATE FUNCTION IMPLEMENTATIONS                                            *
  ******************************************************************************/
@@ -262,9 +277,10 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
             IEC2bits.U5RXIE = 0;
         }
         IFS2bits.U5RXIF = 0; //clear the flag
-    } else if(IFS2bits.U5EIF){
+    } else if (IFS2bits.U5EIF) { // parity, framing, or overrun errors
+        uart_err_counter++;
         /* check status register for overrun*/
-        if(U5STAbits.OERR){
+        if (U5STAbits.OERR) {
             U5STAbits.OERR = 0; //clear overrun and reset FIFO
         }
         IFS2bits.U5EIF = 0; //clear flag

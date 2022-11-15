@@ -31,6 +31,7 @@
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
 #define CONTROL_PERIOD 10 //Period for control loop in msec
+#define PUBLISH_PERIOD 50 // Period for publishing data (msec)
 #define GPS_PERIOD 100 //10 Hz update rate
 #define KNOTS_TO_MPS 0.5144444444 //1 meter/second is equal to 1.9438444924406 knots
 #define UINT_16_MAX 0xffff
@@ -57,8 +58,8 @@ static struct GPS_data GPS_data;
 /* publish signal booleans */
 static uint8_t pub_RC_servo = FALSE;
 static uint8_t pub_RC_signals = FALSE;
-static uint8_t pub_IMU = TRUE;
-static uint8_t pub_GPS = FALSE;
+static uint8_t pub_IMU = FALSE;
+static uint8_t pub_GPS = TRUE;
 static uint8_t pub_encoders = TRUE;
 static uint8_t pub_attitude = TRUE;
 static uint8_t pub_position = TRUE;
@@ -989,6 +990,7 @@ int main(void) {
     uint32_t control_start_time = 0;
     uint32_t timer_start = 0;
     int32_t timer_end = 0;
+    uint32_t publish_start_time = 0;
     uint32_t gps_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     int8_t IMU_state = ERROR;
@@ -1053,6 +1055,7 @@ int main(void) {
 
     cur_time = Sys_timer_get_msec();
     control_start_time = cur_time;
+    publish_start_time = cur_time;
     heartbeat_start_time = cur_time;
     gps_start_time = cur_time;
 
@@ -1065,7 +1068,7 @@ int main(void) {
         check_USB_events(); // look for MAVLink messages
         check_RC_events(); //check incoming RC commands
         cur_time = Sys_timer_get_msec();
-        //publish control and sensor signals
+        /* update control loop*/
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
             timer_start = Sys_timer_get_usec();
@@ -1089,7 +1092,12 @@ int main(void) {
                     }
                 }
             }
-            /*publish high speed sensors*/
+            /* test time duration of control actions*/
+            timer_end = Sys_timer_get_usec() - timer_start;
+        }
+        /* publish high speed sensors */
+        if (cur_time - publish_start_time > PUBLISH_PERIOD) {
+            publish_start_time = cur_time; //reset publishing timer
             if (pub_RC_signals == TRUE) {
                 publish_RC_signals_raw();
             }
@@ -1102,12 +1110,10 @@ int main(void) {
             if (pub_attitude == TRUE) {
                 publish_attitude();
             }
-            if (pub_position == TRUE){
+            if (pub_position == TRUE) {
                 publish_position();
             }
-            /* test time duration of control actions*/
-            timer_end = Sys_timer_get_usec() - timer_start;
-        }
+        }        
 
         /* publish GPS */
         if (cur_time - gps_start_time > GPS_PERIOD) {
@@ -1119,7 +1125,7 @@ int main(void) {
         /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-            //publish_heartbeat(USB);
+            publish_heartbeat(USB);
             //            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n",
             //                    euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
             //                    gyro_bias[0], gyro_bias[1], gyro_bias[2]);

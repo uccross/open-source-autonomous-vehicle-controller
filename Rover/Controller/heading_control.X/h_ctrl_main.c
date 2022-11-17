@@ -195,13 +195,14 @@ int main(void) {
     };
 
     uint16_t pwm_val = 0;
-    float waypoint[3] = {0.0, -100.0, 0.0}; // test vector, basically north
+    float waypoint[3] = {0.0, 100.0, 0.0}; // test vector, basically north
     float position[3] = {0.0, 0.0, 0.0}; // robot position
     float heading_vec_i[MSZ] = {0.0, 0.0, 0.0}; // vector to waypoint
     float heading_vec_b[MSZ];
     uint16_t heading_0;
     float heading_ref = 0.0;
     float heading_meas;
+    float u_calc;
     int8_t IMU_state = ERROR;
     int8_t IMU_retry = 5;
 
@@ -210,6 +211,7 @@ int main(void) {
     Serial_init(); //start USB interface output
     Sys_timer_init(); //start the system timer
     PID_init(&heading_PID); // initialize the PID controller
+    printf("c0; %E, c1: %E, c2: %E\r\n", heading_PID.c0, heading_PID.c1, heading_PID.c2);
     Encoder_init();
     RC_servo_init(RC_SERVO_TYPE, SERVO_PWM_3);
     RC_servo_set_pulse(1500, SERVO);
@@ -253,18 +255,18 @@ int main(void) {
             /* compute angle to waypoint */
             heading_meas = atan2f(heading_vec_b[1], heading_vec_b[0]);
             heading_meas = heading_meas * rad2deg; // convert to degrees
-//            printf("Heading vector %3.1f, %3.1f, %3.1f, angle: %3.1f \r\n ",
-//                    heading_vec_b[0], heading_vec_b[1], heading_vec_b[2], heading_meas);
+            //            printf("Heading vector %3.1f, %3.1f, %3.1f, angle: %3.1f \r\n ",
+            //                    heading_vec_b[0], heading_vec_b[1], heading_vec_b[2], heading_meas);
             /* compute control action */
-            PID_update(& heading_PID, heading_ref, heading_meas);
+            PID_update(&heading_PID, heading_ref, heading_meas);
             pwm_val = (uint16_t) (heading_PID.u) + RC_SERVO_CENTER_PULSE;
             /* apply control action */
             RC_servo_set_pulse(pwm_val, SERVO);
             /* initiate measurements for next period */
             Encoder_start_data_acq(); // start the next reading of the encoders
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
+
             //            printf("Attitude: [%1.3f, %1.3f, %1.3f, %1.3f], ", q_vehicle[0], q_vehicle[1], q_vehicle[2], q_vehicle[3]);
-            printf("ref: %3.1f, heading: %3.1f, u: %f \r\n", heading_ref, heading_meas, heading_PID.u);
         }
         if (IMU_is_data_ready() == TRUE) {
             IMU_get_norm_data(&IMU_scaled); // get calibrated IMU values

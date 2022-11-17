@@ -44,8 +44,9 @@ void PID_init(PID_controller *pid) {
     pid->c0 = pid->kp + pid->ki * pid->dt + pid->kd / pid->dt;
     pid->c1 = -pid->kp - 2 * pid->kd / pid->dt;
     pid->c2 = pid->kd / pid->dt;
-    /* initialize error*/
     pid->u = 0;
+    pid->u_calc = 0;
+    /* initialize error*/
     for (i = 0; i < 3; i++) {
         pid->error[i] = 0;
     }
@@ -65,13 +66,15 @@ void PID_update(PID_controller *pid, float reference, float measurement) {
     pid->error[1] = pid->error[0];
     pid->error[0] = reference - measurement;
     /* compute new output */
-    pid->u = pid->u + pid->c0 * pid->error[0] + pid->c1 * pid->error[1] + pid->c2 * pid->error[2];
+    pid->u_calc = pid->u_calc + pid->c0 * pid->error[0] + pid->c1 * pid->error[1] + pid->c2 * pid->error[2];
     /* clamp outputs within actuator limits*/
-    if (pid->u > pid->u_max) {
+    if (pid->u_calc > pid->u_max) {
         pid->u = pid->u_max;
     }
-    if (pid->u < pid->u_min) {
+    if (pid->u_calc < pid->u_min) {
         pid->u = pid->u_min;
+    } else {
+        pid->u = pid->u_calc;
     }
 }
 

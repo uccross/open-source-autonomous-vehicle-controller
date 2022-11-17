@@ -108,8 +108,8 @@ int main(void) {
     encoder_t encoder_data[NUM_MOTORS]; //array of encoder structs
     PID_controller v_PID = {
         .dt = DT,
-        .kp = 0.8,
-        .ki = 0.2,
+        .kp = 1.0,
+        .ki = 0.4,
         .kd = 0.0,
         .u_max = 500,
         .u_min = -500
@@ -147,7 +147,7 @@ int main(void) {
             RC_servo_set_pulse(pwm_val, MOTOR_LEFT);
             RC_servo_set_pulse(pwm_val, MOTOR_RIGHT);
             Encoder_start_data_acq(); // start the next reading of the encoders
-            printf("%f, %f \r\n", v_meas, v_PID.u);
+            printf("error: %f, command: %f \r\n", v_ref-v_meas, v_PID.u);
         }
         if (Encoder_is_data_ready()) {
             Encoder_get_data(encoder_data);

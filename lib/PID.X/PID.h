@@ -27,7 +27,8 @@ typedef struct PID_controller {
     float kd; // derivative gain
     float u_max; // output upper bound
     float u_min; //output lower bound
-    float u; // output
+    float u_calc; // calculated output
+    float u; // output returned (may be different due to actuator limits)
     float c0; // pre-computed constants
     float c1; 
     float c2; 

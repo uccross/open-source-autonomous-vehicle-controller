@@ -8,7 +8,7 @@ import csv
 # Create the connection
 # Need to provide the serial port and baudrate
 print("Starting mavcsv_logging.py\n")
-master = mavutil.mavlink_connection("COM3", baud=57600) # usb on windows
+master = mavutil.mavlink_connection("COM9", baud=115200) # usb on windows
 # find the OSAVC controller
 master.wait_heartbeat(timeout = 10)
 if master.target_system == 0:
@@ -27,9 +27,9 @@ csv_file = 'logfile.csv'
 
 # first find all the incoming messages:
 msgs_dict = {}
-# Collect messages for one second to get all keys
+# Collect messages for ten seconds to get all keys
 start_time = time.time()
-end_time = 11
+end_time = 10
 while time.time() - start_time < end_time:
     try:
         msg = master.recv_match(blocking = True)

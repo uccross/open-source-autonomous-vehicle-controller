@@ -7,6 +7,7 @@
       <itemPath>RC_servo.h</itemPath>
       <itemPath>../Board.X/Board.h</itemPath>
       <itemPath>../Serial.X/SerialM32.h</itemPath>
+      <itemPath>../System_timer.X/System_timer.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -18,6 +19,7 @@
       <itemPath>RC_servo.c</itemPath>
       <itemPath>../Board.X/Board.c</itemPath>
       <itemPath>../Serial.X/SerialM32.c</itemPath>
+      <itemPath>../System_timer.X/System_timer.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -29,6 +31,7 @@
     <Elem>.</Elem>
     <Elem>../Board.X</Elem>
     <Elem>../Serial.X</Elem>
+    <Elem>../System_timer.X</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -78,7 +81,8 @@
         <property key="enable-symbols" value="true"/>
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
-        <property key="extra-include-directories" value="..\Serial.X;..\Board.X"/>
+        <property key="extra-include-directories"
+                  value="..\Serial.X;..\Board.X;..\System_timer.X"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

@@ -22,6 +22,9 @@
                 <sourceRootElem>../../../lib/Serial.X</sourceRootElem>
                 <sourceRootElem>../../../lib/System_timer.X</sourceRootElem>
                 <sourceRootElem>../../../modules/c_library_v2/common</sourceRootElem>
+                <sourceRootElem>../../../apps/ahrs_apps/AHRS.X</sourceRootElem>
+                <sourceRootElem>../../../lib/Lin_alg.X</sourceRootElem>
+                <sourceRootElem>../../../lib/PID.X</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

@@ -13,6 +13,7 @@
 #include "RC_servo.h" // The header file for this source file.
 #include "Board.h"   //Max32 setup
 #include "SerialM32.h"
+#include "System_timer.h"
 #include <xc.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -30,8 +31,8 @@
 /*******************************************************************************
  * PRIVATE VARIABLES                                                            *
  ******************************************************************************/
-static uint16_t pulse_width[RC_NUM_SERVOS]; //PW in microseconds
-static uint16_t raw_ticks[RC_NUM_SERVOS]; // raw ticks corresponding to pulse width
+static uint16_t pulse_width[RC_SERVO_NUM_OUTPUTS]; //PW in microseconds
+static uint16_t raw_ticks[RC_SERVO_NUM_OUTPUTS]; // raw ticks corresponding to pulse width
 static int8_t RC_SET_NEW_CMD = FALSE; //flag to indicate when the new command can be loaded 
 /*******************************************************************************
  * PRIVATE FUNCTIONS PROTOTYPES                                                 *
@@ -53,14 +54,14 @@ void RC_servo_delay(int cycles);
  * @Function RC_servo_init(void)
  * @param None
  * @return SUCCESS or ERROR
- * @brief initializes hardware and sets all PWM periods to to RC_SERVO_CENTER_PULSE */
-int8_t RC_servo_init(void) {
+ * @brief initializes hardware required and set it to the correct initial setting
+ *  */
+int8_t RC_servo_init(uint8_t output_type, uint8_t output_channel) {
     uint8_t i;
     uint16_t ticks_center = (RC_SERVO_CENTER_PULSE * USEC_NUM) >> USEC_LOG_DEN;
-    for (i = 0; i < RC_NUM_SERVOS; i++) {
-        pulse_width[i] = RC_SERVO_CENTER_PULSE;
-        raw_ticks[i] = ticks_center;
-    }
+    uint16_t ticks_min = (RC_SERVO_MIN_PULSE * USEC_NUM) >> USEC_LOG_DEN;
+    printf("min ticks %d \r\n", ticks_min);
+
     __builtin_disable_interrupts();
     /* timer 3 settings */
     T3CON = 0;
@@ -73,50 +74,80 @@ int8_t RC_servo_init(void) {
     IFS0bits.T3IF = 0; // clear interrupt flag
     IEC0bits.T3IE = 1; //enable interrupt
 
-
     /* Output Capture configuration*/
-    OC2CON = 0x0000; //Turn off OC3 while doing setup.
-    OC2R = 0x0000; // Initialize primary Compare Register
-    OC2RS = 0x0000; // Initialize secondary Compare Register
-    OC2CONbits.OC32 = 0; //16 bit mode
-    OC2CONbits.OCTSEL = 1; //use timer 3
-    OC2CONbits.OCM = 0b110; // PWM mode, no fault detection
-    OC2R = raw_ticks[RC_LEFT_WHEEL]; // need load this register initially
-    OC2RS = raw_ticks[RC_LEFT_WHEEL]; // OCxRS -> OCxR at timer rollover
-    OC2CONbits.ON = 1; //turn on the peripheral
+    switch (output_channel) {
+        case SERVO_PWM_1:
+            if (output_type == RC_SERVO_TYPE || output_type == ESC_BIDIRECTIONAL_TYPE) {
+                pulse_width[SERVO_PWM_1] = RC_SERVO_CENTER_PULSE;
+                raw_ticks[SERVO_PWM_1] = ticks_center;
+            } else {
+                pulse_width[SERVO_PWM_1] = RC_SERVO_MIN_PULSE;
+                raw_ticks[SERVO_PWM_1] = ticks_min;
+            }
+            OC2CON = 0x0000; //Turn off OC3 while doing setup.
+            OC2R = 0x0000; // Initialize primary Compare Register
+            OC2RS = 0x0000; // Initialize secondary Compare Register
+            OC2CONbits.OC32 = 0; //16 bit mode
+            OC2CONbits.OCTSEL = 1; //use timer 3
+            OC2CONbits.OCM = 0b110; // PWM mode, no fault detection
+            OC2R = raw_ticks[SERVO_PWM_1]; // need load this register initially
+            OC2RS = raw_ticks[SERVO_PWM_1]; // OCxRS -> OCxR at timer rollover
+            printf("OC2RS: %d\r\n", OC2RS);
+            OC2CONbits.ON = 1; //turn on the peripheral
+        case SERVO_PWM_2:
+            if (output_type == RC_SERVO_TYPE || output_type == ESC_BIDIRECTIONAL_TYPE) {
+                pulse_width[SERVO_PWM_2] = RC_SERVO_CENTER_PULSE;
+                raw_ticks[SERVO_PWM_2] = ticks_center;
+            } else {
+                pulse_width[SERVO_PWM_2] = RC_SERVO_MIN_PULSE;
+                raw_ticks[SERVO_PWM_2] = ticks_min;
+            }
+            OC3CON = 0x0;
+            OC3R = 0x0000; // Initialize primary Compare Register
+            OC3RS = 0x0000; // Initialize secondary Compare Register
+            OC3CONbits.OC32 = 0; //16 bit mode
+            OC3CONbits.OCTSEL = 1; //use timer 3
+            OC3CONbits.OCM = 0b110; // PWM mode, no fault detection
+            OC3R = raw_ticks[SERVO_PWM_2]; // need load this register initially 
+            OC3RS = raw_ticks[SERVO_PWM_2]; // OCxRS -> OCxR at timer rollover
+            OC3CONbits.ON = 1; //turn on the peripheral
+        case SERVO_PWM_3:
+            if (output_type == RC_SERVO_TYPE || output_type == ESC_BIDIRECTIONAL_TYPE) {
+                pulse_width[SERVO_PWM_3] = RC_SERVO_CENTER_PULSE;
+                raw_ticks[SERVO_PWM_3] = ticks_center;
+            } else {
+                pulse_width[SERVO_PWM_3] = RC_SERVO_MIN_PULSE;
+                raw_ticks[SERVO_PWM_3] = ticks_min;
+            }
+            OC4CON = 0x0;
+            OC4R = 0x0000; // Initialize primary Compare Register
+            OC4RS = 0x0000; // Initialize secondary Compare Register
+            OC4CONbits.OC32 = 0; //16 bit mode
+            OC4CONbits.OCTSEL = 1; //use timer 3
+            OC4CONbits.OCM = 0b110; // PWM mode, no fault detection
+            OC4R = raw_ticks[SERVO_PWM_3]; // need load this register initially 
+            OC4RS = raw_ticks[SERVO_PWM_3]; // OCxRS -> OCxR at timer rollover
+            OC4CONbits.ON = 1; //turn on the peripheral
 
-    if (RC_NUM_SERVOS > 1) { //second servo = RIGHT_WHEEL
-        OC3CON = 0x0;
-        OC3R = 0x0000; // Initialize primary Compare Register
-        OC3RS = 0x0000; // Initialize secondary Compare Register
-        OC3CONbits.OC32 = 0; //16 bit mode
-        OC3CONbits.OCTSEL = 1; //use timer 3
-        OC3CONbits.OCM = 0b110; // PWM mode, no fault detection
-        OC3R = raw_ticks[RC_RIGHT_WHEEL]; // need load this register initially 
-        OC3RS = raw_ticks[RC_RIGHT_WHEEL]; // OCxRS -> OCxR at timer rollover
-        OC3CONbits.ON = 1; //turn on the peripheral
-    }
-    if (RC_NUM_SERVOS > 2) { //third servo = STEERING servo
-        OC4CON = 0x0;
-        OC4R = 0x0000; // Initialize primary Compare Register
-        OC4RS = 0x0000; // Initialize secondary Compare Register
-        OC4CONbits.OC32 = 0; //16 bit mode
-        OC4CONbits.OCTSEL = 1; //use timer 3
-        OC4CONbits.OCM = 0b110; // PWM mode, no fault detection
-        OC4R = raw_ticks[RC_STEERING]; // need load this register initially 
-        OC4RS = raw_ticks[RC_STEERING]; // OCxRS -> OCxR at timer rollover
-        OC4CONbits.ON = 1; //turn on the peripheral
-    }
-    if (RC_NUM_SERVOS > 3) { //third servo = STEERING servo
-        OC5CON = 0x0;
-        OC5R = 0x0000; // Initialize primary Compare Register
-        OC5RS = 0x0000; // Initialize secondary Compare Register
-        OC5CONbits.OC32 = 0; //16 bit mode
-        OC5CONbits.OCTSEL = 1; //use timer 3
-        OC5CONbits.OCM = 0b110; // PWM mode, no fault detection
-        OC5R = raw_ticks[RC_STEERING]; // need load this register initially 
-        OC5RS = raw_ticks[RC_STEERING]; // OCxRS -> OCxR at timer rollover
-        OC5CONbits.ON = 1; //turn on the peripheral
+        case SERVO_PWM_4:
+            if (output_type == RC_SERVO_TYPE || output_type == ESC_BIDIRECTIONAL_TYPE) {
+                pulse_width[SERVO_PWM_4] = RC_SERVO_CENTER_PULSE;
+                raw_ticks[SERVO_PWM_4] = ticks_center;
+            } else {
+                pulse_width[SERVO_PWM_4] = RC_SERVO_MIN_PULSE;
+                raw_ticks[SERVO_PWM_4] = ticks_min;
+            }
+            OC5CON = 0x0;
+            OC5R = 0x0000; // Initialize primary Compare Register
+            OC5RS = 0x0000; // Initialize secondary Compare Register
+            OC5CONbits.OC32 = 0; //16 bit mode
+            OC5CONbits.OCTSEL = 1; //use timer 3
+            OC5CONbits.OCM = 0b110; // PWM mode, no fault detection
+            OC5R = raw_ticks[SERVO_PWM_4]; // need load this register initially 
+            OC5RS = raw_ticks[SERVO_PWM_4]; // OCxRS -> OCxR at timer rollover
+            OC5CONbits.ON = 1; //turn on the peripheral
+        default:
+            break;
     }
     /* turn on the timer */
     T3CONbits.ON = 1;
@@ -142,16 +173,16 @@ int8_t RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo) {
         pulse_width[which_servo] = in_pulse;
         raw_ticks[which_servo] = (in_pulse * USEC_NUM) >> USEC_LOG_DEN; //only update PW register if the value has changed
         switch (which_servo) {
-            case RC_LEFT_WHEEL:
+            case SERVO_PWM_1:
                 OC2RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
                 break;
-            case RC_RIGHT_WHEEL:
+            case SERVO_PWM_2:
                 OC3RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
                 break;
-            case RC_STEERING:
+            case SERVO_PWM_3:
                 OC4RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
                 break;
-            case MOTOR:
+            case SERVO_PWM_4:
                 OC5RS = raw_ticks[which_servo]; //load new PWM value into OCxRS
                 break;
             default:
@@ -221,45 +252,65 @@ void __ISR(_TIMER_3_VECTOR, ipl6auto) RC_T3_handler(void) {
 #ifdef RCSERVO_TESTING
 
 void main(void) {
-    uint16_t test_pulse = RC_SERVO_CENTER_PULSE;
+    uint16_t test_pulse = RC_SERVO_MIN_PULSE;
+    uint16_t start_time;
+    uint16_t cur_time;
+    uint16_t ESC_time = 5000;
+    uint16_t test_time = 250;
     int direction = 1;
+    int DONE_TESTING = FALSE;
     Board_init();
     Serial_init();
-    RC_servo_init();
-
+    Sys_timer_init();
     printf("\r\nRC_servo Test Harness %s %s\r\n", __DATE__, __TIME__);
-    RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
-    RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
-    RC_servo_delay(320000);
 
-    while (1) {
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_1);
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_2);
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_3);
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_4);
+    printf("Exiting init() functions\r\n");
+    start_time = Sys_timer_get_msec();
+    cur_time = start_time;
+    while ((cur_time - start_time) <= ESC_time) {
+        cur_time = Sys_timer_get_msec();
+    }
+
+    printf("ESC delay over\r\n");
+
+    while (DONE_TESTING == FALSE) {
         if (RC_servo_cmd_needed() == TRUE) {
             if (direction == 1) {
-                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
-                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
-                RC_servo_set_pulse(test_pulse, RC_STEERING);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_1);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_2);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_3);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_4);
                 test_pulse += 10;
-                if (test_pulse > RC_SERVO_MAX_PULSE) {
+                if (test_pulse > RC_SERVO_CENTER_PULSE) {
                     direction = -1;
                 }
             }
             if (direction == -1) {
-                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_LEFT_WHEEL);
-                RC_servo_set_pulse(test_pulse + RC_ESC_TRIM, RC_RIGHT_WHEEL);
-                RC_servo_set_pulse(test_pulse, RC_STEERING);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_1);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_2);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_3);
+                RC_servo_set_pulse(test_pulse, SERVO_PWM_4);
                 test_pulse -= 10;
                 if (test_pulse < RC_SERVO_MIN_PULSE) {
                     direction = 1;
+                    DONE_TESTING = TRUE;
                 }
             }
         }
-        printf("LEFT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_LEFT_WHEEL), RC_servo_get_raw_ticks(RC_LEFT_WHEEL));
-        printf("RIGHT PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_RIGHT_WHEEL), RC_servo_get_raw_ticks(RC_RIGHT_WHEEL));
-        printf("STEERING PWM: %d, current ticks: %d \r\n", RC_servo_get_pulse(RC_STEERING), RC_servo_get_raw_ticks(RC_STEERING));
-        RC_servo_delay(320000);
-
+        printf("SERVO_PWM_1: %d, current ticks: %d \r\n", RC_servo_get_pulse(SERVO_PWM_1), RC_servo_get_raw_ticks(SERVO_PWM_1));
+        printf("SERVO_PWM_2: %d, current ticks: %d \r\n", RC_servo_get_pulse(SERVO_PWM_2), RC_servo_get_raw_ticks(SERVO_PWM_2));
+        printf("SERVO_PWM_3: %d, current ticks: %d \r\n", RC_servo_get_pulse(SERVO_PWM_3), RC_servo_get_raw_ticks(SERVO_PWM_3));
+        printf("SERVO_PWM_4: %d, current ticks: %d \r\n", RC_servo_get_pulse(SERVO_PWM_4), RC_servo_get_raw_ticks(SERVO_PWM_4));
+        start_time = Sys_timer_get_msec();
+        cur_time = start_time;
+        while ((cur_time - start_time) <= test_time) {
+            cur_time = Sys_timer_get_msec();
+        }
     }
-    // RC_servo_set_pulse(RC_SERVO_MIN_PULSE, RC_LEFT_WHEEL);
 }
 
 #endif //RCSERVO_TESTING

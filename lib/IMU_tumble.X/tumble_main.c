@@ -22,8 +22,8 @@
 /*******************************************************************************
  * #DEFINES                                                                    *
  ******************************************************************************/
-//#define RAW_DATA_OUT
-#define NORM_DATA_OUT
+#define RAW_DATA_OUT
+//#define NORM_DATA_OUT
 #define MSZ 3
 
 int main(void) {
@@ -32,7 +32,7 @@ int main(void) {
     uint32_t current_time = 0;
     uint32_t warmup_time = 250; // IMU settling time
     uint32_t period = 20; // milliseconds
-    uint32_t data_collection_time = 30000; //milliseconds
+    uint32_t data_collection_time = 60000; //milliseconds
     int8_t timer_expired = FALSE;
     struct IMU_out IMU_data_out = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 

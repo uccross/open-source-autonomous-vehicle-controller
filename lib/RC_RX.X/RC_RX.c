@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include <sys/attribs.h>  //for ISR definitions
 #include <xc.h>
+#include <proc/p32mx795f512l.h>
 
 /*******************************************************************************
  * PRIVATE #DEFINES                                                            *
@@ -46,6 +47,9 @@ static int8_t RX_collision = FALSE;
 static volatile int8_t new_data_avail = FALSE;
 static int8_t parse_error = FALSE;
 static unsigned int parse_error_counter = 0;
+static unsigned int byte_counter = 0;
+static unsigned int collision_counter = 0;
+static unsigned int uart_err_counter = 0;
 
 //typedef enum {
 //    WAIT_FOR_START,
@@ -116,6 +120,8 @@ static uint8_t RCRX_calc_cmd(RCRX_channel_buffer *channels);
  * @author aahunter
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 uint8_t RCRX_init(void) {
+    /* reset the byte counter*/
+    byte_counter = 0;
     //initialize the message buffers
     RCRX_init_msg_buffer(RCRX_buf_p);
     /* turn off UART while configuring */
@@ -133,7 +139,9 @@ uint8_t RCRX_init(void) {
     IPC12bits.U5IP = 0b110; //Interrupt priority of 6
     IPC12bits.U5IS = 0; //sub-priority 0
     IEC2bits.U5RXIE = 1; //enable interrupt on RX
+    IEC2bits.U5EIE = 1; // enable error interrupts
     IFS2bits.U5RXIF = 0; //clear interrupt flags
+    IFS2bits.U5EIF = 0;
     // turn on UART
     U5MODEbits.ON = 1;
     __builtin_enable_interrupts();
@@ -166,10 +174,11 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
     parsing_RX = TRUE;
     RCRX_calc_cmd(channels);
     parsing_RX = FALSE;
-    //if a collision occured, clear the flag and re-enable interrupt to get data
+    //if a collision occurred, clear the flag and re-enable interrupt to get data
     if (RX_collision == TRUE) {
         RX_collision = FALSE;
-        IEC0bits.U1RXIE = 1;
+        IEC2bits.U5RXIE = 1;
+        IFS2bits.U5RXIF = 1;
     }
     new_data_avail = FALSE;
 
@@ -186,6 +195,42 @@ uint8_t RCRX_get_cmd(RCRX_channel_buffer *channels) {
  * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
 unsigned int RCRX_get_err(void) {
     return parse_error_counter;
+}
+
+/**
+ * @Function RCRX_get_byte_count()
+ * @param pointer to servo data buffer
+ * @return number of bytes read since init
+ * @brief 
+ * @note used to troubleshoot RC dropouta
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_byte_count(void) {
+    return byte_counter;
+}
+
+/**
+ * @Function RCRX_get_collision_count()
+ * @param none
+ * @return number of collisions  since init
+ * @brief 
+ * @note used to troubleshoot RC dropouta
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_collision_count(void) {
+    return collision_counter;
+}
+
+/**
+ * @Function RCRX_get_uart_err_count()
+ * @param none
+ * @return number of frame, parity or FIFO overrun errors  since init
+ * @brief 
+ * @note used to troubleshoot RC dropout
+ * @author aahunter
+ * @modified <Your Name>, <year>.<month>.<day> <hour> <pm/am> */
+unsigned int RCRX_get_uart_err_count(void) {
+    return uart_err_counter;
 }
 
 /*******************************************************************************
@@ -222,14 +267,23 @@ static void __ISR(_UART_5_VECTOR, IPL6SOFT) RCRX_UART_interrupt_handler(void) {
     if (IFS2bits.U5RXIF) { //check for received data flag
         //run the state machine with the new character from the RX buffer
         if (parsing_RX == FALSE) {
+            byte_counter++;
             RCRX_run_RX_state_machine(U5RXREG);
         } else {
             /*a collision occurred need to disable interrupts to exit ISR*/
             /*it will be re-enabled in parsing_RX */
             RX_collision = TRUE;
-            IEC0bits.U1RXIE = 0;
+            collision_counter++;
+            IEC2bits.U5RXIE = 0;
         }
         IFS2bits.U5RXIF = 0; //clear the flag
+    } else if (IFS2bits.U5EIF) { // parity, framing, or overrun errors
+        uart_err_counter++;
+        /* check status register for overrun*/
+        if (U5STAbits.OERR) {
+            U5STAbits.OERR = 0; //clear overrun and reset FIFO
+        }
+        IFS2bits.U5EIF = 0; //clear flag
     }
 }
 
@@ -499,10 +553,10 @@ void main(void) {
                     servo_data[0], servo_data[1], servo_data[2], servo_data[3],
                     servo_data[4], servo_data[5], servo_data[6], servo_data[7],
                     servo_data[8]);
-                    //            printf("T %d S %d M %d stat %x ERR %d \r", servo_data[2], servo_data[3], \
+            //            printf("T %d S %d M %d stat %x ERR %d \r", servo_data[2], servo_data[3], \
 //                    servo_data[7], RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
-                    //            printf("stat %x ERR %d \r\n", RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
-                    //        }
+            //            printf("stat %x ERR %d \r\n", RCRX_msgs.sbus_buffer[RCRX_msgs.read_index][23], parse_error_counter);
+            //        }
         }
     }
 }

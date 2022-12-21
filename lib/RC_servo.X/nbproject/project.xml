@@ -16,6 +16,7 @@
                 <sourceRootElem>.</sourceRootElem>
                 <sourceRootElem>../Board.X</sourceRootElem>
                 <sourceRootElem>../Serial.X</sourceRootElem>
+                <sourceRootElem>../System_timer.X</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

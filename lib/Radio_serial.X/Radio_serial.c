@@ -113,6 +113,7 @@ static int16_t get_num_elements(struct circular_buffer *buf);
  * @brief  Initializes the UART subsystem for the SiK radio link
  * @author Aaron Hunter*/
 void Radio_serial_init(void) {
+    char c;
     /*Initialize the circular buffers*/
     init_buffer(rxp);
     init_buffer(txp);

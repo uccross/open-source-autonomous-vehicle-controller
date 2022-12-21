@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "xc.h"
 #include "Board.h"
@@ -21,6 +22,8 @@
 #include "RC_RX.h"
 #include "RC_servo.h"
 #include "ICM_20948.h"
+#include "AHRS.h"
+#include "PID.h"
 
 
 
@@ -29,7 +32,8 @@
  * #DEFINES                                                                    *
  ******************************************************************************/
 #define HEARTBEAT_PERIOD 1000 //1 sec interval for hearbeat update
-#define CONTROL_PERIOD 20 //Period for control loop in msec
+#define ANGULAR_RATE_CONTROL_PERIOD 20 //Period for control loop in msec
+#define ANGLE_CONTROL_PERIOD 20 // msec for calculating new angular control output
 #define BUFFER_SIZE 1024
 #define RAW 1
 #define SCALED 2
@@ -47,6 +51,7 @@ mavlink_system_t mavlink_system = {
 };
 
 enum RC_channels {
+    SWITCH_D,
     THR,
     AIL,
     ELE,
@@ -55,9 +60,8 @@ enum RC_channels {
     SWITCH_A,
     SWITCH_B,
     SWITCH_C,
-    SWITCH_D,
     SWITCH_E
-}; //map to the car controls from the RC receiver
+}; //map of the rc txmitter to the RC_channels
 
 enum motors {
     MOTOR_1,
@@ -68,18 +72,66 @@ enum motors {
 
 
 const uint16_t RC_raw_fs_scale = RC_RAW_TO_FS;
+static int8_t RC_system_online = FALSE;
 
-RCRX_channel_buffer RC_channels[CHANNELS];
+
+RCRX_channel_buffer RC_channels[CHANNELS] = {RC_RX_MID_COUNTS};
 struct IMU_out IMU_raw = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for raw IMU data
 struct IMU_out IMU_scaled = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; //container for scaled IMU data
 static uint8_t pub_RC_servo = FALSE;
-static uint8_t pub_RC_signals = TRUE;
-static uint8_t pub_IMU = TRUE;
+static uint8_t pub_RC_signals = FALSE;
+static uint8_t pub_IMU = FALSE;
 
 /*******************************************************************************
  * TYPEDEFS                                                                    *
  ******************************************************************************/
+/* inner loop gyro rate controllers*/
 
+PID_controller pitch_rate_controller = {
+    .dt = DT,
+    .kp = 120.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 2000.0,
+    .u_min = -2000.0
+};
+
+PID_controller roll_rate_controller = {
+    .dt = DT,
+    .kp = 120.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 2000.0,
+    .u_min = -2000.0
+};
+
+PID_controller roll_controller = {
+    .dt = DT,
+    .kp = 20.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 1000.0,
+    .u_min = -1000.0
+};
+
+PID_controller pitch_controller = {
+    .dt = DT,
+    .kp = 20.0,
+    .ki = 0.0,
+    .kd = 0.0,
+    .u_max = 1000.0,
+    .u_min = -1000.0
+};
+
+/* container for controller outputs*/
+struct controller_outputs {
+    float phi;
+    float theta;
+    float psi;
+    float phi_dot;
+    float theta_dot;
+    float psi_dot;
+} controller_outputs;
 
 /*******************************************************************************
  * FUNCTION PROTOTYPES                                                         *
@@ -95,13 +147,6 @@ void check_IMU_events(void);
  * @function RC_channels_init(void)
  * @param none
  * @brief set all RC channels to RC_RX_MID_COUNTS
- * @author Aaron Hunter
- */
-void RC_channels_init(void);
-/**
- * @function check_RC_events(void)
- * @param none
- * @brief checks for RC messages and stores data in RC channel buffer
  * @author Aaron Hunter
  */
 void check_RC_events();
@@ -157,14 +202,51 @@ void publish_parameter(uint8_t param_id[16]);
 static int calc_pw(int raw_counts);
 
 /**
- * @Function set_control_output(void)
+ * @Function set_control_output(float gyros[], float euler[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(void);
+void set_control_output(float gyros[], float euler[]);
+
+/**
+ * @Function void calc_angle_rate_output(float gyros[])
+ * @param gyros[], the gyro rate measurements
+ * @brief computes the output of the gyro rate controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_rate_output(float gyros[]);
+
+/**
+ * @Function void calc_angle_output(float euler[])
+ * @param euler[], the euler angle measurements
+ * @brief computes the output of the angle controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_output(float euler[]);
+
+
+/**
+ * @Function set_motor_outputs(void);
+ * @return none
+ * @brief computes the output of the motors
+ * @author Aaron Hunter
+ */
+void set_motor_outputs(void);
+
+
+/**
+ * @Function get_control_output(float ref, float sensor_val, PID_controller * controller)
+ * @param ref, the control reference
+ * @paarm sensor, sensor measurement
+ * @param controller, the PID controller 
+ * @return controller output
+ * @brief generates controller output
+ * @author Aaron Hunter
+ */
+float get_control_output(float ref, float sensor_val, PID_controller * controller);
 
 /*******************************************************************************
  * FUNCTIONS                                                                   *
@@ -179,19 +261,6 @@ void set_control_output(void);
 void check_IMU_events(void) {
     if (IMU_is_data_ready() == TRUE) {
         IMU_get_raw_data(&IMU_raw);
-    }
-}
-
-/**
- * @function RC_channels_init(void)
- * @param none
- * @brief set all RC channels to RC_RX_MID_COUNTS
- * @author Aaron Hunter
- */
-void RC_channels_init(void) {
-    uint8_t i;
-    for (i = 0; i < CHANNELS; i++) {
-        RC_channels[i] = RC_RX_MID_COUNTS;
     }
 }
 
@@ -468,19 +537,53 @@ static int calc_pw(int raw_counts) {
 }
 
 /**
- * @Function set_control_output(void)
+ * @Function void calc_angle_rate_output(float gyros[])
+ * @param gyros[], the gyro rate measurements
+ * @brief computes the output of the gyro rate controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_rate_output(float gyros[]) {
+    float roll_rate_cmd;
+    float pitch_rate_cmd;
+    roll_rate_cmd = get_control_output(controller_outputs.phi, gyros[0], &roll_rate_controller);
+    pitch_rate_cmd = get_control_output(controller_outputs.theta, gyros[1], &pitch_rate_controller);
+    controller_outputs.phi_dot = roll_rate_cmd;
+    controller_outputs.theta_dot = pitch_rate_cmd;
+}
+
+/**
+ * @Function void calc_angle_output(float euler[])
+ * @param euler[], the euler angle measurements
+ * @brief computes the output of the angle controllers and stores in 
+ * controller_ref struct
+ */
+void calc_angle_output(float euler[]){
+    float roll_cmd;
+    float pitch_cmd;
+    /* NOTE: Euler angles are defined a yaw, pitch, roll for some stupid reason*/
+    roll_cmd = get_control_output(0.0, euler[2], &roll_controller);
+    pitch_cmd = get_control_output(0.0, euler[1], &pitch_controller);
+    controller_outputs.phi = roll_cmd;
+    controller_outputs.theta = pitch_cmd;
+}
+
+/**
+ * @Function set_control_output(float gyros[], float euler[])
  * @param none
  * @return none
  * @brief converts RC input signals to pulsewidth values and sets the actuators
  * (servos and ESCs) to those values
  * @author Aaron Hunter
  */
-void set_control_output(void) {
+void set_control_output(float gyros[], float euler[]) {
     int hash;
+    int switch_d;
     int throttle[4];
     int throttle_raw;
-    int roll_cmd;
-    int pitch_cmd;
+    float roll_cmd;
+    float pitch_cmd;
+    int roll_rate_cmd;
+    int pitch_rate_cmd;
     int yaw_cmd;
     int hash_check;
     const int tol = 4;
@@ -490,6 +593,67 @@ void set_control_output(void) {
     int theta_raw;
     int psi_raw;
     /* get RC commanded values*/
+    switch_d = RC_channels[SWITCH_D];
+    throttle_raw = RC_channels[THR];
+    phi_raw = RC_channels[AIL];
+    theta_raw = RC_channels[ELE];
+    psi_raw = RC_channels[RUD];
+    //    psi_raw = 0; 
+    hash = RC_channels[HASH];
+    hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
+    if (abs(hash_check - hash) <= tol) {
+        INTOL = TRUE;
+        /*compute attitude commands*/
+        roll_rate_cmd = (int) get_control_output(0.0, gyros[0], &roll_rate_controller);
+        pitch_rate_cmd = (int) get_control_output(0.0, gyros[1], &pitch_rate_controller);
+        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
+        if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
+            /* mix attitude into X configuration */
+            throttle[0] = calc_pw((throttle_raw + roll_rate_cmd - pitch_rate_cmd - yaw_cmd));
+            throttle[1] = calc_pw(throttle_raw - roll_rate_cmd - pitch_rate_cmd + yaw_cmd);
+            throttle[2] = calc_pw(throttle_raw - roll_rate_cmd + pitch_rate_cmd - yaw_cmd);
+            throttle[3] = calc_pw(throttle_raw + roll_rate_cmd + pitch_rate_cmd + yaw_cmd);
+
+        } else { // Set throttle to minimum
+            throttle[0] = RC_SERVO_MIN_PULSE;
+            throttle[1] = RC_SERVO_MIN_PULSE;
+            throttle[2] = RC_SERVO_MIN_PULSE;
+            throttle[3] = RC_SERVO_MIN_PULSE;
+        }
+        /* send commands to motor outputs*/
+        RC_servo_set_pulse(throttle[0], MOTOR_1);
+        RC_servo_set_pulse(throttle[1], MOTOR_2);
+        RC_servo_set_pulse(throttle[2], MOTOR_3);
+        RC_servo_set_pulse(throttle[3], MOTOR_4);
+    } else {
+        INTOL = FALSE;
+        //        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
+    }
+}
+
+/**
+ * @Function set_motor_outputs(float theta_dot, float phi_dot);
+ * @param theta_dot, pitch rate
+ * @param phi_dot, roll rate
+ * @return none
+ * @brief converts RC input signals and controller outputs to pulsewidth values and sets the actuators
+ * (servos and ESCs) to those values
+ * @author Aaron Hunter
+ */
+void set_motor_outputs(void) {
+    int hash;
+    int switch_d;
+    int throttle[4];
+    int throttle_raw;
+    int yaw_cmd;
+    int hash_check;
+    const int tol = 4;
+    int INTOL;
+    int phi_raw;
+    int theta_raw;
+    int psi_raw;
+    /* get RC commanded values*/
+    switch_d = RC_channels[SWITCH_D];
     throttle_raw = RC_channels[THR];
     phi_raw = RC_channels[AIL];
     theta_raw = RC_channels[ELE];
@@ -498,16 +662,20 @@ void set_control_output(void) {
     hash_check = (throttle_raw >> 2) + (phi_raw >> 2) + (theta_raw >> 2) + (psi_raw >> 2);
     if (abs(hash_check - hash) <= tol) {
         INTOL = TRUE;
-        /*compute attitude commands*/
-        roll_cmd = phi_raw - RC_RX_MID_COUNTS;
-        pitch_cmd = theta_raw - RC_RX_MID_COUNTS;
-        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS); // reverse for CCW positive yaw
+        yaw_cmd = -(psi_raw - RC_RX_MID_COUNTS) >> 2; // reverse for CCW positive yaw
+        if (RC_channels[SWITCH_D] == RC_RX_MAX_COUNTS) { // SWITCH_D arms the motors
+            /* mix attitude into X configuration */
+            throttle[0] = calc_pw((throttle_raw + controller_outputs.phi_dot - controller_outputs.theta_dot - yaw_cmd));
+            throttle[1] = calc_pw(throttle_raw - controller_outputs.phi_dot - controller_outputs.theta_dot + yaw_cmd);
+            throttle[2] = calc_pw(throttle_raw - controller_outputs.phi_dot + controller_outputs.theta_dot - yaw_cmd);
+            throttle[3] = calc_pw(throttle_raw + controller_outputs.phi_dot + controller_outputs.theta_dot + yaw_cmd);
 
-        /* mix attitude into X configuration */
-        throttle[0] = calc_pw((throttle_raw + roll_cmd - pitch_cmd - yaw_cmd));
-        throttle[1] = calc_pw(throttle_raw - roll_cmd - pitch_cmd + yaw_cmd);
-        throttle[2] = calc_pw(throttle_raw - roll_cmd + pitch_cmd - yaw_cmd);
-        throttle[3] = calc_pw(throttle_raw + roll_cmd + pitch_cmd + yaw_cmd);
+        } else { // Set throttle to minimum
+            throttle[0] = RC_SERVO_MIN_PULSE;
+            throttle[1] = RC_SERVO_MIN_PULSE;
+            throttle[2] = RC_SERVO_MIN_PULSE;
+            throttle[3] = RC_SERVO_MIN_PULSE;
+        }
         /* send commands to motor outputs*/
         RC_servo_set_pulse(throttle[0], MOTOR_1);
         RC_servo_set_pulse(throttle[1], MOTOR_2);
@@ -515,262 +683,52 @@ void set_control_output(void) {
         RC_servo_set_pulse(throttle[3], MOTOR_4);
     } else {
         INTOL = FALSE;
-        printf("%d, %d, %d, %d, %d, %d, %d \r\n", throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
-    }
-
-    //        printf("%d, %d, %d, %d, %d, %d, %d \r\n", roll_cmd, pitch_cmd, yaw_cmd, throttle[0], throttle[1], throttle[2], throttle[3]);
-}
-
-/**
- * @function quat2euler()
- * @param q A quaternion
- * @param euler a vector of euler angles in [psi, theta, roll] order
- */
-void quat2euler(double q[MSZ], double euler[MSZ]) {
-    double q00 = q[0] * q[0];
-    double q11 = q[1] * q[1];
-    double q22 = q[2] * q[2];
-    double q33 = q[3] * q[3];
-
-    // psi
-    euler[0] = atan2(2.0 * (q[1] * q[2] + q[0] * q[3]), ((q00 + q11 - q22 - q33)));
-    // theta
-    euler[1] = asin(2.0 * (q[0] * q[2] - q[1] * q[3]));
-    // phi
-    euler[2] = atan2(2.0 * (q[2] * q[3] + q[0] * q[1]), q00 - q11 - q22 + q33);
-}
-
-/**
- * @function lin_alg_q_mult()
- * Multiply two quaternions together
- * @param p A quaternion
- * @param q A quaternion
- * @param r The resulting quaternion
- */
-void lin_alg_q_mult(double q[QSZ], double p[QSZ], double r[QSZ]) {
-    r[0] = p[0] * q[0] - p[1] * q[1] - p[2] * q[2] - p[3] * q[3];
-    r[1] = p[1] * q[0] + p[0] * q[1] + p[3] * q[2] - p[2] * q[3];
-    r[2] = p[2] * q[0] - p[3] * q[1] + p[0] * q[2] + p[1] * q[3];
-    r[3] = p[3] * q[0] + p[2] * q[1] - p[1] * q[2] + p[0] * q[3];
-}
-
-/**
- * @function q_rot_v_q()
- * Rotate a vector from the inertial frame to the body frame
- * @param v_i, a 3space vector in the inertial frame
- * @param q an attitude quaternion
- * sets v_b to the rotated inertial vector in the body frame
- */
-void q_rot_v_q(double v_i[MSZ], double q[QSZ], double v_b[MSZ]) {
-    double q_i[QSZ];
-    double q_temp[QSZ];
-    double q_conj[QSZ];
-    double q_b[QSZ]; // container for inertial vector in body frame as pure quaternion
-
-    // calculate conjugate of q 
-    q_conj[0] = q[0];
-    q_conj[1] = -q[1];
-    q_conj[2] = -q[2];
-    q_conj[3] = -q[3];
-
-    //   convert v_i to a pure quaternion --> q_i
-    q_i[0] = 0;
-    q_i[1] = v_i[0];
-    q_i[2] = v_i[1];
-    q_i[3] = v_i[2];
-    //   first quaternion product q_i by q --> q_temp
-    lin_alg_q_mult(q_i, q, q_temp);
-    //   second quaternion product q_conj by q_temp -->q_b
-    lin_alg_q_mult(q_conj, q_temp, q_b);
-    //    set v_b to imaginary part of q_b
-    v_b[0] = q_b[1];
-    v_b[1] = q_b[2];
-    v_b[2] = q_b[3];
-}
-
-void v_copy(double m_in[MSZ], double m_out[MSZ]) {
-    int row;
-    for (row = 0; row < MSZ; row++) {
-        m_out[row] = m_in[row];
+        //        printf("%d, %d, %d, %d, %d, %d, %d, %d \r\n", switch_d, throttle_raw, phi_raw, theta_raw, psi_raw, hash, hash_check, INTOL);
     }
 }
 
-/**
- * @function lin_alg_cross()
- * @param u A vector
- * @param v A vector
- * @return The cross product (sometimes called the outter product) of u and v
- */
-void lin_alg_cross(double u[MSZ], double v[MSZ], double w_out[MSZ]) {
-    w_out[0] = u[1] * v[2] - u[2] * v[1];
-    w_out[1] = u[2] * v[0] - u[0] * v[2];
-    w_out[2] = u[0] * v[1] - u[1] * v[0];
-}
-
-/**
- * @function lin_alg_v_scale()
- * Scales vector
- * @param s Scalar to scale vector with
- * @param v Vector to be scaled
- */
-void lin_alg_v_scale(double s, double v[MSZ]) {
-    int row;
-    for (row = 0; row < MSZ; row++) {
-        v[row] *= s;
-    }
-}
-
-/**
- * @function lin_alg_v_v_add()
- * Add a vector value to a vector
- * @param v1 Vector to add to another vector
- * @param v2 Vector to have a vector added to it
- * @param v_out Vector as sum of two vectors
- */
-void lin_alg_v_v_add(double v1[MSZ], double v2[MSZ], double v_out[MSZ]) {
-    int row;
-
-    for (row = 0; row < MSZ; row++) {
-        v_out[row] = v1[row] + v2[row];
-    }
-}
-
-/**
- * @function lin_alg_v_v_sub()
- * Add a vector value to a vector
- * @param v1 Vector to subtract to another vector
- * @param v2 Vector to have a vector subtracted to it
- * @param v_out Vector as difference of two vectors
- */
-void lin_alg_v_v_sub(double v1[MSZ], double v2[MSZ], double v_out[MSZ]) {
-    int row;
-
-    for (row = 0; row < MSZ; row++) {
-        v_out[row] = v1[row] - v2[row];
-    }
-}
-
-/**
- * @function lin_alg_q_norm()
- * @param q A quaternion
- * @return The magnitude of the quaternion, q
- */
-double lin_alg_q_norm(double q[QSZ]) {
-    return ((double) sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]));
-}
-
-/**
- * @function m_norm()
- * @param M A matrix
- * @return The magnitude of the M, m_norm
- */
-double m_norm(double M[MSZ]) {
-    return ((double) sqrt(M[0] * M[0] + M[1] * M[1] + M[2] * M[2]));
-}
-
-void ahrs_update(double q_minus[QSZ], double bias_minus[MSZ], double gyros[MSZ],
-        double mags[MSZ], double accels[MSZ], double mag_i[MSZ], double acc_i[MSZ],
-        double dt, double kp_a, double ki_a, double kp_m, double ki_m,
-        double q_plus[QSZ], double bias_plus[MSZ]) {
-
-    double acc_b[MSZ]; //estimated gravity vector in body frame
-    double mag_b[MSZ]; //estimated magnetic field vector in body frame
-
-    double gyro_cal[MSZ]; // gyros with bias correction
-    double gyro_wfb[MSZ]; // gyro 'rate' after feedback
-    double w_meas_ap[MSZ]; // accelerometer proportion correction rate
-    double w_meas_mp[MSZ]; // magnetometer proportional correction rate
-    double w_meas_ai[MSZ]; // accelerometer integral correction rate
-    double w_meas_mi[MSZ]; // magnetometer integral correction rate
-
-    double gyro_q_wfb[QSZ]; // temporary quaternion to hold feedback term
-    double q_dot[QSZ]; // quaternion derivative
-    double b_dot[MSZ]; // bias vector derivative
-    double q_norm;
-    double acc_n;
-    double mag_n;
-
-    /* normalize inertial measurements */
-    acc_n = m_norm(accels);
-    accels[0] = accels[0] / acc_n;
-    accels[1] = accels[1] / acc_n;
-    accels[2] = accels[2] / acc_n;
-
-    mag_n = m_norm(mags);
-    mags[0] = mags[0] / mag_n;
-    mags[1] = mags[1] / mag_n;
-    mags[2] = mags[2] / mag_n;
-
-    /*Accelerometer attitude calculations */
-    q_rot_v_q(acc_i, q_minus, acc_b); //estimate gravity vector in body frame 
-    lin_alg_cross(accels, acc_b, w_meas_ap); // calculate the accelerometer rate term
-    v_copy(w_meas_ap, w_meas_ai); // make a copy for the integral term
-    lin_alg_v_scale(kp_a, w_meas_ap); // calculate the accelerometer proportional feedback term 
-    lin_alg_v_scale(ki_a, w_meas_ai); // calculate the accelerometer integral feedback term 
-
-    /*Magnetometer attitude calculations*/
-    q_rot_v_q(mag_i, q_minus, mag_b); //estimate magnetic field vector in body frame
-    lin_alg_cross(mags, mag_b, w_meas_mp); // calculate the magnetometer rate term
-    v_copy(w_meas_mp, w_meas_mi); //make a copy for the integral term
-    lin_alg_v_scale(kp_m, w_meas_mp); // calculate the magnetometer proportional feedback term
-    lin_alg_v_scale(ki_m, w_meas_mi); // calculate the magnetometer integral feedback term
-
-    /*Gyro attitude contributions */
-    lin_alg_v_v_sub(gyros, bias_minus, gyro_cal); //correct the gyros with the b_minus vector
-
-    /* calculate total rate term gyro_wfb */
-    lin_alg_v_v_add(w_meas_ap, w_meas_mp, gyro_wfb);
-    lin_alg_v_v_add(gyro_cal, gyro_wfb, gyro_wfb);
-
-    /* convert feedback term to a pure quaternion */
-    gyro_q_wfb[0] = 0;
-    gyro_q_wfb[1] = gyro_wfb[0];
-    gyro_q_wfb[2] = gyro_wfb[1];
-    gyro_q_wfb[3] = gyro_wfb[2];
-
-    /* compute the quaternion derivative q_dot */
-    lin_alg_q_mult(q_minus, gyro_q_wfb, q_dot);
-
-    /* integrate term by term */
-    q_plus[0] = q_minus[0] + 0.5 * q_dot[0] * dt;
-    q_plus[1] = q_minus[1] + 0.5 * q_dot[1] * dt;
-    q_plus[2] = q_minus[2] + 0.5 * q_dot[2] * dt;
-    q_plus[3] = q_minus[3] + 0.5 * q_dot[3] * dt;
-
-    // normalize the quaternion for stability
-    q_norm = lin_alg_q_norm(q_plus);
-    q_plus[0] = q_plus[0] / q_norm;
-    q_plus[1] = q_plus[1] / q_norm;
-    q_plus[2] = q_plus[2] / q_norm;
-    q_plus[3] = q_plus[3] / q_norm;
-
-    // compute the integral of the bias term by term
-    bias_plus[0] = bias_minus[0] - (w_meas_ai[0] + w_meas_mi[0]) * dt;
-    bias_plus[1] = bias_minus[1] - (w_meas_ai[1] + w_meas_mi[1]) * dt;
-    bias_plus[2] = bias_minus[2] - (w_meas_ai[2] + w_meas_mi[2]) * dt;
+float get_control_output(float ref, float sensor_val, PID_controller * controller) {
+    float setpoint = 0;
+    /* get control from PID*/
+    PID_update(controller, ref, sensor_val);
+    setpoint = controller->u;
+    return (setpoint);
 }
 
 int main(void) {
+    uint32_t start_time = 0;
     uint32_t cur_time = 0;
-    uint32_t warmup_time = 250; //time in ms to allow subsystems to stabilize (IMU))
-    uint32_t control_start_time = 0;
+    uint32_t RC_timeout = 1000;
+    uint32_t angular_rate_control_start_time = 0;
+    uint32_t angle_control_start_time = 0;
     uint32_t heartbeat_start_time = 0;
     uint8_t index;
     int8_t IMU_state = ERROR;
     int8_t IMU_retry = 5;
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
+    uint32_t IMU_update_start;
+    uint32_t IMU_update_end;
+
+    /*test value for IMU update rate*/
+    int8_t IMU_updated = TRUE;
+
+    /*radio variables*/
+    char message[BUFFER_SIZE];
+    uint8_t msg_len = 0;
 
     /*filter gains*/
-    double kp_a = 2.5; //accelerometer proportional gain
-    double ki_a = 0.05; // accelerometer integral gain
-    double kp_m = 2.5; // magnetometer proportional gain
-    double ki_m = 0.05; //magnetometer integral gain
+    float kp_a = 2.5; //accelerometer proportional gain
+    float ki_a = 0.05; // accelerometer integral gain
+    float kp_m = 2.5; // magnetometer proportional gain
+    float ki_m = 0.05; //magnetometer integral gain
     /*timing and conversion*/
-    const double dt = DT;
-    const double deg2rad = M_PI / 180.0;
-    const double rad2deg = 180.0 / M_PI;
+    const float dt = DT;
+    const float deg2rad = M_PI / 180.0;
+    const float rad2deg = 180.0 / M_PI;
     /* Calibration matrices and offset vectors */
+
+    /*calibration matrices*/
     float A_acc[MSZ][MSZ] = {
         {5.98605657636023e-05, 5.02299172664344e-08, 8.41134559461075e-07},
         {-2.82167981801537e-08, 6.05938345982234e-05, 6.95665927111956e-07},
@@ -783,67 +741,120 @@ int main(void) {
     };
     float b_acc[MSZ] = {0.00591423067694908, 0.0173747801090554, 0.0379428158730668};
     float b_mag[MSZ] = {0.214140746707571, -1.08116057610690, -0.727337561140470};
-
     // gravity inertial vector
-    double a_i[MSZ] = {0, 0, 1.0};
+    float a_i[MSZ] = {0, 0, 1.0};
     // Earth's magnetic field inertial vector, normalized 
     // North 22,680.8 nT	East 5,217.6 nT	Down 41,324.7 nT, value from NOAA
     // converted into ENU format and normalized:
-    double m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.871322609031072};
+    float m_i[MSZ] = {0.110011998753301, 0.478219898291142, -0.871322609031072};
 
     // Euler angles
-    double euler[MSZ] = {0, 0, 0};
+    float euler[MSZ] = {0, 0, 0};
 
-    // attitude quaternions
-    double q_minus[QSZ] = {1, 0, 0, 0};
-    double q_plus[QSZ] = {1, 0, 0, 0};
-    // gyro bias vector
-    double b_minus[MSZ] = {0, 0, 0};
-    double b_plus[MSZ] = {0, 0, 0};
     /* data arrays */
-    double gyro_cal[MSZ] = {0, 0, 0};
-    double acc_cal[MSZ] = {0, 0, 0};
-    double mag_cal[MSZ] = {0, 0, 0};
+    float gyro_cal[MSZ] = {0, 0, 0};
+    float acc_cal[MSZ] = {0, 0, 0};
+    float mag_cal[MSZ] = {0, 0, 0};
 
     //Initialization routines
     Board_init(); //board configuration
-    Serial_init(); //start debug terminal (USB)
-    Sys_timer_init(); //start the system timer
-    /*small delay to get all the subsystems time to get online*/
-    while (cur_time < warmup_time) {
-        cur_time = Sys_timer_get_msec();
-    }
+    Serial_init(); //start debug terminal 
     Radio_serial_init(); //start the radios
+    printf("Board initialization complete.\r\n");
+    msg_len = sprintf(message, "Board initialization complete.\r\n");
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+
+    Sys_timer_init(); //start the system timer
+    cur_time = Sys_timer_get_msec();
+    printf("System timer initialized.  Current time %d. \r\n", cur_time);
+    msg_len = sprintf(message, "System timer initialized.\r\n");
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+    cur_time = Sys_timer_get_msec();
+    start_time = cur_time;
     RCRX_init(); //initialize the radio control system
-    RC_channels_init(); //set channels to midpoint of RC system
-    RC_servo_init(); // start the servo subsystem
+    /*wait until we get data from the RC controller*/
+    while (cur_time - start_time < RC_timeout) {
+        if (RCRX_new_cmd_avail()) {
+            RC_system_online = TRUE;
+            break;
+        }
+    }
+    if (RC_system_online == FALSE) {
+        msg_len = sprintf(message, "RC system failed to connect!\r\n");
+    } else {
+        msg_len = sprintf(message, "RC system online.\r\n");
+    }
+    for (index = 0; index < msg_len; index++) {
+        Radio_put_char(message[index]);
+    }
+
+    /* With RC controller online we can set the servo PWM outputs*/
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_1); // MOTOR 1
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_2); // MOTOR 2
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_3); // MOTOR 3
+    RC_servo_init(ESC_UNIDIRECTIONAL_TYPE, SERVO_PWM_4); // MOTOR 4
+    /* initialize the IMU */
     IMU_state = IMU_init(IMU_SPI_MODE);
     if (IMU_state == ERROR && IMU_retry > 0) {
         IMU_state = IMU_init(IMU_SPI_MODE);
         printf("IMU failed init, retrying %d \r\n", IMU_retry);
         IMU_retry--;
     }
+    /*initialize controllers*/
+    PID_init(&pitch_rate_controller);
+    PID_init(&roll_rate_controller);
+    PID_init(&pitch_controller);
+    PID_init(&roll_controller);
 
-    printf("\r\nMinimal Mavlink application %s, %s \r\n", __DATE__, __TIME__);
-    /* load calibration matrices */
+    printf("\r\nQuad Passthrough Control App %s, %s \r\n", __DATE__, __TIME__);
+    printf("Testing!\r\n");
+    /* load IMU calibrations */
     IMU_set_mag_cal(A_mag, b_mag);
     IMU_set_acc_cal(A_acc, b_acc);
 
+    /* set filter gains and inertial guiding vectors for AHRS*/
+    AHRS_set_filter_gains(kp_a, ki_a, kp_m, ki_m);
+    AHRS_set_mag_inertial(m_i);
+
     cur_time = Sys_timer_get_msec();
-    control_start_time = cur_time;
+    angular_rate_control_start_time = cur_time;
+    angle_control_start_time = cur_time;
     heartbeat_start_time = cur_time;
 
     while (1) {
-        cur_time = Sys_timer_get_msec();
         //check for all events
         check_IMU_events(); //check for IMU data ready and publish when available
-        check_radio_events(); //detect and process MAVLink incoming messages
+        //        check_radio_events(); //detect and process MAVLink incoming messages
         check_RC_events(); //check incoming RC commands
-
+        cur_time = Sys_timer_get_msec();
         //publish control and sensor signals
-        if (cur_time - control_start_time >= CONTROL_PERIOD) {
-            control_start_time = cur_time; //reset control loop timer
-            set_control_output(); // set actuator outputs
+        if (cur_time - angular_rate_control_start_time >= ANGULAR_RATE_CONTROL_PERIOD) {
+            angular_rate_control_start_time = cur_time; //reset control loop timer
+//            set_control_output(gyro_cal, euler); // set actuator outputs
+            calc_angle_rate_output(gyro_cal);
+            set_motor_outputs();
+            /*start next data acquisition round*/
+            IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
+            if (IMU_updated == TRUE) {
+                IMU_update_start = Sys_timer_get_msec();
+                IMU_updated = FALSE;
+            }
+            if (IMU_state == ERROR) {
+                IMU_error++;
+                if (IMU_error % error_report == 0) {
+                    printf("IMU error count %d\r\n", IMU_error);
+                    //                    IMU_retry = 5;
+                    //                    IMU_state = IMU_init(IMU_SPI_MODE);
+                    //                    if (IMU_state == ERROR && IMU_retry > 0) {
+                    //                        IMU_state = IMU_init(IMU_SPI_MODE);
+                    //                        printf("IMU failed init, retrying %d \r\n", IMU_retry);
+                    //                        IMU_retry--;
+                }
+            }
             /*publish high speed sensors*/
             if (pub_RC_signals == TRUE) {
                 publish_RC_signals_raw();
@@ -851,48 +862,37 @@ int main(void) {
             if (pub_IMU == TRUE) {
                 publish_IMU_data(RAW);
             }
-            /*start next data acquisition round*/
-            IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-            if (IMU_state == ERROR) {
-                IMU_error++;
-                if (IMU_error % error_report == 0) {
-                    printf("IMU error count %d\r\n", IMU_error);
-                }
-            }
         }
+        /* update angular control every ANGL_CONTROL_PERIOD*/
+        if(cur_time - angle_control_start_time >= ANGLE_CONTROL_PERIOD) {
+            angle_control_start_time = cur_time;
+            calc_angle_output(euler);
+        }
+        
         if (IMU_is_data_ready() == TRUE) {
+            IMU_updated = TRUE;
+            IMU_update_end = Sys_timer_get_msec();
             IMU_get_norm_data(&IMU_scaled);
 
-            acc_cal[0] = (double) IMU_scaled.acc.x;
-            acc_cal[1] = (double) IMU_scaled.acc.y;
-            acc_cal[2] = (double) IMU_scaled.acc.z;
-            mag_cal[0] = (double) IMU_scaled.mag.x;
-            mag_cal[1] = (double) IMU_scaled.mag.y;
-            mag_cal[2] = (double) IMU_scaled.mag.z;
+            acc_cal[0] = (float) IMU_scaled.acc.x;
+            acc_cal[1] = (float) IMU_scaled.acc.y;
+            acc_cal[2] = (float) IMU_scaled.acc.z;
+            mag_cal[0] = (float) IMU_scaled.mag.x;
+            mag_cal[1] = (float) IMU_scaled.mag.y;
+            mag_cal[2] = (float) IMU_scaled.mag.z;
             /*scale gyro readings into rad/sec */
-            gyro_cal[0] = (double) IMU_scaled.gyro.x * deg2rad;
-            gyro_cal[1] = (double) IMU_scaled.gyro.y * deg2rad;
-            gyro_cal[2] = (double) IMU_scaled.gyro.z * deg2rad;
-            ahrs_update(q_minus, b_minus, gyro_cal, mag_cal, acc_cal, m_i,
-                    a_i, dt, kp_a, ki_a, kp_m, ki_m, q_plus, b_plus);
-            quat2euler(q_plus, euler);
+            gyro_cal[0] = (float) IMU_scaled.gyro.x * deg2rad;
+            gyro_cal[1] = (float) IMU_scaled.gyro.y * deg2rad;
+            gyro_cal[2] = (float) IMU_scaled.gyro.z * deg2rad;
+            AHRS_update(acc_cal, mag_cal, gyro_cal, dt, euler);
 
-            printf("%+3.1f, %+3.1f, %+3.1f \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg);
-
-            // update b_minus and q_minus
-            b_minus[0] = b_plus[0];
-            b_minus[1] = b_plus[1];
-            b_minus[2] = b_plus[2];
-            q_minus[0] = q_plus[0];
-            q_minus[1] = q_plus[1];
-            q_minus[2] = q_plus[2];
-            q_minus[3] = q_plus[3];
+            //            printf("%+3.1f, %+3.1f, %+3.1f, %d \r\n", euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg, IMU_update_end - IMU_update_start);
         }
-        //publish heartbeat
+        /* if period timer expires, publish the heartbeat message*/
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
-            publish_heartbeat();
+            //            publish_heartbeat();
         }
     }
-    return 0;
+    return (0);
 }

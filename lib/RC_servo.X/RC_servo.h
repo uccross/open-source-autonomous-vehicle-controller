@@ -24,23 +24,35 @@
 #define RC_SERVO_CENTER_PULSE 1500
 #define RC_SERVO_MAX_PULSE 2000
 #define RC_ESC_TRIM -10
+#define RC_SERVO_NUM_OUTPUTS 4
 
-#define RC_NUM_SERVOS 4
-#define RC_LEFT_WHEEL 0
-#define RC_RIGHT_WHEEL 1
-#define RC_STEERING 2
-#define MOTOR 3
 
 /*******************************************************************************
  * PUBLIC FUNCTIONS                                                           *
  ******************************************************************************/
+
+/*******************************************************************************
+ * PUBLIC TYPEDEF                                                              *
+ ******************************************************************************/
+enum {
+    RC_SERVO_TYPE,
+    ESC_UNIDIRECTIONAL_TYPE,
+    ESC_BIDIRECTIONAL_TYPE
+};
+
+enum {
+    SERVO_PWM_1,
+    SERVO_PWM_2,
+    SERVO_PWM_3,
+    SERVO_PWM_4
+};
 
 /**
  * @Function RC_servo_init(void)
  * @param None
  * @return SUCCESS or ERROR
  * @brief initializes hardware required and set it to the CENTER PULSE */
-int8_t RC_servo_init(void);
+int8_t RC_servo_init(uint8_t output_type, uint8_t output_channel);
 
 /**
  * @Function int RC_servo_set_pulse(uint16_t in_pulse, uint8_t which_servo)

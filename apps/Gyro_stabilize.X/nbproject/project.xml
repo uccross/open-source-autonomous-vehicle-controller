@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>Gyro_stabilize</name>
+            <creation-uuid>f742aabb-be15-4cdb-a157-42ec96aeb997</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <c-extensions>c</c-extensions>
+            <cpp-extensions/>
+            <header-extensions>h</header-extensions>
+            <asminc-extensions/>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>../../lib/Board.X</sourceRootElem>
+                <sourceRootElem>../ahrs_apps/AHRS.X</sourceRootElem>
+                <sourceRootElem>../../lib/ICM-20948.X</sourceRootElem>
+                <sourceRootElem>../../lib/Lin_alg.X</sourceRootElem>
+                <sourceRootElem>../../lib/RC_servo.X</sourceRootElem>
+                <sourceRootElem>../../lib/Serial.X</sourceRootElem>
+                <sourceRootElem>../../lib/System_timer.X</sourceRootElem>
+                <sourceRootElem>../../lib/PID.X</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>default</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>

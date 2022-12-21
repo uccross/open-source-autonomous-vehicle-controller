@@ -80,13 +80,14 @@ void AHRS_set_filter_gains(float kp_a_set, float ki_a_set, float kp_m_set, float
  * @param dt, the integration time in seconds
  * @param mag_i normalized inertial aiding vector of magnetic field at location
  * @params kp_a, kp_i, km_p, km_i filter gains
- * @return euler angles in [psi, theta, phi] (yaw, pitch, roll) order
+ * @return attitude quaternion and gyro biases vector (x,y,z)
  * @brief implements the complementary filter update step 
  * @note 
  * @author Aaron Hunter, 08/05/2022
- * @modified */
+ * @modified  11/01/22 to return quaternion attitude and bias values rather
+ * than Euler angles*/
 void AHRS_update(float accels[MSZ], float mags[MSZ], float gyros[MSZ], 
-        float dt, float euler[MSZ]);
+        float dt, float q[QSZ], float bias[MSZ]);
 
 #endif /* AHRS_H */
 

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://www.netbeans.org/ns/project/1">
+    <type>com.microchip.mplab.nbide.embedded.makeproject</type>
+    <configuration>
+        <data xmlns="http://www.netbeans.org/ns/make-project/1">
+            <name>v_control</name>
+            <creation-uuid>70a77769-799f-4d86-9621-734fa7c44e4c</creation-uuid>
+            <make-project-type>0</make-project-type>
+            <c-extensions>c</c-extensions>
+            <cpp-extensions/>
+            <header-extensions>h</header-extensions>
+            <asminc-extensions/>
+            <sourceEncoding>ISO-8859-1</sourceEncoding>
+            <make-dep-projects/>
+            <sourceRootList>
+                <sourceRootElem>../../../lib/AS5047D.X</sourceRootElem>
+                <sourceRootElem>../../../lib/PID.X</sourceRootElem>
+                <sourceRootElem>../../../lib/Board.X</sourceRootElem>
+                <sourceRootElem>../../../lib/Serial.X</sourceRootElem>
+                <sourceRootElem>../../../lib/System_timer.X</sourceRootElem>
+                <sourceRootElem>../../../lib/RC_servo.X</sourceRootElem>
+            </sourceRootList>
+            <confList>
+                <confElem>
+                    <name>default</name>
+                    <type>2</type>
+                </confElem>
+            </confList>
+            <formatting>
+                <project-formatting-style>false</project-formatting-style>
+            </formatting>
+        </data>
+    </configuration>
+</project>

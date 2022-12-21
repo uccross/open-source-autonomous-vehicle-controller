@@ -13,6 +13,9 @@
       <itemPath>../../../lib/Serial.X/SerialM32.h</itemPath>
       <itemPath>../../../lib/System_timer.X/System_timer.h</itemPath>
       <itemPath>../../../modules/c_library_v2/common/mavlink.h</itemPath>
+      <itemPath>../../../apps/ahrs_apps/AHRS.X/AHRS.h</itemPath>
+      <itemPath>../../../lib/Lin_alg.X/Lin_alg_float.h</itemPath>
+      <itemPath>../../../lib/PID.X/PID.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -29,6 +32,9 @@
       <itemPath>../../../lib/Serial.X/SerialM32.c</itemPath>
       <itemPath>quad_main.c</itemPath>
       <itemPath>../../../lib/System_timer.X/System_timer.c</itemPath>
+      <itemPath>../../../apps/ahrs_apps/AHRS.X/AHRS.c</itemPath>
+      <itemPath>../../../lib/Lin_alg.X/Lin_alg_float.c</itemPath>
+      <itemPath>../../../lib/PID.X/PID.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -46,6 +52,9 @@
     <Elem>../../../lib/Serial.X</Elem>
     <Elem>../../../lib/System_timer.X</Elem>
     <Elem>../../../modules/c_library_v2/common</Elem>
+    <Elem>../../../apps/ahrs_apps/AHRS.X</Elem>
+    <Elem>../../../lib/Lin_alg.X</Elem>
+    <Elem>../../../lib/PID.X</Elem>
   </sourceRootList>
   <projectmakefile>Makefile</projectmakefile>
   <confs>
@@ -96,7 +105,7 @@
         <property key="enable-unroll-loops" value="false"/>
         <property key="exclude-floating-point" value="false"/>
         <property key="extra-include-directories"
-                  value="..\..\..\lib\Board.X;..\..\..\lib\ICM-20948.X;..\..\..\lib\Radio_serial.X;..\..\..\lib\RC_RX.X;..\..\..\lib\RC_servo.X;..\..\..\lib\Serial.X;..\..\..\lib\System_timer.X;..\..\..\modules\c_library_v2"/>
+                  value="..\..\..\lib\Board.X;..\..\..\lib\ICM-20948.X;..\..\..\lib\Radio_serial.X;..\..\..\lib\RC_RX.X;..\..\..\lib\RC_servo.X;..\..\..\lib\Serial.X;..\..\..\lib\System_timer.X;..\..\..\modules\c_library_v2;..\..\..\apps\ahrs_apps\AHRS.X;..\..\..\lib\Lin_alg.X;..\..\..\lib\PID.X"/>
         <property key="generate-16-bit-code" value="false"/>
         <property key="generate-micro-compressed-code" value="false"/>
         <property key="isolate-each-function" value="false"/>

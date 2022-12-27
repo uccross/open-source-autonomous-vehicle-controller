@@ -151,7 +151,7 @@ PID_controller v_PID = {
 
 PID_controller heading_PID = {
     .dt = DT,
-    .kp = 15.0,
+    .kp = 10.0,
     .ki = 0.0,
     .kd = 0.0,
     .u_max = 500.0,
@@ -161,17 +161,9 @@ PID_controller heading_PID = {
 /*******************************************************************************
  * GUIDANCE                                                                    *
  ******************************************************************************/
-uint8_t num_waypoints = 1;
+uint8_t num_waypts = 1;
 
-struct waypoint {
-    float x;
-    float y;
-    float z;
-} waypts[num_waypoints] = {
-    3.0,
-    0.0,
-    0.0
-};
+float waypt[MSZ] = {3.0, 0.0, 0.0};
 
 /*******************************************************************************
  * TYPEDEFS AND ENUMS                                                          *
@@ -960,17 +952,20 @@ void set_control_output(uint8_t mode) {
     uint8_t error_limit = 10;
     int16_t v_cmd;
     int16_t heading_cmd;
-    float position[3] = {0.0, 0.0, 0.0};
+    int16_t motor_trim = -15;
+    float position[MSZ] = {0.0, 0.0, 0.0};
     float heading_vec_i[MSZ] = {0.0, 0.0, 0.0}; // vector to waypoint in inertial
     float heading_vec_b[MSZ] = {0.0, 0.0, 0.0}; // vector to waypoint in body frame
     float heading_meas;
     static float heading_ref = 0.0;
     static int8_t mission_active = TRUE;
-    uint8_t tol = 0.1;  // meters
+    uint8_t tol = 1.0; // meters
 
     switch (mode) {
         case MANUAL:
         {
+            /* reset mission status */
+            mission_active = TRUE;
             PID_init(&v_PID); // reset PID controller if we switch into manual mode
             /* send commands to motor outputs*/
             RC_servo_set_pulse(calc_pw(RC_channels[ELE]), MOTOR_LEFT);
@@ -998,7 +993,10 @@ void set_control_output(uint8_t mode) {
             position[1] = X_new.y;
             position[2] = 0.0;
 
-            if (sqrt((position[0] * position[0] + position[1] * position[1])) < tol) {
+            /* compute vector to waypoint */
+            lin_alg_v_v_sub(waypt, position, heading_vec_i);
+            //            printf("Heading vector %3.1f, %3.1f, %3.1f \r\n ", heading_vec_i[0],heading_vec_i[1], heading_vec_i[2]);
+            if (lin_alg_v_norm(heading_vec_i) < tol) {
                 /*waypoint reached*/
                 mission_active = FALSE;
             }
@@ -1009,16 +1007,11 @@ void set_control_output(uint8_t mode) {
                 RC_servo_set_pulse(v_cmd, MOTOR_LEFT);
                 RC_servo_set_pulse(v_cmd, MOTOR_RIGHT);
 
-                /* compute vector to waypoint */
-                lin_alg_v_v_sub(waypts[0], position, heading_vec_i);
-                //            printf("Heading vector %3.1f, %3.1f, %3.1f \r\n ", heading_vec_i[0],heading_vec_i[1], heading_vec_i[2]);
                 /* rotate vector into body frame */
                 q_rot_v_q(heading_vec_i, q, heading_vec_b);
                 /* compute angle to waypoint */
                 heading_meas = atan2f(heading_vec_b[1], heading_vec_b[0]);
                 heading_meas = heading_meas * rad2deg; // convert to degrees
-                //            printf("Heading vector %3.1f, %3.1f, %3.1f, angle: %3.1f \r\n ",
-                //                    heading_vec_b[0], heading_vec_b[1], heading_vec_b[2], heading_meas);
                 /* compute control action */
                 PID_update(&heading_PID, heading_ref, heading_meas);
                 heading_cmd = (int16_t) (heading_PID.u) + RC_SERVO_CENTER_PULSE;
@@ -1026,21 +1019,19 @@ void set_control_output(uint8_t mode) {
                 RC_servo_set_pulse(heading_cmd, STEERING_SERVO);
             } else {
                 /*stop the car!*/
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), MOTOR_LEFT);
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), MOTOR_RIGHT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_LEFT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_RIGHT);
                 RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), STEERING_SERVO);
             }
-
             error_limit = 0; // reset error counter
             break;
         }
         case BADRCVAL:
             error_count++;
             if (error_count > error_limit) {
-
                 /*stop the car!*/
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), MOTOR_LEFT);
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), MOTOR_RIGHT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_LEFT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_RIGHT);
                 RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), STEERING_SERVO);
             }
             break;
@@ -1112,6 +1103,8 @@ void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
 void update_odometry(void) {
     float l = 0.174; // wheelbase in meters
     float r_w = .032; // wheel radius in meters
+    float scale = 1.43;
+    r_w = r_w*scale; // rough calibration test
     float R; // radius of vehicle path
     float dPsi; // change in heading angle of rover
     float Psi_new;
@@ -1143,6 +1136,7 @@ void update_odometry(void) {
     v = d_omega * r_w * dt_inv; // vehicle speed [m/s]]
     v = low_pass(v); // low pass the raw velocity to smooth out encoder variations
     dPsi = v * dt / R; // heading change due to steering command delta
+    /* alternatively, we could use the gyro readings instead */
     Psi_new = X_old.psi + dPsi;
     /* limit Psi to +/- PI*/
     if (Psi_new > M_PI) {
@@ -1152,15 +1146,14 @@ void update_odometry(void) {
 
         Psi_new = Psi_new + TWO_PI;
     }
-
+ 
     /* compute change in position */
-    /* TODO update using AHRS heading rather than odometry*/
     dx = -R * sin(X_old.psi) + R * sin(Psi_new);
     dy = R * cos(X_old.psi) - R * cos(Psi_new);
     /* update state (X_new)*/
     X_new.x = X_old.x + dx;
     X_new.y = X_old.y + dy;
-    X_new.psi = Psi_new;
+    X_new.psi = euler[0]; //use AHRS heading rather than odometry
     X_new.vx = dx*dt_inv;
     X_new.vy = dy*dt_inv;
     X_new.v = v;
@@ -1367,8 +1360,8 @@ int main(void) {
             msg_len = sprintf(message, "x: %3.1f y: %3.1f psi: %3.1f vx: %3.1f vy: %3.1f v: %3.1f delta: %3.1f \r\n",
                     X_new.x, X_new.y, X_new.psi*rad2deg, X_new.vx, X_new.vy, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
-            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
-            mavprint(message, msg_len, RADIO);
+//            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
+//            mavprint(message, msg_len, RADIO);
         }
     }
     return (0);

@@ -127,6 +127,7 @@ struct state {
 };
 struct state X_new = {.x = 0.0, .y = 0.0, .psi = 0.0, .vx = 0, .vy = 0, .v = 0.0, .delta = 0.0};
 struct state X_old = {.x = 0.0, .y = 0.0, .psi = 0.0, .vx = 0, .vy = 0, .v = 0.0, .delta = 0.0};
+
 /* Encoder structs for motors and servo */
 encoder_t enc[] = {
     {.last_theta = 0, .next_theta = 0, .omega = 0},
@@ -161,9 +162,12 @@ PID_controller heading_PID = {
 /*******************************************************************************
  * GUIDANCE                                                                    *
  ******************************************************************************/
-uint8_t num_waypts = 1;
+uint8_t num_waypts = 2;
 
-float waypt[MSZ] = {3.0, 0.0, 0.0};
+float waypt[MSZ] = {
+    {3.0, 0.0, 0.0},
+    {0.0, 0.0, 0.0}
+};
 
 /*******************************************************************************
  * TYPEDEFS AND ENUMS                                                          *
@@ -958,6 +962,7 @@ void set_control_output(uint8_t mode) {
     float heading_vec_b[MSZ] = {0.0, 0.0, 0.0}; // vector to waypoint in body frame
     float heading_meas;
     static float heading_ref = 0.0;
+    static waypt_index = 0;
     static int8_t mission_active = TRUE;
     uint8_t tol = 1.0; // meters
 
@@ -994,11 +999,15 @@ void set_control_output(uint8_t mode) {
             position[2] = 0.0;
 
             /* compute vector to waypoint */
-            lin_alg_v_v_sub(waypt, position, heading_vec_i);
-            //            printf("Heading vector %3.1f, %3.1f, %3.1f \r\n ", heading_vec_i[0],heading_vec_i[1], heading_vec_i[2]);
+            lin_alg_v_v_sub(&waypt[waypt_index], position, heading_vec_i);
             if (lin_alg_v_norm(heading_vec_i) < tol) {
                 /*waypoint reached*/
-                mission_active = FALSE;
+                if (waypt_index < num_waypts - 1) {
+                    waypt_index++; // go to next waypoint 
+                    lin_alg_v_v_sub(&waypt[waypt_index], position, heading_vec_i); //recompute heading
+                } else { 
+                    mission_active = FALSE; // no more waypoints, the mission is complete
+                }
             }
             if (mission_active) {
                 /*set velocity */
@@ -1019,8 +1028,8 @@ void set_control_output(uint8_t mode) {
                 RC_servo_set_pulse(heading_cmd, STEERING_SERVO);
             } else {
                 /*stop the car!*/
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_LEFT);
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_RIGHT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS + motor_trim), MOTOR_LEFT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS + motor_trim), MOTOR_RIGHT);
                 RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), STEERING_SERVO);
             }
             error_limit = 0; // reset error counter
@@ -1030,8 +1039,8 @@ void set_control_output(uint8_t mode) {
             error_count++;
             if (error_count > error_limit) {
                 /*stop the car!*/
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_LEFT);
-                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS+ motor_trim), MOTOR_RIGHT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS + motor_trim), MOTOR_LEFT);
+                RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS + motor_trim), MOTOR_RIGHT);
                 RC_servo_set_pulse(calc_pw(RC_RX_MID_COUNTS), STEERING_SERVO);
             }
             break;
@@ -1136,7 +1145,6 @@ void update_odometry(void) {
     v = d_omega * r_w * dt_inv; // vehicle speed [m/s]]
     v = low_pass(v); // low pass the raw velocity to smooth out encoder variations
     dPsi = v * dt / R; // heading change due to steering command delta
-    /* alternatively, we could use the gyro readings instead */
     Psi_new = X_old.psi + dPsi;
     /* limit Psi to +/- PI*/
     if (Psi_new > M_PI) {
@@ -1146,7 +1154,6 @@ void update_odometry(void) {
 
         Psi_new = Psi_new + TWO_PI;
     }
- 
     /* compute change in position */
     dx = -R * sin(X_old.psi) + R * sin(Psi_new);
     dy = R * cos(X_old.psi) - R * cos(Psi_new);
@@ -1294,11 +1301,12 @@ int main(void) {
             /*start next data acquisition round*/
             Encoder_start_data_acq(); // start encoder acquisition
             IMU_state = IMU_start_data_acq(); //initiate IMU measurement with SPI
-            if (IMU_state == ERROR) {
+            if (IMU_state == ERROR) { //last transaction didn't complete
                 IMU_error++;
                 if (IMU_error % error_report == 0) {
-                    msg_len = sprintf(message, "IMU error count %d\r\n", IMU_error);
-                    mavprint(message, msg_len, USB);
+                    /* let's check frmerr bit*/
+                    msg_len = sprintf(message, "IMU errors: %d, buf: %d\r\n", IMU_error, SPI1STATbits.SPIROV);
+                    mavprint(message, msg_len, RADIO);
                     IMU_retry = 5;
                     IMU_state = IMU_init(IMU_SPI_MODE);
                     if (IMU_state == ERROR && IMU_retry > 0) {
@@ -1360,8 +1368,10 @@ int main(void) {
             msg_len = sprintf(message, "x: %3.1f y: %3.1f psi: %3.1f vx: %3.1f vy: %3.1f v: %3.1f delta: %3.1f \r\n",
                     X_new.x, X_new.y, X_new.psi*rad2deg, X_new.vx, X_new.vy, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
-//            msg_len = sprintf(message, "GPS: %f, %f, %f \r\n", GPS_data.time, GPS_data.lat, GPS_data.lon);
-//            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "status buffer SPIROV: %d\r\n", SPI1STATbits.SPIROV);
+            //            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "dPsi: %3.1e, \r\n", gyro_cal[2]*dt);
+            //            mavprint(message, msg_len, RADIO);
         }
     }
     return (0);

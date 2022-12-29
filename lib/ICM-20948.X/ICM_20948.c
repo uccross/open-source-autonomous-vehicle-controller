@@ -738,7 +738,12 @@ static void __ISR(_SPI_1_VECTOR, IPL5AUTO) IMU_SPI_interrupt_handler(void) {
     uint8_t data;
     data = SPI1BUF;
     IFS0bits.SPI1RXIF = 0; // clear interrupt flag
-    IFS0bits.SPI1AEIF = 0;
+    if(IFS0bits.SPI1AEIF){
+        SPI1STATCLR = 1<<12; //clear frame error register
+        SPI1STATCLR = 1<<6; // clear the overflow register
+        IFS0bits.SPI1AEIF = 0; //clear error flag
+    }
+    
     IMU_run_SPI_state_machine(data);
 }
 

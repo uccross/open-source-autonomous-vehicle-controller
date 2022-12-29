@@ -43,6 +43,7 @@
 #define DT 0.01 //integration constant
 #define MSZ 3 //matrix size
 #define QSZ 4 //quaternion size
+#define NUM_WAYPTS 2
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -162,13 +163,21 @@ PID_controller heading_PID = {
 /*******************************************************************************
  * GUIDANCE                                                                    *
  ******************************************************************************/
-uint8_t num_waypts = 2;
 
-float waypt[MSZ] = {
-    {3.0, 0.0, 0.0},
-    {0.0, 0.0, 0.0}
+float waypt[NUM_WAYPTS][MSZ] = {
+    3.0, 0.0, 0.0,
+    0.0, 0.0, 0.0
 };
 
+double home[] = {0.0, 0.0, 0.0}; // home position in {lon, lat, alt}
+double home_tp[] = {0.0, 0.0, 0.0}; // home in tangent plane (meters)
+double X_tp[] = {0.0, 0.0, 0.0}; // current position in tangent plane
+float X_ltp[] = {0.0, 0.0, 0.0}; // current position in local tangent plane
+/*geodetic constants*/
+static const double Geo_a = 6378137.0; // semimajor ellipsoid axis in meters
+static const double Geo_b = 6356752.3142; // semiminor ellipsoid axis in meters
+static const double Geo_f = 0.00335281067183099; // flatness
+static const double Geo_e = 0.0818191909289064; // eccentricity
 /*******************************************************************************
  * TYPEDEFS AND ENUMS                                                          *
  ******************************************************************************/
@@ -378,6 +387,13 @@ void update_odometry(void);
  * @return filtered quantity
  */
 float low_pass(float x);
+
+/**
+ * @function int8_t set_home();
+ * @brief:  If GPS data is valid, set home position to current location
+ * @return home_set, TRUE, or FALSE
+ */
+int8_t set_home(void);
 /*******************************************************************************
  * FUNCTIONS                                                                   *
  ******************************************************************************/
@@ -389,12 +405,83 @@ float low_pass(float x);
  * @author Aaron Hunter
  */
 void check_GPS_events(void) {
+    static double X_tp[] = {0.0, 0.0, 0.0};
     if (GPS_is_msg_avail() == TRUE) {
         GPS_parse_stream();
     }
     if (GPS_is_data_avail() == TRUE) {
         GPS_get_data(&GPS_data);
     }
+    /* update LTP*/
+    /* calculate X_tp*/
+    /* calculate LTP*/
+    /*update X.state*/
+}
+
+/**
+ * @function GPS2ECEF(float * X[], lon, lat, alt};
+ * @parameter X: vector to store position in tangent plane
+ * @parameter lon: longitude in degrees
+ * @parameter lat: latitude in degrees
+ * @parameter alt: altitude in meters above sea level
+ * @brief converts GPS position into ECEF coordinates
+ * @returns none
+ */
+void GPS2ECEF(double X[MSZ], double lon, double lat, double alt) {
+    double N;
+    double sin_lat;
+    double sin_lon;
+    double cos_lat;
+    double cos_lon;
+
+    lat = lat*deg2rad;
+    lon = lon*deg2rad;
+    sin_lat = sin(lat);
+    cos_lat = cos(lat);
+    sin_lon = sin(lon);
+    cos_lon = cos(lon);
+    N = Geo_a / sqrt(1 - Geo_e * Geo_e * sin_lat * sin_lat);
+    X[0] = (alt + N) * cos_lat*cos_lon;
+    X[1] = (alt + N) * cos_lat*sin_lon;
+    X[2] = (alt + (1 - Geo_e * Geo_e) * N) * sin_lat;
+}
+
+/**
+ * @function GPS2LTP(float X_LTP[MSZ], double X0[MSZ], double X[MSZ], lon, lat);
+ * @parameter X_LTP: position in local tangent plane
+ * @parameter X0: ECEF coordinate of home position
+ * @paramter X: ECEF coordinates of current position
+ * @parameter lon: longitude in degrees of current position
+ * @parameter lat: latitude in degrees of current position
+ * @returns none
+ */
+void GPS2LTP(float X_LTP[MSZ], double X0[MSZ], double X[MSZ], double lon, double lat) {
+    float sin_lat;
+    float sin_lon;
+    float cos_lat;
+    float cos_lon;
+    float dX[MSZ];
+
+    lat = lat*deg2rad;
+    lon = lon*deg2rad;
+    sin_lat = (float) sin(lat);
+    cos_lat = (float) cos(lat);
+    sin_lon = (float) sin(lon);
+    cos_lon = (float) cos(lon);
+    float R[MSZ][MSZ];
+    R[0][0] = -sin_lon;
+    R[0][1] = cos_lon; // 
+    R[0][2] = 0.0;
+    R[1][0] = -cos_lon*sin_lat;
+    R[1][1] = -sin_lat*sin_lon;
+    R[1][2] = cos_lat;
+    R[2][0] = cos_lat*cos_lon;
+    R[2][1] = cos_lat * sin_lon;
+    R[2][2] = sin_lat;
+    dX[0] = (float) (X[0] - X0[0]);
+    dX[1] = (float) (X[1] - X0[1]);
+    dX[2] = (float) (X[2] - X0[2]);
+    lin_alg_m_v_mult(R, dX, X_LTP);
 }
 
 /**
@@ -999,13 +1086,13 @@ void set_control_output(uint8_t mode) {
             position[2] = 0.0;
 
             /* compute vector to waypoint */
-            lin_alg_v_v_sub(&waypt[waypt_index], position, heading_vec_i);
+            lin_alg_v_v_sub(&waypt[waypt_index][0], position, heading_vec_i);
             if (lin_alg_v_norm(heading_vec_i) < tol) {
                 /*waypoint reached*/
-                if (waypt_index < num_waypts - 1) {
+                if (waypt_index < NUM_WAYPTS - 1) {
                     waypt_index++; // go to next waypoint 
-                    lin_alg_v_v_sub(&waypt[waypt_index], position, heading_vec_i); //recompute heading
-                } else { 
+                    lin_alg_v_v_sub(&waypt[waypt_index][0], position, heading_vec_i); //recompute heading
+                } else {
                     mission_active = FALSE; // no more waypoints, the mission is complete
                 }
             }
@@ -1191,6 +1278,21 @@ float low_pass(float x) {
     return (y_new);
 }
 
+/**
+ * @function int8_t set_home();
+ * @brief:  If GPS data is valid, set home position to current location
+ * @return home_set, TRUE, or FALSE
+ */
+int8_t set_home(void) {
+    if (GPS_data.lon != 0.0) {
+        home[0] = GPS_data.lon; //x component
+        home[1] = GPS_data.lat; // y component
+        GPS2ECEF(&home_tp[0], home[0], home[1], 0.0);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 int main(void) {
     uint32_t start_time = 0;
     uint32_t cur_time = 0;
@@ -1206,6 +1308,7 @@ int main(void) {
     uint32_t IMU_error = 0;
     uint8_t error_report = 50;
     uint8_t mission_mode = MANUAL;
+    int8_t is_home_set = FALSE;
 
     /*radio variables*/
     char c;
@@ -1349,28 +1452,23 @@ int main(void) {
         if (cur_time - heartbeat_start_time >= HEARTBEAT_PERIOD) {
             heartbeat_start_time = cur_time; //reset the timer
             publish_heartbeat(USB);
-            //            msg_len = sprintf(message, "%+3.1f, %+3.1f, %+3.1f,%+1.3e, %+1.3e, %+1.3e \r\n",
-            //                    euler[0] * rad2deg, euler[1] * rad2deg, euler[2] * rad2deg,
-            //                    gyro_bias[0], gyro_bias[1], gyro_bias[2]);
-            //            mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "%d, %d, %d \r\n",
-            //                    enc[HEADING].last_theta, enc[HEADING].next_theta, enc[HEADING].omega);
-            //            mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "Parse error counter: %d \r\n", RCRX_get_err());
-            //            mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "Switch D: %d, switch A: %d \r\n", RC_channels[SWITCH_D], RC_channels[SWITCH_A]);
-            //            mavprint(message, msg_len, RADIO);
+            /*check for GPS location lock*/
+            if (is_home_set == FALSE) {
+                is_home_set = set_home();
+            }
+
             msg_len = sprintf(message, "%d \r\n", timer_end);
             mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "RCRX bytes: %d, collisions %d, parse err %d, Uart err %d\r\n",
-            //                    RCRX_get_byte_count(), RCRX_get_collision_count(), RCRX_get_err(), RCRX_get_uart_err_count());
-            //            mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "x: %3.1f y: %3.1f psi: %3.1f vx: %3.1f vy: %3.1f v: %3.1f delta: %3.1f \r\n",
                     X_new.x, X_new.y, X_new.psi*rad2deg, X_new.vx, X_new.vy, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "status buffer SPIROV: %d\r\n", SPI1STATbits.SPIROV);
+            //            msg_len = sprintf(message, "Home: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n", home[1], home[0], GPS_data.lat, GPS_data.lon);
             //            mavprint(message, msg_len, RADIO);
-            //            msg_len = sprintf(message, "dPsi: %3.1e, \r\n", gyro_cal[2]*dt);
+            GPS2ECEF(&X_tp[0], GPS_data.lon, GPS_data.lat, 0.0);
+            GPS2LTP(X_ltp, home_tp, X_tp, GPS_data.lon, GPS_data.lat);
+            msg_len = sprintf(message, "LTP: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n", X_ltp[1], X_ltp[0], GPS_data.lat, GPS_data.lon);
+            mavprint(message, msg_len, RADIO);
+            //            msg_len = sprintf(message, "status buffer SPIROV: %d\r\n", SPI1STATbits.SPIROV);
             //            mavprint(message, msg_len, RADIO);
         }
     }

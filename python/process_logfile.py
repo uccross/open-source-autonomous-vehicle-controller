@@ -10,8 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from haversine import calc_earth_radius, haversine
 
-filename = '.\logfiles\Log_02262022_bike_path.csv'
-# not the parking garage! Actually the music center/bike path
+filename = '.\logfiles\log_20230101-142316.csv'
+
 df_raw = pd.read_csv(filename)
 df_raw['time_msec'] = df_raw['time_usec']/1000
 
@@ -31,8 +31,8 @@ R = calc_earth_radius(df_raw.lat[0]/1e7)
 # cal scaling factor for longitude
 cos_lat = np.cos(df_raw.lat2[0])
 # calculate distances at each step
-df_raw['dy_ltp'] = df_raw.dlat * R *1000
-df_raw['dx_ltp'] = df_raw.dlon * R *cos_lat *1000
+df_raw['dy_ltp'] = df_raw.dlat * R
+df_raw['dx_ltp'] = df_raw.dlon * R *cos_lat
 # compite x,y
 df_raw['y_ltp'] = df_raw.dy_ltp.cumsum()
 df_raw['x_ltp'] = df_raw.dx_ltp.cumsum()

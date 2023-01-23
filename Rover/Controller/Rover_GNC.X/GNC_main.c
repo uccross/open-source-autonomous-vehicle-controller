@@ -43,7 +43,7 @@
 #define DT 0.01 //integration constant
 #define MSZ 3 //matrix size
 #define QSZ 4 //quaternion size
-#define NUM_WAYPTS 2
+#define NUM_WAYPTS 5
 
 /*******************************************************************************
  * VARIABLES                                                                   *
@@ -60,7 +60,7 @@ static struct GPS_data GPS_data;
 /* publish signal booleans */
 static uint8_t pub_RC_servo = FALSE;
 static uint8_t pub_RC_signals = FALSE;
-static uint8_t pub_IMU = FALSE;
+static uint8_t pub_IMU = TRUE;
 static uint8_t pub_GPS = TRUE;
 static uint8_t pub_encoders = TRUE;
 static uint8_t pub_attitude = TRUE;
@@ -165,7 +165,10 @@ PID_controller heading_PID = {
  ******************************************************************************/
 
 float waypt[NUM_WAYPTS][MSZ] = {
-    3.0, 0.0, 0.0,
+    3.0, 3.0, 0.0,
+    3.0, -3.0, 0.0,
+    -3.0, 3.0, 0.0,
+    -3.0, -3.0, 0.0,
     0.0, 0.0, 0.0
 };
 
@@ -1039,7 +1042,7 @@ uint8_t check_mission_status(void) {
  */
 void set_control_output(uint8_t mode) {
     static uint8_t error_count = 0;
-    static float v_ref = 0.75;
+    static float v_ref = 1.0;
     uint8_t error_limit = 10;
     int16_t v_cmd;
     int16_t heading_cmd;
@@ -1199,7 +1202,7 @@ void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
 void update_odometry(void) {
     float l = 0.174; // wheelbase in meters
     float r_w = .032; // wheel radius in meters
-    float scale = 1.43;
+    float scale = 1.13;
     r_w = r_w*scale; // rough calibration test
     float R; // radius of vehicle path
     float dPsi; // change in heading angle of rover
@@ -1209,7 +1212,7 @@ void update_odometry(void) {
     float d_omega; // wheel rotation amount
     float v; // speed
     float delta; // steering angle
-    float delta_scale = 0.675;
+    float delta_scale = 0.6958; // theoretical linear fit
     const int16_t max_delta = 2730; // ~ 60 degree turn angle max in counts
     const int16_t TWO_PI_INT = 16383; // 2^14 -1
     int16_t delta_int;
@@ -1395,7 +1398,7 @@ int main(void) {
         /* update control loop*/
         if (cur_time - control_start_time >= CONTROL_PERIOD) {
             control_start_time = cur_time; //reset control loop timer
-            timer_start = Sys_timer_get_usec();
+
             AHRS_update(acc_cal, mag_cal, gyro_cal, dt, q, gyro_bias);
             Rover_quat2euler(q, euler);
             update_odometry();
@@ -1457,16 +1460,17 @@ int main(void) {
                 is_home_set = set_home();
             }
 
-            msg_len = sprintf(message, "%d \r\n", timer_end);
-            mavprint(message, msg_len, RADIO);
             msg_len = sprintf(message, "x: %3.1f y: %3.1f psi: %3.1f vx: %3.1f vy: %3.1f v: %3.1f delta: %3.1f \r\n",
                     X_new.x, X_new.y, X_new.psi*rad2deg, X_new.vx, X_new.vy, X_new.v, X_new.delta * rad2deg);
             mavprint(message, msg_len, RADIO);
+            timer_start = Sys_timer_get_usec();
             //            msg_len = sprintf(message, "Home: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n", home[1], home[0], GPS_data.lat, GPS_data.lon);
             //            mavprint(message, msg_len, RADIO);
             GPS2ECEF(&X_tp[0], GPS_data.lon, GPS_data.lat, 0.0);
             GPS2LTP(X_ltp, home_tp, X_tp, GPS_data.lon, GPS_data.lat);
-            msg_len = sprintf(message, "LTP: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n", X_ltp[1], X_ltp[0], GPS_data.lat, GPS_data.lon);
+            timer_end = Sys_timer_get_usec();
+            msg_len = sprintf(message, "timer: %d;  LTP: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n",
+                    timer_end-timer_start, X_ltp[1], X_ltp[0], GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);
             //            msg_len = sprintf(message, "status buffer SPIROV: %d\r\n", SPI1STATbits.SPIROV);
             //            mavprint(message, msg_len, RADIO);

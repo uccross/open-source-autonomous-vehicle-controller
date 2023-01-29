@@ -272,7 +272,6 @@ char GPS_is_msg_avail(void) {
     }
 }
 
-
 /**
  * @Function char GPS_parseStream(void)
  * @return SUCCESS or ERROR

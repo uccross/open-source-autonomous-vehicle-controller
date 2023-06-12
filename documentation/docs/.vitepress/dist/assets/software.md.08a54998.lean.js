@@ -1,1 +1,0 @@
-import{_ as e,o as t,c as o,V as a}from"./chunks/framework.df15cb86.js";const m=JSON.parse('{"title":"Setup","description":"","frontmatter":{},"headers":[],"relativePath":"software.md","filePath":"software.md"}'),s={name:"software.md"},n=a("",22),p=[n];function l(r,i,c,h,u,d){return t(),o("div",null,p)}const y=e(s,[["render",l]]);export{m as __pageData,y as default};

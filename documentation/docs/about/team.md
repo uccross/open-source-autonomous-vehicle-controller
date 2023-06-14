@@ -11,7 +11,7 @@ layout: page
   
   const members = [
     {
-      avatar: '/assets/images/Aaron.jpg',
+      avatar: 'https://avatars.githubusercontent.com/u/7852021?v=4',
       name: 'Aaron Hunter',
       title: 'PhD student at University of California Santa Cruz',
       links: [
@@ -20,7 +20,7 @@ layout: page
       ]
     },
     {
-      avatar: '/assets/images/Carlos.jpg',
+      avatar: 'https://avatars.githubusercontent.com/u/34257319?v=4',
       name: 'Carlos Espinosa',
       title: 'PhD student at University of California Santa Cruz',
       links: [

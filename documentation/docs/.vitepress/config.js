@@ -1,9 +1,9 @@
 import { defineConfig } from 'vitepress'
 
-
 export default defineConfig({
   title: "OSAVC",
-  base: '/open-source-autonomous-vehicle-controller/',
+  siteTitle: "OSAVC",
+  // base: '/open-source-autonomous-vehicle-controller/',
   themeConfig: {
 
     logo: '',
@@ -21,6 +21,14 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'About', link: '/about/' },
       { text: 'Contacts', link: '/contacts' },
+      // {
+      //   text: "Changelog",
+      //   items: [
+      //     { text: "v0.0.1", link: "/item-1" },
+      //     { text: "v0.0.2", link: "/item-2" },
+      //     { text: "v0.0.3", link: "/item-3" },
+      //   ],
+      // }
     ],
 
     sidebar: [
@@ -33,13 +41,6 @@ export default defineConfig({
             items: [
               { text: 'Hardware', link: '/hardware' },
               { text: 'Software', link: '/software' },
-            ],
-          },
-          {
-            text: 'Installations',
-            items: [
-              { text: 'Windows', link: '/windows' },
-              { text: 'Linux/Mac OS', link: '/linux' },
             ],
           },
           { text: 'Build your First Project', link: '/project' },
@@ -63,6 +64,7 @@ export default defineConfig({
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/uccross/open-source-autonomous-vehicle-controller' },
-    ]
+      { icon: "discord", link: 'https://discord.gg/bkJ6DNdy' },
+    ],
   }
 })

@@ -6,9 +6,9 @@ hero:
   name: "OSAVC"
   text: "Open Source Autonomous Vehicle Control"
   tagline:
-  image:
-    src: '/assets/images/front.png'
-    alt: OSAVC
+  # image:
+  #   src: "./assets/images/Hardware/OSAVC_BOARD.png"
+  #   alt: OSAVC
   actions:
     - theme: brand
       text: Getting Started

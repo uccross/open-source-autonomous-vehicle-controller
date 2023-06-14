@@ -1,50 +1,55 @@
-# Setup
+# Installations
 
-## Cloning the Repository
+## Git & Github Installations
 
-To clone the Repo just execute the following command on Gitbash or your terminal prompt.
-We are making the project folder in Desktop you can clone it into directory you want.
+Make sure you have a Github account.
 
-```bash
-Clone https://github.com/uccross/open-source-autonomous-vehicle-controller
-```
+Click [here](https://github.com/), and continue below based on your OS.
 
-Now navigate to the modules directory in the Cloned Repo
+### For Windows
 
-```bash
-cd open-source-autonomous-vehicle-controller/modules
-```
+- Git Installations : Click [here](https://git-scm.com/downloads)
 
-Clone the submodules in this directory
+### For Linux
+
+- Open terminal and run the following commands
 
 ```bash
-Clone submodule https://github.com/mavlink/c_library_v2
+  sudo apt-get update
+  ```
+
+  ```bash
+  sudo apt-get install git
+  ```
+
+### For MacOS
+
+- Open terminal and run the following commands
+
+```bash
+brew install git
 ```
 
-## Setting up the MPLAB X
+Now follow [this](https://git-scm.com/book/en/v2/GitHub-Account-Setup-and-Configuration#:~:text=The%20first%20thing%20you%20need,Sign%20up%20for%20GitHub%E2%80%9D%20button) to set up git with GitHub.
 
-**Images are required for this steps**
+To check if you have git installed properly type git help in your terminal; make sure that there are no errors and git is recognized as a command
 
-File -> Open Project -> open-source-autonomous-vehicle-controller -> lib -> Serial.X
+```bash
+git help
+```
 
-Open Serial.X Project Properties (File -> Project Properties)
+## MPLAB Installation
 
-Choose Connected Hardware Tool to PICkit3
+Download the MPLAB X IDE v6.05 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide#tabs).
 
-Navigate to xc32-ld -> choose General as the option category -> set the Heap Size (bytes) to be 8000 bytes
+Ensure that the version number is v6.05
 
-Click OK to save the modified Project Properties
+## XC32 Compiler Installation
 
-Running SerialM32.c
+Download the XC32 Compiler v4.21 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-xc-compilers/downloads-documentation#XC32)
 
-Click Clean and Build
+Ensure that the version number is v4.21
 
-Click Debug Project
+## Serial Terminal Installation
 
-Open a serial port terminal app (CoolTerm for Mac, PuTTY for Windows)
-
-Output should be:
-
-Try typing something and press Enter
-
-What you type should now stay in the serial terminal
+Install CoolTerm available [here](http://freeware.the-meiers.org/)

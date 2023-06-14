@@ -40,16 +40,22 @@ git help
 
 ## MPLAB Installation
 
-Download the MPLAB X IDE v6.05 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide#tabs).
+Download the MPLAB X IDE v6.05 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-x-ide#tabs) according to your system.
+
+![MPLAB X](./assets/images/first_project/MPLAB.png)
 
 Ensure that the version number is v6.05
 
 ## XC32 Compiler Installation
 
-Download the XC32 Compiler v4.21 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-xc-compilers/downloads-documentation#XC32)
+Download the XC32 Compiler v4.21 [here](https://www.microchip.com/en-us/tools-resources/develop/mplab-xc-compilers/downloads-documentation#XC32) according to your system.
+
+![XC32](./assets/images/first_project/XC32.png)
 
 Ensure that the version number is v4.21
 
 ## Serial Terminal Installation
 
 Install CoolTerm available [here](http://freeware.the-meiers.org/)
+
+![CoolTerm](./assets/images/first_project/CoolTerm.png)

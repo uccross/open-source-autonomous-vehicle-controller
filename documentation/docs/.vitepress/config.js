@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "OSAVC",
   siteTitle: "OSAVC",
-  base: '/open-source-autonomous-vehicle-controller/',
+  // base: '/open-source-autonomous-vehicle-controller/',
   themeConfig: {
 
     logo: '',
@@ -22,11 +22,11 @@ export default defineConfig({
       { text: 'About', link: '/about/' },
       { text: 'Contacts', link: '/contacts' },
       // {
-      //   text: "Changelog",
+      //   text: "Trouble Shooting",
       //   items: [
-      //     { text: "v0.0.1", link: "/item-1" },
-      //     { text: "v0.0.2", link: "/item-2" },
-      //     { text: "v0.0.3", link: "/item-3" },
+      //     { text: "Connection Failure", link: "/item-1" },
+      //     { text: "PICKIT configuration", link: "/item-2" },
+      //     { text: "Voltage not detected", link: "/item-3" },
       //   ],
       // }
     ],
@@ -34,6 +34,7 @@ export default defineConfig({
     sidebar: [
       {
         text: 'Get Started',
+        collapsible: true,
         items: [
           { text: 'Introduction', link: '/introduction' },
           {

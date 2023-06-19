@@ -76,9 +76,6 @@ you would be able to see the below window with the serial project open
 - Click Clean and Build
 ![Clean and Build](./assets/images/first_project/CleanBuild.png)
 
-- Click Debug Project
-![Debug Project](./assets/images/first_project/Debug.png)
-
 - Click Make and Program Device
 ![Make and Program Device](./assets/images/first_project/MakeProgram.png)
 

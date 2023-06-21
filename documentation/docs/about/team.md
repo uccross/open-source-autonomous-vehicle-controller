@@ -45,10 +45,10 @@ layout: page
     {
       avatar: 'https://avatars.githubusercontent.com/u/88685125?v=4',
       name: 'Chiling Han',
-      title: '',
+      title: 'Student at the Harker School',
       links: [
         { icon: 'github', link: 'https://github.com/25ChilingH' },
-        // { icon: 'linkedin', link: '' }
+        { icon: 'linkedin', link: 'https://www.linkedin.com/in/chiling-han-6b551921a' }
       ]
     },
     {

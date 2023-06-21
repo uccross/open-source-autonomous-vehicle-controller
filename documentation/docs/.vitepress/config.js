@@ -3,7 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "OSAVC",
   siteTitle: "OSAVC",
-  // base: '/open-source-autonomous-vehicle-controller/',
+  base: '/open-source-autonomous-vehicle-controller/',
   themeConfig: {
 
     logo: '',
@@ -45,6 +45,7 @@ export default defineConfig({
             ],
           },
           { text: 'Build your First Project', link: '/project' },
+          { text: 'Test Harness', link: '/test_harness' },
         ],
       },
       {

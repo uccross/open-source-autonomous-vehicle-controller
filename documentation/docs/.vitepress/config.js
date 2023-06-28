@@ -6,6 +6,21 @@ export default defineConfig({
   base: '/open-source-autonomous-vehicle-controller/',
   themeConfig: {
 
+    blog: {
+      title: 'My AI Written Blog',
+      description: 'All these articles were written by AI!',
+      defaultAuthor: 'AI Writer',
+      categoryIcons: {
+        article: 'i-[heroicons-outline/book-open]',
+        tutorial: 'i-[heroicons-outline/academic-cap]',
+        document: 'i-[heroicons-outline/annotation]',
+      },
+      tagIcons: {
+        github: 'i-[carbon/logo-github]',
+        vue: 'i-[carbon/logo-vue]',
+      },
+    },
+
     logo: '',
 
     search: {
@@ -21,6 +36,7 @@ export default defineConfig({
       { text: 'Home', link: '/' },
       { text: 'About', link: '/about/' },
       { text: 'Contacts', link: '/contacts' },
+      { text: 'Trouble shooting', link: '/troubleShooting/', activeMatch: '/troubleShooting/$'},
       // {
       //   text: "Trouble Shooting",
       //   items: [

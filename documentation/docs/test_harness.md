@@ -7,7 +7,7 @@
 
 - Now navigate to -> open-source-autonomous-vehicle-controller -> lib -> Test_harness.X
 you would be able to see the below window with the serial project open
-![Test harness](./assets/images/first_project/)
+<!-- ![Test harness](./assets/images/first_project/) -->
 
 - Now Open Test_harness.X Project Properties (File -> Project Properties)
 ![Test_harness Project Properties](./assets/images/first_project/projectProperties.png)
@@ -42,7 +42,7 @@ Output should be:
 
 ### Hardware Setup for Motor
 
-![Motor Test Harness](./assets/images/first_project/)
+<!-- ![Motor Test Harness](./assets/images/first_project/) -->
 
 ### Software Setup for Motor
 
@@ -62,7 +62,7 @@ Output should be:
 
 ### Hardware Setup for GPS
 
-![GPS Test Harness](./assets/images/first_project/)
+<!-- ![GPS Test Harness](./assets/images/first_project/) -->
 
 ### Software Setup for GPS
 
@@ -82,7 +82,7 @@ Output should be:
 
 ### Hardware Setup for RC Receiver
 
-![RC Receiver Test Harness](./assets/images/first_project/)
+<!-- ![RC Receiver Test Harness](./assets/images/first_project/) -->
 
 ### Software Setup for RC Receiver
 
@@ -102,7 +102,7 @@ Output should be:
 
 ### Hardware Setup for Mavlink
 
-![Mavlink Test Harness](./assets/images/first_project/)
+<!-- ![Mavlink Test Harness](./assets/images/first_project/) -->
 
 ### Software Setup for RC Mavlink
 

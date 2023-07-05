@@ -1,18 +1,17 @@
 ---
-# https://vitepress.dev/reference/default-theme-home-page
 layout: home
 
 hero:
   name: "OSAVC"
   text: "Open Source Autonomous Vehicle Control"
   tagline:
-  # image:
-  #   src: "./assets/images/Hardware/OSAVC_BOARD.png"
-  #   alt: OSAVC
+  image:
+    src: https://i.imgur.com/DHF56G9.png
+    alt: OSAVC
   actions:
     - theme: brand
       text: Getting Started
-      link: /introduction
+      link: /guide/introduction
     - theme: alt
       text: View on Github
       link: 'https://github.com/uccross/open-source-autonomous-vehicle-controller'
@@ -28,4 +27,3 @@ features:
   - title: Feature C
     details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
 ---
-

@@ -59,10 +59,10 @@ The `docs` directory is the **project root** of the Website. The `.vitepress` di
 
 ### The Config File
 
-The config file (`.vitepress/config.js`) allows you to customize various aspects of your Website, with the most basic options being the title and description of the site:
+The config file (`.vitepress/config.ts`) allows you to customize various aspects of your Website, with the most basic options being the title and description of the site:
 
 ```js
-// .vitepress/config.js
+// .vitepress/config.ts
 export default {
   // site-level options
   title: 'OSAVC',

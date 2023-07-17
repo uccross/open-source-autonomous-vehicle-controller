@@ -6,7 +6,7 @@ hero:
   text: "Open Source Autonomous Vehicle Control"
   tagline:
   image:
-    src: https://i.imgur.com/DHF56G9.png
+    src: https://imgtr.ee/images/2023/07/15/95254f913b502ed8f19e045e2a29c720.png
     alt: OSAVC
   actions:
     - theme: brand

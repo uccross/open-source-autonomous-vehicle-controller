@@ -78,14 +78,19 @@ width="300"
 height="300"
 src="../assets/images/Hardware/J19.png"
 />
-| Pin | Signal |
+
+<!-- | Pin | Signal |
 |-------|------|
 |1|3V|
 |2|RE|
 |3|SCK|
 |4|SDO|
 |5|SDI|
-|6|Ground|
+|6|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 | 5 | 6 |
+| --- | - | -| - | - | - | - |
+| Signal | 3V | RE | SCK | SDO | SDI | Ground |
 
 &nbsp;
 
@@ -96,23 +101,31 @@ width="350"
 height="350"
 src="../assets/images/Hardware/J13.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|5V|
 |2|TX|
 |3|RX|
-|4|Ground|
+|4|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 |
+| --- | - | -| - | - |
+| Signal | 5V | TX | RX | Ground |
 
 ### J14 Pinout
 
 <img
  width="350" height="350" src="../assets/images/Hardware/J14.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|Ground|
 |2|5V|
-|3|Rx|
+|3|Rx| -->
+
+| Pin | 1 | 2| 3 |
+| --- | - | -| - |
+| Signal | Ground | 5V | RX |
 
 &nbsp;
 
@@ -121,14 +134,18 @@ src="../assets/images/Hardware/J13.png"/>
 <img
 width="350" height="350" src="../assets/images/Hardware/J15.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|5V|
 |2|RTX|
 |3|RX|
 |4|SCL|
 |5|SDA|
-|6|Ground|
+|6|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 | 5 | 6 |
+| --- | - | -| - | - | - | - |
+| Signal | 5V | RTX | RX | SCL | SDA | Ground |
 
 &nbsp;
 
@@ -137,13 +154,17 @@ width="350" height="350" src="../assets/images/Hardware/J15.png"/>
 <img
  width="350" height="350" src="../assets/images/Hardware/J20.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|5V|
 |2|RE|
 |3|SCL|
 |4|SDA|
-|5|Ground|
+|5|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 | 5 |
+| --- | - | -| - | - | - |
+| Signal | 5V | RE |SCL | SDA | Ground |
 
 &nbsp;
 
@@ -152,44 +173,54 @@ width="350" height="350" src="../assets/images/Hardware/J15.png"/>
 <img
 width="350" height="350" src="../assets/images/Hardware/J21.png">
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|Ground|
 |2|3V|
 |3|SDA|
-|4|SCL|
+|4|SCL| -->
+
+| Pin | 1 | 2| 3 | 4 |
+| --- | - | -| - | - |
+| Signal | Ground | 3V | SDA | SCL |
 
 &nbsp;
 
 ### J22 Pinout
 
-<p text-align="right">
 <img
  width="350" height="300" src="../assets/images/Hardware/J22.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|5V|
 |2|RX|
 |3|TX|
-|4|Ground|
-</p>
+|4|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 |
+| --- | - | -| - | - |
+| Signal | 5V | RX | TX | Ground |
 
 &nbsp;
 
 ### J26 Pinout
 
 <img
-width="350" height="350" src="../assets/images/Hardware/J19.png"/>
+width="350" height="350" src="../assets/images/Hardware/J26.png"/>
 
-| Pin | Signal |
+<!-- | Pin | Signal |
 |-------|------|
 |1|RE|
 |2|SDI|
 |3|SDK|
 |4|SDO|
 |5|3V|
-|6|Ground|
+|6|Ground| -->
+
+| Pin | 1 | 2| 3 | 4 | 5 | 6 |
+| --- | - | -| - | - | - | - |
+| Signal | RE | SDI | SDK | SDO | 3V | Ground |
 
 &nbsp;
 

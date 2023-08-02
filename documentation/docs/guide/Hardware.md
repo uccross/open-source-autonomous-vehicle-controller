@@ -35,10 +35,10 @@
 
 ### Dimensions
 
-- Weight:
-- Width:
-- Height:
-- Length:
+- Weight: 35g
+- Width: 54.61mm
+- Height: 10.00mm
+- Length: 106.68mm
 
 ## Board Architecture
 

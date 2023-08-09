@@ -2,7 +2,6 @@
 
 date: 2023-06-28
 title: 'Setting Up Hardware'
-Author: Carlos Espinosa
 category: Tutorial
 tags:
   - Hardware

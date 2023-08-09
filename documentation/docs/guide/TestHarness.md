@@ -23,18 +23,20 @@ Navigate to opensource-autonomous-vehicle-controller -> lib
 
 - RC_RX.X contains the test harness of the radio controller
   - Radio receiver found [here](https://www.frsky-rc.com/product/xsr/)
-    - Radio transmitter found [here](https://www.frsky-rc.com/product/taranis-x9-lite/)
+  - Radio transmitter found [here](https://www.frsky-rc.com/product/taranis-x9-lite/)
 
 - RC_servo.X contains the test harness of the servo motors
   - Servo motor found [here](https://www.digikey.com/en/products/detail/terasic-inc/FXX-3037-TOP/7044113)
 
-## Running the Teat Harness
+## Running the Test Harness
 
 - Note: Before running the test harnesses, make sure that you have properly connected your peripherals
 - File -> Open Project -> open-source-autonomous-vehicle-controller -> lib
 - Open the folder that contains the desired test harness in MPLAB
 - Open the folder’s Project Properties (File -> Project Properties)
+
 ![Test_harness Project Properties](../assets/images/first_project/projectProperties.png)
+
 - Choose Connected Hardware Tool to PICkit3
 - Navigate to xc32-ld -> choose General as the option category -> set the Heap Size (bytes) to be 0 bytes
 
@@ -108,6 +110,8 @@ The terminal output should continuously report and update the IMU’s accelerome
 ![Motor Connections](../assets/images/TestHarness/MotorTest2.jpg)
 
 ![Motor Connections](../assets/images/TestHarness/MotorTest3.jpg)
+
+- **Note** :  The J5 jumper must be placed to supply 5V to the power lane.
 
 <!-- ### Software Setup for Motor
 
@@ -204,13 +208,18 @@ Output should be: -->
 ### Output for Radio Telemetry
 
 - The terminal output should show a message like this.
-![terminal output](../assets/images/TestHarness/RT1.png)
+
+![Radio Telemetry](../assets/images/TestHarness/RT5.png)
 
 - Then, click File -> New to open a new terminal.
+
+![terminal output](../assets/images/TestHarness/RT1.png)
+
+- Set the new terminal’s port to be the other usbserial (of the radio module, not the OSAVC serial port).
+
 ![new terminal](../assets/images/TestHarness/RT2.png)
 
-- Set the new terminal’s port to be the other usbserial (of the radio module, not the OSAVC serial port) and set the baud rate to be 57600
-![port](../assets/images/TestHarness/RT2.png)
+- Set the baud rate to be 57600
 
 ![Baud Rate](../assets/images/TestHarness/RT3.png)
 
@@ -224,6 +233,14 @@ Output should be: -->
 
 ![Encoder](../assets/images/TestHarness/Encoder.png)
 
+![Encoder](../assets/images/TestHarness/Encoder2.jpg)
+
+**Note** : If you only have one encoder, set NUM_ENCODERS to be 1 in the AS5047D.h file and connect your encoder to the J16 port.
+
+- The terminal output should continuously report and update the angle and velocity measured by the encoder in native units (16384 pulses per revolution).
+
+![Encoder](../assets/images/TestHarness/EncoderOutput.png)
+
 ## LIDAR Test Harder
 
 ### Hardware Setup for LIDAR
@@ -233,6 +250,8 @@ Output should be: -->
 ![LIDAR](../assets/images/TestHarness/LIDAR2.jpg)
 
 ### Output for LIDAR Test Harness
+
+- The terminal output should continuously report and update the range measured by the LIDAR sensor.
 
 ![Output](../assets/images/TestHarness/LIDAR3.png)
 

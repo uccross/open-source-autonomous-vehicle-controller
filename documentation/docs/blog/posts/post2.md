@@ -1,6 +1,5 @@
 ---
 title: Setting Up MPLAB X
-Author: Carlos Espinosa
 date: 2023-06-28
 category: Tutorial
 tags:

@@ -609,7 +609,7 @@ void main(void) {
     // test a write on page 1
     page = 1;
     offset = 0;
-    sprintf(msg, "Developed by Aaron Hunter");
+    sprintf(msg, "OSAVC S/N 08\r\nDeveloped by Aaron Hunter");
     length = strlen(msg);
     start_time = Sys_timer_get_usec();
     EEPROM_write_data(msg, length, page, offset);

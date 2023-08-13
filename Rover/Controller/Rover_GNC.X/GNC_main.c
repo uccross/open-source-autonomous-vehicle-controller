@@ -190,7 +190,7 @@ mavlink_system_t mavlink_system = {
 };
 
 enum mission {
-    MANUAL = 0, CRUISE, AUTO, BADRCVAL
+    MANUAL = 0, CRUISE, STEP, AUTO, BADRCVAL
 };
 
 enum RC_channels {
@@ -1017,7 +1017,8 @@ uint8_t check_mission_status(void) {
         }/* if switch state == mid*/
         else if (RC_channels[SWITCH_A] == RC_RX_MID_COUNTS) {
             /* we're in cruise control*/
-            mode = CRUISE;
+            //mode = CRUISE;
+            mode = STEP;
         } else if (RC_channels[SWITCH_A] == RC_RX_MAX_COUNTS) {
             /* Autonomous mode enabled*/
             mode = AUTO;
@@ -1074,6 +1075,20 @@ void set_control_output(uint8_t mode) {
             /* set velocity */
             PID_update(&v_PID, v_ref, X_new.v);
             v_cmd = (uint16_t) (v_PID.u) + RC_SERVO_CENTER_PULSE;
+            RC_servo_set_pulse(v_cmd, MOTOR_LEFT);
+            RC_servo_set_pulse(v_cmd, MOTOR_RIGHT);
+            /* manual steering*/
+            RC_servo_set_pulse(calc_pw(RC_channels[RUD]), STEERING_SERVO);
+            error_limit = 0; // reset error counter
+            break;
+        }
+
+        case STEP:
+        {
+            v_cmd = RC_channels[SWITCH_B]/20 + RC_SERVO_CENTER_PULSE + 75;
+            /* set step value */
+//            PID_update(&v_PID, v_ref, X_new.v);
+//            v_cmd = (uint16_t) (v_PID.u) + RC_SERVO_CENTER_PULSE;
             RC_servo_set_pulse(v_cmd, MOTOR_LEFT);
             RC_servo_set_pulse(v_cmd, MOTOR_RIGHT);
             /* manual steering*/
@@ -1202,8 +1217,8 @@ void q_rot_v_q(float v_i[MSZ], float q[QSZ], float v_b[MSZ]) {
 void update_odometry(void) {
     float l = 0.174; // wheelbase in meters
     float r_w = .032; // wheel radius in meters
-    float scale = 1.13;
-    r_w = r_w*scale; // rough calibration test
+    float scale = 1.13; //calibration factor for effective wheel radius
+    r_w = r_w*scale; // calibrated r_w
     float R; // radius of vehicle path
     float dPsi; // change in heading angle of rover
     float Psi_new;
@@ -1470,7 +1485,7 @@ int main(void) {
             GPS2LTP(X_ltp, home_tp, X_tp, GPS_data.lon, GPS_data.lat);
             timer_end = Sys_timer_get_usec();
             msg_len = sprintf(message, "timer: %d;  LTP: y=%3.6f x=%3.6f, GPS: lat: %3.6f, lon: %3.6f \r\n",
-                    timer_end-timer_start, X_ltp[1], X_ltp[0], GPS_data.lat, GPS_data.lon);
+                    timer_end - timer_start, X_ltp[1], X_ltp[0], GPS_data.lat, GPS_data.lon);
             mavprint(message, msg_len, RADIO);
             //            msg_len = sprintf(message, "status buffer SPIROV: %d\r\n", SPI1STATbits.SPIROV);
             //            mavprint(message, msg_len, RADIO);

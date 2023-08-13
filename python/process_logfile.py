@@ -10,7 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from haversine import calc_earth_radius, haversine
 
-filename = '.\logfiles\log_20230101-142316.csv'
+filename = '.\logfiles\log_20230109-084742.csv'
 
 df_raw = pd.read_csv(filename)
 df_raw['time_msec'] = df_raw['time_usec']/1000

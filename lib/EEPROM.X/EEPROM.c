@@ -595,7 +595,7 @@ void main(void) {
     uint8_t bytes[] = {0xff, 0xca, 0x00, 0xff, 0x02, 0x02, 0x08, 0x08, 0xbb, 0xdd, 0xff, 0x00};
     uint8_t msg[PAGESIZE];
     uint8_t msg_length;
-    sprintf(msg, "OSAVC Rev 1.0");
+    sprintf(msg, "OSAVC Rev 1.1");
     msg_length = strlen(msg);
 
     uint8_t recv_data[] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};

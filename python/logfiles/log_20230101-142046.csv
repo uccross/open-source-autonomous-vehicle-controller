@@ -1,0 +1,1 @@
+mavpackettype,index,frequency,time_boot_ms,q1,q2,q3,q4,rollspeed,pitchspeed,yawspeed,repr_offset_q,x,y,z,vx,vy,vz,time_usec,fix_type,lat,lon,alt,eph,epv,vel,cog,satellites_visible,alt_ellipsoid,h_acc,v_acc,vel_acc,hdg_acc,yaw,type,autopilot,base_mode,custom_mode,system_status,mavlink_version

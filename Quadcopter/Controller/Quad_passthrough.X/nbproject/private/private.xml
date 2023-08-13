@@ -5,6 +5,7 @@
         <group>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/PID.X/PID.c</file>
             <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/lib/PID.X/PID.h</file>
+            <file>file:/C:/Users/Aaron/MPLABXProjects/open-source-autonomous-vehicle-controller/apps/ahrs_apps/AHRS.X/AHRS.c</file>
         </group>
     </open-files>
 </project-private>

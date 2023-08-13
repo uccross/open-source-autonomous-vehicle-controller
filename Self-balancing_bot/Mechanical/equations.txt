@@ -1,0 +1,3 @@
+﻿"Black_acrylic"= 1.35mm
+"MDF_base"= 20mm
+"Supports_material"= 5.4mm

@@ -40,4 +40,6 @@
 !*.SLDASM
 !*.SLDPRT
 !*.STEP
+!*.SLDDRW
+!*.DXF
 

@@ -273,8 +273,10 @@ uint8_t IMU_init(char interface_mode) {
         IMU_CS_LAT = 1; // deselect device 
         SPI1BUF; // clear receive buffer 
         /*set up SPI1 RX interrupt*/
-        IFS0bits.SPI1RXIF = 0; // clear interrupt flag
-        IEC0bits.SPI1RXIE = 1; //enable interrupt
+        IFS0bits.SPI1RXIF = 0; // clear interrupt flags
+        IFS0bits.SPI1EIF = 0;
+        IEC0bits.SPI1RXIE = 1; //enable interrupts
+        IEC0bits.SPI1AEIE = 1; 
         IPC5bits.SPI1IP = 5; //interrupt priority 5
         IPC5bits.SPI1IS = 0; //subpriority 0
         SPI1BRG = pb_clk / (2 * IMU_SPI_FREQ) - 1; // set frequency 
@@ -736,6 +738,12 @@ static void __ISR(_SPI_1_VECTOR, IPL5AUTO) IMU_SPI_interrupt_handler(void) {
     uint8_t data;
     data = SPI1BUF;
     IFS0bits.SPI1RXIF = 0; // clear interrupt flag
+    if(IFS0bits.SPI1AEIF){
+        SPI1STATCLR = 1<<12; //clear frame error register
+        SPI1STATCLR = 1<<6; // clear the overflow register
+        IFS0bits.SPI1AEIF = 0; //clear error flag
+    }
+    
     IMU_run_SPI_state_machine(data);
 }
 

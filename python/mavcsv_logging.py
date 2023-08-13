@@ -29,7 +29,7 @@ csv_file = 'logfile.csv'
 msgs_dict = {}
 # Collect messages for ten seconds to get all keys
 start_time = time.time()
-end_time = 10
+end_time = 5
 while time.time() - start_time < end_time:
     try:
         msg = master.recv_match(blocking = True)
@@ -45,7 +45,7 @@ with open(csv_file, 'w', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=headers)    
     writer.writeheader()
     start_time = time.time()
-    logging_time = 20
+    logging_time = 30
     # currently we log for a specified period of time
     while time.time() - start_time < logging_time:
         try:

@@ -241,8 +241,10 @@ int GPS_init(void) {
 
     IFS1bits.U2RXIF = 0; //clear interrupt flags
     IFS1bits.U2TXIF = 0;
+    IFS1bits.U2AEIF = 0;
     IEC1bits.U2RXIE = 1; //enable interrupt on RX
     IEC1bits.U2TXIE = 1; //enable interrupts on TX
+    IEC1bits.U2AEIE = 1; //enable error interrupts
 
     IPC8bits.U2IP = 3; //set interrupt priority to 3
     U2STAbits.UTXEN = 0; // TX disabled--at this point we're not writing to GPS
@@ -269,7 +271,6 @@ char GPS_is_msg_avail(void) {
         return TRUE;
     }
 }
-
 
 /**
  * @Function char GPS_parseStream(void)
@@ -359,7 +360,11 @@ void __ISR(_UART_2_VECTOR, IPL3AUTO) UART2_interrupt_handler(void) {
         //        }
     }
     if (IFS1bits.U2EIF) { //error flag--can check U1STA for the reason
-        IFS1bits.U2EIF = 0; /* unhandled, just clear */
+        /* check status register for overrun*/
+        if (U2STAbits.OERR) {
+            U2STAbits.OERR = 0; //clear overrun and reset FIFO
+        }
+        IFS1bits.U2EIF = 0; /* clear flag */
     }
 }
 

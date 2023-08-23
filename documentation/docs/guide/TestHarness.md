@@ -105,11 +105,11 @@ The terminal output should continuously report and update the IMU’s accelerome
 
 ### Hardware Setup for Motor
 
-![Motor Connections](../assets/images/TestHarness/MotorTest1.jpg)
+![Motor Connections](../assets/images/TestHarness/MotorTest1.png)
 
 ![Motor Connections](../assets/images/TestHarness/MotorTest2.jpg)
 
-![Motor Connections](../assets/images/TestHarness/MotorTest3.jpg)
+![Motor Connections](../assets/images/TestHarness/MotorTest3.png)
 
 - **Note** :  The J5 jumper must be placed to supply 5V to the power lane.
 

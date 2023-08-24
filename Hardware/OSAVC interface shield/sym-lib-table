@@ -1,0 +1,4 @@
+(sym_lib_table
+  (lib (name dk_Rectangular-Connectors-Headers-Male-Pins)(type Legacy)(uri C:/Users/Aaron/Documents/KiCAD/Libraries/digikey-kicad-library-master/digikey-symbols/dk_Rectangular-Connectors-Headers-Male-Pins.lib)(options "")(descr ""))
+  (lib (name OSAVC_generated)(type Legacy)(uri ${KIPRJMOD}/OSAVC_generated.lib)(options "")(descr ""))
+)

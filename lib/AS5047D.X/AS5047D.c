@@ -166,6 +166,9 @@ uint8_t Encoder_init(void) {
     /*set up SPI2 RX interrupt*/
     IEC1bits.SPI2RXIE = 1; //enable interrupt
     IFS1bits.SPI2RXIF = 0; // clear interrupt flag
+    IEC1bits.SPI2EIE = 1; //enable error interrupt
+    IFS1bits.SPI2EIF = 0; //clear interrupt flag
+
     IPC7bits.SPI2IP = 5; //interrupt priority 5
     IPC7bits.SPI2IS = 1; //subpriority 1
     SPI2CONbits.ON = 1; /* enable SPI system*/
@@ -398,10 +401,17 @@ static int16_t write_register(uint16_t address, uint16_t value) {
  */
 void __ISR(_SPI_2_VECTOR, IPL5AUTO) SPI2_interrupt_handler(void) {
     uint16_t data;
-    data = SPI2BUF; //read the data 
-    IFS1bits.SPI2RXIF = 0; // clear interrupt flag
-    run_encoder_SM(data);
-
+    data = SPI2BUF; //read the data
+    // what caused the interrupt?
+    if (IFS1bits.SPI2RXIF) {
+         
+        IFS1bits.SPI2RXIF = 0; // clear interrupt flag
+        run_encoder_SM(data);
+    }
+    if (IFS1bits.SPI2EIF) {
+        SPI2STATbits.SPIROV = 0; // clear any overflow condition 
+        IFS1bits.SPI2EIF = 0; // clear interrupt flag
+    }
 }
 
 /**

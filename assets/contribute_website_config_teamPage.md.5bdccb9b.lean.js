@@ -1,4 +1,4 @@
-import { V as VPTeamMembers } from "./chunks/theme.566471a5.js";
+import { V as VPTeamMembers } from "./chunks/theme.4c21da17.js";
 import { o as openBlock, c as createElementBlock, J as createVNode, b as unref, V as createStaticVNode, C as createBaseVNode, a as createTextVNode } from "./chunks/framework.ce59e187.js";
 const _hoisted_1 = /* @__PURE__ */ createStaticVNode("", 6);
 const _hoisted_7 = /* @__PURE__ */ createStaticVNode("", 17);

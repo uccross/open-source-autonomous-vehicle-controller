@@ -1,4 +1,4 @@
-import { a as VPTeamPageTitle, V as VPTeamMembers, b as VPTeamPageSection, c as VPTeamPage } from "./chunks/theme.566471a5.js";
+import { a as VPTeamPageTitle, V as VPTeamMembers, b as VPTeamPageSection, c as VPTeamPage } from "./chunks/theme.4c21da17.js";
 import { o as openBlock, c as createElementBlock, J as createVNode, E as withCtx, b as unref, a as createTextVNode } from "./chunks/framework.ce59e187.js";
 const __pageData = JSON.parse('{"title":"","description":"","frontmatter":{"layout":"page"},"headers":[],"relativePath":"projects/team.md"}');
 const __default__ = { name: "projects/team.md" };

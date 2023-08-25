@@ -1,0 +1,24 @@
+[
+  {
+    "author": "",
+    "date": "2023-07-30",
+    "image": "https://i.ibb.co/ZGKprGh/Project-Thumbnail-removebg-preview.png",
+    "title": "D.O.R.A",
+    "path": "./posts/dora",
+    "excerpt": "The Dynamically Operated Reconfigurable Autopilot (D.O.R.A) project is a revolutionary initiative aimed at enhancing the teaching and understanding of flight controls."
+  },
+  {
+    "author": "Carlos Espinosa",
+    "image": "https://i.ibb.co/kDhfHgB/balancingbot-removebg-preview.png",
+    "title": "Balancing Bot",
+    "path": "./posts/balancingBot",
+    "excerpt": "A setup with two motors ...."
+  },
+  {
+    "author": "Pavlo Vlastos",
+    "image": "https://i.ibb.co/2Mfq84M/boat-removebg-preview.png",
+    "title": "Slug Autonomous Surface Vehicle Project",
+    "path": "./posts/slug",
+    "excerpt": "The Slug Autonomous Surface Vehicle Project is a pioneering effort aimed at revolutionizing oceanography by developing a robust autonomous vehicle. This vehicle is designed to significantly reduce the cost associated with gathering oceanographic data. The project's ultimate goal is to create an autonomous surface vehicle (ASV) capable of performing waypoint tracking, optimal exploration, and data collection in marine environments."
+  }
+]

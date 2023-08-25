@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Setting Up Hardware",
+    "path": "./posts/post1",
+    "excerpt": "Getting Trouble Setting up the Hardware ?"
+  },
+  {
+    "title": "Problem with MPLAB X ?",
+    "path": "./posts/post2",
+    "excerpt": "No Such file or directory for include files"
+  }
+]

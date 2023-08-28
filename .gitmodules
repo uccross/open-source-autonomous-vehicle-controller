@@ -1,3 +1,7 @@
 [submodule "modules/c_library_v2"]
 	path = modules/c_library_v2
 	url = https://github.com/mavlink/c_library_v2.git
+[submodule "companion_computer/PositioningSystem_raspi"]
+	path = companion_computer/PositioningSystem_raspi
+	url = https://github.com/25ChilingH/PositioningSystem.git
+	branch = dev_raspi

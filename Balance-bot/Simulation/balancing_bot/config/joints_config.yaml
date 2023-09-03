@@ -1,0 +1,11 @@
+joint_state_controller:
+  type: "joint_state_controller/JointStateController"
+  publish_rate: 50
+
+right_motor_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: propeller_R_joint
+
+left_motor_controller:
+  type: "velocity_controllers/JointVelocityController"
+  joint: propeller_L_joint

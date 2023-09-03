@@ -8,12 +8,12 @@ Please find instructions for installing ROS. [Here](http://wiki.ros.org/melodic)
 
 After installing ROS. you can copy the balancing bot file into your src folder in your ros workspace and build it.
 
-then run these commands for running gazebo and control ros node.
+then run the commands for running gazebo and control ros node.
 
 ```
 roslaunch balancing_bot gazebo.launch 
 ```
-You should be able see the balancing like in the below image
+You should be able to see the self-balancing bot simulation in gazebo like in the image below
 
 ![gazebo](gazebo_sample.png)
 
@@ -23,15 +23,16 @@ In another terminal run
 rosrun balancing_bot example_pd_controller.py 
 ```
 
-After running the last command, you should be able to the balancing the arm link.
+After running the last command, you should be able to balance the arm link.
 
 <video src="example_pd.mp4" controls="controls" style="max-width: 730px;">
 </video>
 
-with the error decreasing over time like this,
+With the error decreasing over time like this,
+
 ![error](sample.png)
 
-The PD controller block diagram here explains the control loop
+The PD controller block diagram here explains the control loop, where the error of angle difference is fed into the controller. Motor speed command is generated for the left and right motors individually using the controller output and target motor speed.
 
 ![pid](blk_diag.png)
 
